@@ -1,0 +1,1404 @@
+{
+  "acre_thresholds": {
+    "by_decade": [
+      {
+        "acres_recorded": 1,
+        "below": {
+          "10": 0,
+          "300": 0,
+          "50": 0
+        },
+        "decade": 1870,
+        "records": 1
+      },
+      {
+        "acres_recorded": 7,
+        "below": {
+          "10": 0,
+          "300": 0,
+          "50": 0
+        },
+        "decade": 1890,
+        "records": 7
+      },
+      {
+        "acres_recorded": 70,
+        "below": {
+          "10": 2,
+          "300": 39,
+          "50": 13
+        },
+        "decade": 1900,
+        "records": 70
+      },
+      {
+        "acres_recorded": 1324,
+        "below": {
+          "10": 73,
+          "300": 774,
+          "50": 236
+        },
+        "decade": 1910,
+        "records": 1324
+      },
+      {
+        "acres_recorded": 1479,
+        "below": {
+          "10": 81,
+          "300": 748,
+          "50": 233
+        },
+        "decade": 1920,
+        "records": 1479
+      },
+      {
+        "acres_recorded": 1157,
+        "below": {
+          "10": 108,
+          "300": 694,
+          "50": 270
+        },
+        "decade": 1930,
+        "records": 1157
+      },
+      {
+        "acres_recorded": 1155,
+        "below": {
+          "10": 70,
+          "300": 564,
+          "50": 226
+        },
+        "decade": 1940,
+        "records": 1155
+      },
+      {
+        "acres_recorded": 1819,
+        "below": {
+          "10": 122,
+          "300": 737,
+          "50": 320
+        },
+        "decade": 1950,
+        "records": 1819
+      },
+      {
+        "acres_recorded": 1276,
+        "below": {
+          "10": 99,
+          "300": 627,
+          "50": 316
+        },
+        "decade": 1960,
+        "records": 1276
+      },
+      {
+        "acres_recorded": 1879,
+        "below": {
+          "10": 270,
+          "300": 1138,
+          "50": 622
+        },
+        "decade": 1970,
+        "records": 1879
+      },
+      {
+        "acres_recorded": 2206,
+        "below": {
+          "10": 184,
+          "300": 1291,
+          "50": 568
+        },
+        "decade": 1980,
+        "records": 2206
+      },
+      {
+        "acres_recorded": 1992,
+        "below": {
+          "10": 179,
+          "300": 1170,
+          "50": 571
+        },
+        "decade": 1990,
+        "records": 1992
+      },
+      {
+        "acres_recorded": 2905,
+        "below": {
+          "10": 265,
+          "300": 2018,
+          "50": 1139
+        },
+        "decade": 2000,
+        "records": 2905
+      },
+      {
+        "acres_recorded": 3429,
+        "below": {
+          "10": 843,
+          "300": 2734,
+          "50": 1929
+        },
+        "decade": 2010,
+        "records": 3429
+      },
+      {
+        "acres_recorded": 2558,
+        "below": {
+          "10": 705,
+          "300": 2112,
+          "50": 1598
+        },
+        "decade": 2020,
+        "records": 2558
+      },
+      {
+        "acres_recorded": 77,
+        "below": {
+          "10": 0,
+          "300": 43,
+          "50": 7
+        },
+        "decade": null,
+        "records": 77
+      }
+    ],
+    "note": "Counts of surviving records below each acreage named in FRAP's published current collection criteria. These are not the criteria that applied in every earlier era, and a record below a threshold is not an error; the count is here so a reader can see how close each decade's records sit to the cutoffs FRAP names.",
+    "thresholds": [
+      10,
+      50,
+      300
+    ]
+  },
+  "duplicate_signals": [
+    {
+      "description": "Records sharing one IRWIN ID. IRWIN is the federal incident identifier, so a repeat means two perimeter records point at one federal incident.",
+      "distinct_keys": 3618,
+      "key": "irwin_id",
+      "keyed_records": 3633,
+      "records_sharing_a_key": 23,
+      "reused_keys": 8
+    },
+    {
+      "description": "Records sharing a fire year, reporting unit and local incident number. Local incident numbers repeat between units by design, so the unit is part of the key; without it this count would be inflated by unrelated fires.",
+      "distinct_keys": 9644,
+      "key": "year_unit_incident_number",
+      "keyed_records": 9901,
+      "records_sharing_a_key": 376,
+      "reused_keys": 119
+    },
+    {
+      "description": "Records sharing a fire year, fire name and GIS acreage rounded to the nearest acre.",
+      "distinct_keys": 16561,
+      "key": "year_name_acres",
+      "keyed_records": 16596,
+      "records_sharing_a_key": 66,
+      "reused_keys": 31
+    }
+  ],
+  "earliest_year": 1878,
+  "fields": [
+    {
+      "explicit_unknown": 0,
+      "label": "Year",
+      "markers": {},
+      "name": "YEAR_",
+      "not_recorded": 77,
+      "note": "Fire year. Records with no year are counted in their own cohort and are never folded into a year that would then appear larger than it is.",
+      "outside_published_domain": 0,
+      "outside_published_domain_distinct": 0,
+      "outside_published_domain_values": {},
+      "present": 23257,
+      "present_tenths_pct": 997,
+      "total": 23334
+    },
+    {
+      "explicit_unknown": 0,
+      "label": "IRWIN ID",
+      "markers": {},
+      "name": "IRWINID",
+      "not_recorded": 19701,
+      "note": "Linkage to the federal IRWIN incident record. FRAP's own release notes describe the new Global ID field as covering records 'pre-dating IRWIN IDs', so an absent IRWIN ID on an older record is expected rather than anomalous.",
+      "outside_published_domain": 0,
+      "outside_published_domain_distinct": 0,
+      "outside_published_domain_values": {},
+      "present": 3633,
+      "present_tenths_pct": 156,
+      "total": 23334
+    },
+    {
+      "explicit_unknown": 0,
+      "label": "Alarm date",
+      "markers": {},
+      "name": "ALARM_DATE",
+      "not_recorded": 5384,
+      "outside_published_domain": 0,
+      "outside_published_domain_distinct": 0,
+      "outside_published_domain_values": {},
+      "present": 17950,
+      "present_tenths_pct": 769,
+      "total": 23334
+    },
+    {
+      "explicit_unknown": 0,
+      "label": "Containment date",
+      "markers": {},
+      "name": "CONT_DATE",
+      "not_recorded": 12618,
+      "outside_published_domain": 0,
+      "outside_published_domain_distinct": 0,
+      "outside_published_domain_values": {},
+      "present": 10716,
+      "present_tenths_pct": 459,
+      "total": 23334
+    },
+    {
+      "explicit_unknown": 85,
+      "label": "Fire name",
+      "markers": {
+        "n/a": 72,
+        "none": 1,
+        "unknown": 12
+      },
+      "name": "FIRE_NAME",
+      "not_recorded": 6583,
+      "note": "A small number of records carry a marker word where the name goes. Counting those as names would put a fire called N/A on a map.",
+      "outside_published_domain": 0,
+      "outside_published_domain_distinct": 0,
+      "outside_published_domain_values": {},
+      "present": 16666,
+      "present_tenths_pct": 714,
+      "total": 23334
+    },
+    {
+      "explicit_unknown": 12469,
+      "label": "Local incident number",
+      "markers": {
+        "00000000": 12469
+      },
+      "name": "INC_NUM",
+      "not_recorded": 955,
+      "note": "An all-zeros incident number stands in a large share of records. It is counted apart from recorded numbers rather than read as an identifier, because reading it as one would make thousands of unrelated fires across many units and many decades appear to share a single incident.",
+      "outside_published_domain": 0,
+      "outside_published_domain_distinct": 0,
+      "outside_published_domain_values": {},
+      "present": 9910,
+      "present_tenths_pct": 425,
+      "total": 23334
+    },
+    {
+      "explicit_unknown": 3623,
+      "label": "Fire number (historical use)",
+      "markers": {
+        "00000000": 3620,
+        "<null>": 3
+      },
+      "name": "FIRE_NUM",
+      "not_recorded": 6190,
+      "note": "Carries the literal text <Null> in a few records, and an all-zeros placeholder in several thousand more. Both are markers written into the cell rather than empty cells, and both are counted apart from recorded numbers.",
+      "outside_published_domain": 0,
+      "outside_published_domain_distinct": 0,
+      "outside_published_domain_values": {},
+      "present": 13521,
+      "present_tenths_pct": 579,
+      "total": 23334
+    },
+    {
+      "explicit_unknown": 10514,
+      "label": "Cause",
+      "markers": {
+        "14": 10514
+      },
+      "name": "CAUSE",
+      "not_recorded": 0,
+      "note": "Code 14 is the published 'Unknown / Unidentified' value. It is a recorded determination that the cause is unknown, not an empty cell.",
+      "outside_published_domain": 0,
+      "outside_published_domain_distinct": 0,
+      "outside_published_domain_values": {},
+      "present": 12820,
+      "present_tenths_pct": 549,
+      "total": 23334
+    },
+    {
+      "explicit_unknown": 15081,
+      "label": "Collection method",
+      "markers": {
+        "8": 15081
+      },
+      "name": "C_METHOD",
+      "not_recorded": 0,
+      "note": "Code 8 is the published 'Unknown' value. FRAP's firep25_1 release notes record that 12,097 fires' collection methods were edited from null to Unknown, which moves cells between two of the three states this project counts.",
+      "outside_published_domain": 0,
+      "outside_published_domain_distinct": 0,
+      "outside_published_domain_values": {},
+      "present": 8253,
+      "present_tenths_pct": 354,
+      "total": 23334
+    },
+    {
+      "explicit_unknown": 0,
+      "label": "Management objective",
+      "markers": {},
+      "name": "OBJECTIVE",
+      "not_recorded": 271,
+      "outside_published_domain": 0,
+      "outside_published_domain_distinct": 0,
+      "outside_published_domain_values": {},
+      "present": 23063,
+      "present_tenths_pct": 988,
+      "total": 23334
+    },
+    {
+      "explicit_unknown": 0,
+      "label": "Reporting agency",
+      "markers": {},
+      "name": "AGENCY",
+      "not_recorded": 48,
+      "outside_published_domain": 0,
+      "outside_published_domain_distinct": 0,
+      "outside_published_domain_values": {},
+      "present": 23286,
+      "present_tenths_pct": 998,
+      "total": 23334
+    },
+    {
+      "explicit_unknown": 0,
+      "label": "Unit",
+      "markers": {},
+      "name": "UNIT_ID",
+      "not_recorded": 60,
+      "outside_published_domain": 0,
+      "outside_published_domain_distinct": 0,
+      "outside_published_domain_values": {},
+      "present": 23274,
+      "present_tenths_pct": 997,
+      "total": 23334
+    },
+    {
+      "explicit_unknown": 0,
+      "label": "State",
+      "markers": {},
+      "name": "STATE",
+      "not_recorded": 0,
+      "outside_published_domain": 0,
+      "outside_published_domain_distinct": 0,
+      "outside_published_domain_values": {},
+      "present": 23334,
+      "present_tenths_pct": 1000,
+      "total": 23334
+    },
+    {
+      "explicit_unknown": 0,
+      "label": "GIS calculated acres",
+      "markers": {},
+      "name": "GIS_ACRES",
+      "not_recorded": 0,
+      "note": "Derived from the stored polygon, so it is the one geometry-dependent field available without downloading geometry.",
+      "outside_published_domain": 0,
+      "outside_published_domain_distinct": 0,
+      "outside_published_domain_values": {},
+      "present": 23334,
+      "present_tenths_pct": 1000,
+      "recorded_zero_values": 0,
+      "total": 23334
+    },
+    {
+      "explicit_unknown": 0,
+      "label": "Complex name",
+      "markers": {},
+      "name": "COMPLEX_NAME",
+      "not_recorded": 22716,
+      "outside_published_domain": 0,
+      "outside_published_domain_distinct": 0,
+      "outside_published_domain_values": {},
+      "present": 618,
+      "present_tenths_pct": 26,
+      "total": 23334
+    },
+    {
+      "explicit_unknown": 1,
+      "label": "Complex ID",
+      "markers": {
+        "00000000": 1
+      },
+      "name": "COMPLEX_ID",
+      "not_recorded": 22750,
+      "outside_published_domain": 0,
+      "outside_published_domain_distinct": 0,
+      "outside_published_domain_values": {},
+      "present": 583,
+      "present_tenths_pct": 25,
+      "total": 23334
+    },
+    {
+      "explicit_unknown": 0,
+      "label": "Decade",
+      "markers": {},
+      "name": "DECADES",
+      "not_recorded": 5270,
+      "outside_published_domain": 0,
+      "outside_published_domain_distinct": 0,
+      "outside_published_domain_values": {},
+      "present": 18064,
+      "present_tenths_pct": 774,
+      "total": 23334
+    }
+  ],
+  "irwin_id_present": 3633,
+  "is_fixture": false,
+  "latest_year": 2025,
+  "measurement": "Completeness of the FRAP historical fire perimeter record",
+  "records": 23334,
+  "records_without_year": 77,
+  "source": {
+    "acquired_bytes": 7964688,
+    "acquired_record_count": 23334,
+    "acquired_sha256": "9be7bcb9c08f6813ba13263eabebc96256f0ea8fb0e809ad8a4171046466a16a",
+    "caveats": [
+      {
+        "measured_as": "Records per fire year, published as counts of what is present, with no year interpolated and no year invented for a record that carries none.",
+        "quote": "Although the dataset represents the most complete digital record of fire perimeters in California, it is still incomplete, and users should be cautious when drawing conclusions based on the data.",
+        "topic": "Completeness"
+      },
+      {
+        "measured_as": "Records per decade counted against each acreage named in the published collection criteria, so a reader can see how much of each decade sits near the cutoffs.",
+        "quote": "This data should be used carefully for statistical analysis and reporting due to missing perimeters (see Use Limitation in metadata). Some fires are missing because historical records were lost or damaged, were too small for the minimum cutoffs, had inadequate documentation or have not yet been incorporated into the database.",
+        "topic": "Missing perimeters"
+      },
+      {
+        "measured_as": "The 10, 50 and 300 acre thresholds are the ones counted against, and they are labelled as the current criteria rather than applied backwards to eras whose cutoffs this project has not established.",
+        "quote": "CAL FIRE (including contract counties) submit perimeters ≥10 acres in timber, ≥50 acres in brush, or ≥300 acres in grass, and/or ≥3 impacted residential or commercial structures, and/or caused ≥1 fatality. All cooperating agencies submit perimeters ≥10 acres.",
+        "topic": "Collection criteria"
+      },
+      {
+        "measured_as": "Counts of records sharing an identifier or an identifying combination, published as candidates. Over-generalization is a property of the polygons, which this project does not download and does not assess.",
+        "quote": "Other errors with the fire perimeter database include duplicate fires and over-generalization. Additionally, over-generalization, particularly with large old fires, may show unburned “islands” within the final perimeter as burned.",
+        "topic": "Duplicates and generalization"
+      },
+      {
+        "measured_as": "IRWIN ID coverage per year, which shows where the federal identifier begins to appear and how much of each recent year carries one.",
+        "quote": "A new field, Global ID, was added to provide a unique ID to track all fire records in this dataset including those pre-dating IRWIN IDs.",
+        "topic": "IRWIN linkage"
+      },
+      {
+        "measured_as": "Collection method counted in three states rather than two, so the cells this edit moved are visible as recorded unknowns instead of disappearing into an apparently complete field.",
+        "quote": "A count of 12,097 fires' collection methods were edited from Null values to Unknown.",
+        "topic": "Null to Unknown"
+      }
+    ],
+    "endpoint": "https://services1.arcgis.com/jUJYIo9tSA7EHvfZ/arcgis/rest/services/California_Historic_Fire_Perimeters/FeatureServer/0/query",
+    "key": "frap_perimeters",
+    "landing_page": "https://data.cnra.ca.gov/dataset/california-historical-fire-perimeters",
+    "layer": "California Fire Perimeters (all)",
+    "licence": "Creative Commons Attribution",
+    "licence_url": "http://www.opendefinition.org/licenses/cc-by",
+    "publisher": "California Department of Forestry and Fire Protection, Fire and Resource Assessment Program",
+    "retrieved": "2026-08-07",
+    "title": "California Historical Fire Perimeters",
+    "version": "firep25_1"
+  },
+  "years": [
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 1,
+      "irwin_present": 0,
+      "records": 1,
+      "year": 1878
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 1,
+      "irwin_present": 0,
+      "records": 1,
+      "year": 1895
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 1,
+      "irwin_present": 0,
+      "records": 1,
+      "year": 1896
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 5,
+      "irwin_present": 0,
+      "records": 5,
+      "year": 1898
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 12,
+      "irwin_present": 0,
+      "records": 12,
+      "year": 1900
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 1,
+      "irwin_present": 0,
+      "records": 1,
+      "year": 1902
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 2,
+      "irwin_present": 0,
+      "records": 2,
+      "year": 1903
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 1,
+      "irwin_present": 0,
+      "records": 1,
+      "year": 1905
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 4,
+      "irwin_present": 0,
+      "records": 4,
+      "year": 1906
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 10,
+      "irwin_present": 0,
+      "records": 10,
+      "year": 1907
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 16,
+      "irwin_present": 0,
+      "records": 16,
+      "year": 1908
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 24,
+      "irwin_present": 0,
+      "records": 24,
+      "year": 1909
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 90,
+      "irwin_present": 0,
+      "records": 90,
+      "year": 1910
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 166,
+      "irwin_present": 0,
+      "records": 166,
+      "year": 1911
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 56,
+      "irwin_present": 0,
+      "records": 56,
+      "year": 1912
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 84,
+      "irwin_present": 0,
+      "records": 84,
+      "year": 1913
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 105,
+      "irwin_present": 0,
+      "records": 105,
+      "year": 1914
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 132,
+      "irwin_present": 0,
+      "records": 132,
+      "year": 1915
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 131,
+      "irwin_present": 0,
+      "records": 131,
+      "year": 1916
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 266,
+      "irwin_present": 0,
+      "records": 266,
+      "year": 1917
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 129,
+      "irwin_present": 0,
+      "records": 129,
+      "year": 1918
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 165,
+      "irwin_present": 0,
+      "records": 165,
+      "year": 1919
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 131,
+      "irwin_present": 0,
+      "records": 131,
+      "year": 1920
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 160,
+      "irwin_present": 0,
+      "records": 160,
+      "year": 1921
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 116,
+      "irwin_present": 0,
+      "records": 116,
+      "year": 1922
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 125,
+      "irwin_present": 0,
+      "records": 125,
+      "year": 1923
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 248,
+      "irwin_present": 0,
+      "records": 248,
+      "year": 1924
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 91,
+      "irwin_present": 0,
+      "records": 91,
+      "year": 1925
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 188,
+      "irwin_present": 0,
+      "records": 188,
+      "year": 1926
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 99,
+      "irwin_present": 0,
+      "records": 99,
+      "year": 1927
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 167,
+      "irwin_present": 0,
+      "records": 167,
+      "year": 1928
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 154,
+      "irwin_present": 0,
+      "records": 154,
+      "year": 1929
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 107,
+      "irwin_present": 0,
+      "records": 107,
+      "year": 1930
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 215,
+      "irwin_present": 0,
+      "records": 215,
+      "year": 1931
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 116,
+      "irwin_present": 0,
+      "records": 116,
+      "year": 1932
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 73,
+      "irwin_present": 0,
+      "records": 73,
+      "year": 1933
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 132,
+      "irwin_present": 0,
+      "records": 132,
+      "year": 1934
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 81,
+      "irwin_present": 0,
+      "records": 81,
+      "year": 1935
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 123,
+      "irwin_present": 0,
+      "records": 123,
+      "year": 1936
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 59,
+      "irwin_present": 0,
+      "records": 59,
+      "year": 1937
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 100,
+      "irwin_present": 0,
+      "records": 100,
+      "year": 1938
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 151,
+      "irwin_present": 0,
+      "records": 151,
+      "year": 1939
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 88,
+      "irwin_present": 0,
+      "records": 88,
+      "year": 1940
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 111,
+      "irwin_present": 0,
+      "records": 111,
+      "year": 1941
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 101,
+      "irwin_present": 0,
+      "records": 101,
+      "year": 1942
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 114,
+      "irwin_present": 0,
+      "records": 114,
+      "year": 1943
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 135,
+      "irwin_present": 0,
+      "records": 135,
+      "year": 1944
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 148,
+      "irwin_present": 0,
+      "records": 148,
+      "year": 1945
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 102,
+      "irwin_present": 0,
+      "records": 102,
+      "year": 1946
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 121,
+      "irwin_present": 0,
+      "records": 121,
+      "year": 1947
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 65,
+      "irwin_present": 0,
+      "records": 65,
+      "year": 1948
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 170,
+      "irwin_present": 0,
+      "records": 170,
+      "year": 1949
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 226,
+      "irwin_present": 0,
+      "records": 226,
+      "year": 1950
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 219,
+      "irwin_present": 0,
+      "records": 219,
+      "year": 1951
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 172,
+      "irwin_present": 0,
+      "records": 172,
+      "year": 1952
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 217,
+      "irwin_present": 0,
+      "records": 217,
+      "year": 1953
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 157,
+      "irwin_present": 0,
+      "records": 157,
+      "year": 1954
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 171,
+      "irwin_present": 0,
+      "records": 171,
+      "year": 1955
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 133,
+      "irwin_present": 0,
+      "records": 133,
+      "year": 1956
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 153,
+      "irwin_present": 0,
+      "records": 153,
+      "year": 1957
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 167,
+      "irwin_present": 0,
+      "records": 167,
+      "year": 1958
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 204,
+      "irwin_present": 0,
+      "records": 204,
+      "year": 1959
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 142,
+      "irwin_present": 0,
+      "records": 142,
+      "year": 1960
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 167,
+      "irwin_present": 0,
+      "records": 167,
+      "year": 1961
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 109,
+      "irwin_present": 0,
+      "records": 109,
+      "year": 1962
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 78,
+      "irwin_present": 0,
+      "records": 78,
+      "year": 1963
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 137,
+      "irwin_present": 0,
+      "records": 137,
+      "year": 1964
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 59,
+      "irwin_present": 0,
+      "records": 59,
+      "year": 1965
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 132,
+      "irwin_present": 0,
+      "records": 132,
+      "year": 1966
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 111,
+      "irwin_present": 0,
+      "records": 111,
+      "year": 1967
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 210,
+      "irwin_present": 0,
+      "records": 210,
+      "year": 1968
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 131,
+      "irwin_present": 0,
+      "records": 131,
+      "year": 1969
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 233,
+      "irwin_present": 0,
+      "records": 233,
+      "year": 1970
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 109,
+      "irwin_present": 0,
+      "records": 109,
+      "year": 1971
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 154,
+      "irwin_present": 0,
+      "records": 154,
+      "year": 1972
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 150,
+      "irwin_present": 0,
+      "records": 150,
+      "year": 1973
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 206,
+      "irwin_present": 0,
+      "records": 206,
+      "year": 1974
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 210,
+      "irwin_present": 0,
+      "records": 210,
+      "year": 1975
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 133,
+      "irwin_present": 0,
+      "records": 133,
+      "year": 1976
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 167,
+      "irwin_present": 0,
+      "records": 167,
+      "year": 1977
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 152,
+      "irwin_present": 0,
+      "records": 152,
+      "year": 1978
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 365,
+      "irwin_present": 0,
+      "records": 365,
+      "year": 1979
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 319,
+      "irwin_present": 0,
+      "records": 319,
+      "year": 1980
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 271,
+      "irwin_present": 0,
+      "records": 271,
+      "year": 1981
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 145,
+      "irwin_present": 0,
+      "records": 145,
+      "year": 1982
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 159,
+      "irwin_present": 0,
+      "records": 159,
+      "year": 1983
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 211,
+      "irwin_present": 0,
+      "records": 211,
+      "year": 1984
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 210,
+      "irwin_present": 0,
+      "records": 210,
+      "year": 1985
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 172,
+      "irwin_present": 0,
+      "records": 172,
+      "year": 1986
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 284,
+      "irwin_present": 0,
+      "records": 284,
+      "year": 1987
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 256,
+      "irwin_present": 0,
+      "records": 256,
+      "year": 1988
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 179,
+      "irwin_present": 0,
+      "records": 179,
+      "year": 1989
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 174,
+      "irwin_present": 0,
+      "records": 174,
+      "year": 1990
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 87,
+      "irwin_present": 0,
+      "records": 87,
+      "year": 1991
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 195,
+      "irwin_present": 0,
+      "records": 195,
+      "year": 1992
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 171,
+      "irwin_present": 0,
+      "records": 171,
+      "year": 1993
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 217,
+      "irwin_present": 0,
+      "records": 217,
+      "year": 1994
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 206,
+      "irwin_present": 0,
+      "records": 206,
+      "year": 1995
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 317,
+      "irwin_present": 0,
+      "records": 317,
+      "year": 1996
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 188,
+      "irwin_present": 0,
+      "records": 188,
+      "year": 1997
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 163,
+      "irwin_present": 0,
+      "records": 163,
+      "year": 1998
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 274,
+      "irwin_present": 0,
+      "records": 274,
+      "year": 1999
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 180,
+      "irwin_present": 0,
+      "records": 180,
+      "year": 2000
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 207,
+      "irwin_present": 0,
+      "records": 207,
+      "year": 2001
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 244,
+      "irwin_present": 0,
+      "records": 244,
+      "year": 2002
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 339,
+      "irwin_present": 0,
+      "records": 339,
+      "year": 2003
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 276,
+      "irwin_present": 0,
+      "records": 276,
+      "year": 2004
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 304,
+      "irwin_present": 0,
+      "records": 304,
+      "year": 2005
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 314,
+      "irwin_present": 0,
+      "records": 314,
+      "year": 2006
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 348,
+      "irwin_present": 0,
+      "records": 348,
+      "year": 2007
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 439,
+      "irwin_present": 0,
+      "records": 439,
+      "year": 2008
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 254,
+      "irwin_present": 0,
+      "records": 254,
+      "year": 2009
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 207,
+      "irwin_present": 0,
+      "records": 207,
+      "year": 2010
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 317,
+      "irwin_present": 0,
+      "records": 317,
+      "year": 2011
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 351,
+      "irwin_present": 0,
+      "records": 351,
+      "year": 2012
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 296,
+      "irwin_present": 0,
+      "records": 296,
+      "year": 2013
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 84,
+      "irwin_present": 152,
+      "records": 236,
+      "year": 2014
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 141,
+      "irwin_present": 173,
+      "records": 314,
+      "year": 2015
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 151,
+      "irwin_present": 212,
+      "records": 363,
+      "year": 2016
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 197,
+      "irwin_present": 414,
+      "records": 611,
+      "year": 2017
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 205,
+      "irwin_present": 211,
+      "records": 416,
+      "year": 2018
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 90,
+      "irwin_present": 228,
+      "records": 318,
+      "year": 2019
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 47,
+      "irwin_present": 457,
+      "records": 504,
+      "year": 2020
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 67,
+      "irwin_present": 321,
+      "records": 388,
+      "year": 2021
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 16,
+      "irwin_present": 291,
+      "records": 307,
+      "year": 2022
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 16,
+      "irwin_present": 269,
+      "records": 285,
+      "year": 2023
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 117,
+      "irwin_present": 436,
+      "records": 553,
+      "year": 2024
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 52,
+      "irwin_present": 469,
+      "records": 521,
+      "year": 2025
+    },
+    {
+      "irwin_explicit_unknown": 0,
+      "irwin_not_recorded": 77,
+      "irwin_present": 0,
+      "records": 77,
+      "year": null
+    }
+  ]
+}
