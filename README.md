@@ -12,6 +12,11 @@ This project counts exactly that and publishes it beside the sentence it answers
 agency.** This is not a review of an agency's work. Every measurement operationalizes a
 limitation the publisher already states.
 
+**Status:** Beta. Version `0.1.0`, first signed tag not yet cut. Both measurements are
+computed, tested, and published against pinned dataset retrievals (FRAP `firep25_1` and CAL
+FIRE DINS, retrieved 2026-08-07). The figures move only when those retrievals are deliberately
+refreshed.
+
 ## The two measurements
 
 **Historical fire perimeter completeness** (`site/perimeters.html`) over FRAP's
