@@ -3,5 +3,14 @@ __pycache__/
 .venv/
 .DS_Store
 dist/
+.coverage
+coverage.xml
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# Acquired source files and the acquisition manifest. Never in git, never in CI:
+# these are CAL FIRE's files, re-downloadable from the endpoints in PROVENANCE.md.
 data/raw/
-data/out/
+build/
+

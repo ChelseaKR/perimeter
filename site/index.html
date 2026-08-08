@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Perimeter | Coverage measures for California wildfire datasets</title>
+<meta name="description" content="Coverage and completeness counts over California's public wildfire datasets. Unofficial.">
+<style>:root {
+  color-scheme: light;
+  --surface: #fcfcfb;
+  --surface-raised: #ffffff;
+  --rule: #e2e0d9;
+  --rule-strong: #c9c6bc;
+  --ink: #14140f;
+  --ink-2: #52514e;
+  --ink-3: #6f6d66;
+  --accent: #1c5cab;
+  --present: #2a78d6;
+  --unknown: #eb6834;
+  --absent: #1baf7a;
+  --quote-bg: #f5f4f0;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --surface: #1a1a19;
+    --surface-raised: #232321;
+    --rule: #383835;
+    --rule-strong: #4f4e4a;
+    --ink: #f7f6f2;
+    --ink-2: #c3c2b7;
+    --ink-3: #9d9b92;
+    --accent: #86b6ef;
+    --present: #3987e5;
+    --unknown: #d95926;
+    --absent: #199e70;
+    --quote-bg: #232321;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --surface: #1a1a19;
+  --surface-raised: #232321;
+  --rule: #383835;
+  --rule-strong: #4f4e4a;
+  --ink: #f7f6f2;
+  --ink-2: #c3c2b7;
+  --ink-3: #9d9b92;
+  --accent: #86b6ef;
+  --present: #3987e5;
+  --unknown: #d95926;
+  --absent: #199e70;
+  --quote-bg: #232321;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--surface);
+  color: var(--ink);
+  font: 400 17px/1.62 ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+}
+.wrap { max-width: 62rem; margin: 0 auto; padding: 0 1.5rem 5rem; }
+a { color: var(--accent); }
+h1, h2, h3, .tile-value, .num, thead th, .eyebrow, .legend, .badge, nav {
+  font-family: ui-sans-serif, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+h1 { font-size: clamp(1.9rem, 1.3rem + 2.4vw, 2.9rem); line-height: 1.14; letter-spacing: -0.02em; margin: 0 0 .6rem; }
+h2 { font-size: 1.4rem; letter-spacing: -0.01em; margin: 3.4rem 0 .4rem; padding-top: 1.6rem; border-top: 1px solid var(--rule); }
+h3 { font-size: 1.02rem; letter-spacing: .01em; margin: 2rem 0 .5rem; color: var(--ink-2); }
+p { margin: 0 0 1rem; max-width: 46rem; }
+.eyebrow { font-size: .74rem; letter-spacing: .13em; text-transform: uppercase; color: var(--ink-3); margin: 0 0 .8rem; }
+.standfirst { font-size: 1.16rem; color: var(--ink-2); max-width: 44rem; }
+.lede { max-width: 44rem; }
+
+nav { border-bottom: 1px solid var(--rule); margin-bottom: 2.6rem; }
+nav .wrap { display: flex; flex-wrap: wrap; gap: 1.4rem; align-items: baseline; padding-top: 1rem; padding-bottom: 1rem; }
+nav a { font-size: .88rem; text-decoration: none; }
+nav a:hover { text-decoration: underline; }
+nav .mark { font-weight: 700; letter-spacing: .04em; text-transform: uppercase; font-size: .8rem; color: var(--ink); }
+
+header.page { padding: 2.2rem 0 0; }
+.badge {
+  display: inline-block; font-size: .72rem; letter-spacing: .07em; text-transform: uppercase;
+  border: 1px solid var(--rule-strong); color: var(--ink-3);
+  border-radius: 999px; padding: .22rem .7rem; margin-bottom: 1.4rem;
+}
+
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: 1px; background: var(--rule); border: 1px solid var(--rule); margin: 2.2rem 0 1rem; }
+.tile { background: var(--surface-raised); padding: 1.1rem 1.2rem 1.2rem; }
+.tile-value { font-size: 1.72rem; font-weight: 600; letter-spacing: -0.02em; line-height: 1.1; }
+.tile-label { font-size: .82rem; color: var(--ink-2); margin-top: .35rem; line-height: 1.4; }
+
+.scroll { overflow-x: auto; border: 1px solid var(--rule); margin: 1.2rem 0; background: var(--surface-raised); }
+.scroll.tall { max-height: 30rem; overflow-y: auto; }
+table { border-collapse: collapse; width: 100%; font-size: .87rem; }
+thead th {
+  position: sticky; top: 0; background: var(--surface-raised);
+  text-align: left; font-size: .72rem; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--ink-3); font-weight: 600; padding: .7rem .8rem; border-bottom: 1px solid var(--rule-strong);
+  white-space: nowrap;
+}
+tbody td { padding: .55rem .8rem; border-bottom: 1px solid var(--rule); vertical-align: middle; }
+tbody tr:last-child td { border-bottom: 0; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+td.field { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .78rem; color: var(--ink-3); }
+td.name { min-width: 12rem; }
+.absent-note { color: var(--ink-3); font-style: italic; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 1.2rem; font-size: .8rem; color: var(--ink-2); margin: 1.4rem 0 .2rem; }
+.legend span { display: flex; align-items: center; gap: .45rem; }
+.swatch { width: .8rem; height: .8rem; border-radius: 2px; flex: none; }
+.sw-present { background: var(--present); }
+.sw-unknown { background: var(--unknown); }
+.sw-absent { background: var(--absent); }
+
+.bar { display: flex; gap: 2px; height: 11px; min-width: 8rem; width: 100%; }
+.bar i { display: block; height: 100%; }
+.bar i:first-child { border-radius: 3px 0 0 3px; }
+.bar i:last-child { border-radius: 0 3px 3px 0; }
+.bar i:only-child { border-radius: 3px; }
+.b-present { background: var(--present); }
+.b-unknown { background: var(--unknown); }
+.b-absent { background: var(--absent); }
+td.barcell { width: 34%; min-width: 9rem; }
+
+blockquote {
+  margin: 1rem 0 1.4rem; padding: 1rem 1.2rem; background: var(--quote-bg);
+  border-left: 3px solid var(--rule-strong); font-size: .95rem; color: var(--ink-2);
+}
+blockquote p { margin: 0; max-width: none; }
+.measured { font-size: .9rem; color: var(--ink-2); max-width: 44rem; }
+.measured strong { color: var(--ink); font-weight: 600; }
+
+dl.meta { display: grid; grid-template-columns: max-content 1fr; gap: .45rem 1.4rem; font-size: .87rem; margin: 1.2rem 0; }
+dl.meta dt { color: var(--ink-3); }
+dl.meta dd { margin: 0; word-break: break-word; }
+
+footer.page { border-top: 1px solid var(--rule); margin-top: 4rem; padding-top: 1.6rem; font-size: .84rem; color: var(--ink-3); }
+footer.page p { max-width: 44rem; }
+.card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)); gap: 1.4rem; margin: 2rem 0; }
+.card { border: 1px solid var(--rule); background: var(--surface-raised); padding: 1.3rem 1.4rem 1.5rem; }
+.card h3 { margin-top: 0; color: var(--ink); font-size: 1.08rem; }
+.card p { font-size: .9rem; color: var(--ink-2); margin-bottom: .9rem; }
+</style>
+</head>
+<body>
+<nav><div class="wrap"><span class="mark">Perimeter</span><a href="index.html" aria-current="page">Overview</a><a href="perimeters.html">Fire perimeters</a><a href="dins.html">Damage inspections</a></div></nav>
+<div class="wrap">
+
+
+<header class="page">
+<p class="eyebrow">Coverage measurement</p>
+<h1>Perimeter</h1>
+<p class="standfirst">Two coverage measurements over California's public wildfire
+datasets, published as counts. CAL FIRE and FRAP document the limits of these datasets in
+their own metadata. This project counts those limits, per year and per incident, so the
+people building on the data can reason about them.</p>
+</header>
+
+<p class="lede">Both datasets carry careful descriptions of what they do and do not
+contain. What is not published alongside them is the arithmetic: how many records per year, how
+many carry a federal identifier, how many cells in each field hold a value, how many hold
+a code meaning the value could not be determined, and how many hold nothing at all. Those
+are the numbers here. Nothing on these pages models fire risk, tracks an incident, or
+estimates a loss.</p>
+
+<div class="card-grid">
+<div class="card">
+<h3>Historical fire perimeter completeness</h3>
+<p>23,334 perimeter records, counted per fire year, with IRWIN
+identifier coverage inside each year, surviving records measured against the published
+collection acreages, and counts of records sharing an identifier.</p>
+<p><a href="perimeters.html">Read the measurement</a></p>
+</div>
+<div class="card">
+<h3>Damage inspection coverage</h3>
+<p>132,522 structure records across 451 incidents, with
+per-field and per-incident completeness, and the difference between a structure that could
+not be reached and a structure inspected and found undamaged kept visible throughout.</p>
+<p><a href="dins.html">Read the measurement</a></p>
+</div>
+</div>
+
+<h2>How absence is handled</h2>
+<p>Every measured cell is counted in one of three states, and the three are never
+collapsed into each other:</p>
+<div class="scroll"><table><thead><tr>
+<th>State</th><th>What it means</th>
+</tr></thead><tbody>
+<tr><td class="name">Recorded value</td><td>A value the agency wrote down, including a recorded zero and including findings of absence such as No Damage or No Eaves.</td></tr><tr><td class="name">Recorded as unknown</td><td>A published code or marker meaning the value could not be determined. Somebody recorded that determination failed.</td></tr><tr><td class="name">Empty cell</td><td>Nothing was written in the cell. For DINS, CAL FIRE states that attributes with null values could not be determined.</td></tr>
+</tbody></table></div>
+<p>A null is not a zero. A structure not inspected is not a structure without damage. A
+field a dataset never collected is not a field full of zeroes. Where a share would have no
+denominator, these pages print words saying so rather than a number. Where a value that
+reads like a missing-data marker turns up in a field this project has not reviewed for
+that marker, the build stops rather than guessing what it meant.</p>
+
+<h2>Sources</h2>
+<p>Both datasets are published by the California Department of Forestry and Fire
+Protection under a Creative Commons Attribution licence, and both were read from the
+GeoServices endpoint listed among the dataset's own published resources. Geometry was not
+requested, because no measurement here needs it. Full detail, including byte counts and
+file hashes, is in <code>PROVENANCE.md</code> and repeated on each page.</p>
+<dl class="meta"><dt>Dataset</dt><dd>California Historical Fire Perimeters</dd><dt>Publisher</dt><dd>California Department of Forestry and Fire Protection, Fire and Resource Assessment Program</dd><dt>Landing page</dt><dd><a href="https://data.cnra.ca.gov/dataset/california-historical-fire-perimeters">https://data.cnra.ca.gov/dataset/california-historical-fire-perimeters</a></dd><dt>Layer read</dt><dd>California Fire Perimeters (all)</dd><dt>Endpoint</dt><dd>https://services1.arcgis.com/jUJYIo9tSA7EHvfZ/arcgis/rest/services/California_Historic_Fire_Perimeters/FeatureServer/0/query</dd><dt>Licence</dt><dd>Creative Commons Attribution</dd><dt>Version</dt><dd>firep25_1</dd><dt>Retrieved</dt><dd>2026-08-07</dd><dt>Acquired</dt><dd>23,334 records, 7,964,688 bytes</dd><dt>SHA-256</dt><dd>9be7bcb9c08f6813ba13263eabebc96256f0ea8fb0e809ad8a4171046466a16a</dd></dl>
+<dl class="meta"><dt>Dataset</dt><dd>CAL FIRE Damage Inspection (DINS) Data</dd><dt>Publisher</dt><dd>California Department of Forestry and Fire Protection</dd><dt>Landing page</dt><dd><a href="https://data.ca.gov/dataset/cal-fire-damage-inspection-dins-data">https://data.ca.gov/dataset/cal-fire-damage-inspection-dins-data</a></dd><dt>Layer read</dt><dd>POSTFIRE</dd><dt>Endpoint</dt><dd>https://services1.arcgis.com/jUJYIo9tSA7EHvfZ/arcgis/rest/services/POSTFIRE_MASTER_DATA_SHARE/FeatureServer/0/query</dd><dt>Licence</dt><dd>Creative Commons Attribution</dd><dt>Version</dt><dd>POSTFIRE_MASTER_DATA_SHARE</dd><dt>Retrieved</dt><dd>2026-08-07</dd><dt>Acquired</dt><dd>132,522 records, 163,728,068 bytes</dd><dt>SHA-256</dt><dd>7683850bec00c201ad05ae55ab3c70baf53acd298a1da2fe8fd3c5432a624761</dd></dl>
+
+<footer class="page">
+<p>Unofficial. Not affiliated with or endorsed by CAL FIRE, FRAP, or any California state agency.</p>
+<p>Source data is published by the California Department of Forestry and Fire Protection
+under a Creative Commons Attribution licence and is reproduced here only as counts.
+This project holds no view on how any agency collects or manages its data. It counts what
+the published files contain, in the terms the publishers use to describe them.</p>
+</footer>
+</div>
+</body>
+</html>

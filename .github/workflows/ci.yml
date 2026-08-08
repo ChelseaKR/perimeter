@@ -1,0 +1,80 @@
+# Least-privilege GITHUB_TOKEN, SHA-pinned actions, and the merge-blocking gates:
+# SAST, secret scan, and `make verify` (lint, format, types, tests, SCA).
+#
+# Every action is pinned to the full 40-char commit SHA of its tag, resolved
+# 2026-08-07 via `gh api repos/OWNER/REPO/commits/TAG`. Actions stay
+# `@<sha> # vX.Y.Z` so the version stays readable next to the pin.
+#
+# CI never touches the network for data. `data/raw/` is not in the repo, so the
+# test suite runs entirely against committed fixtures.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5.4.2
+        with:
+          version: ">=0.11.0"
+          python-version: "3.12"
+
+      - name: make verify (byte-for-byte the local target)
+        run: make verify
+
+      - name: the offline build must produce byte-identical output twice
+        run: |
+          make site-offline
+          find build/site-offline -type f | sort | xargs shasum -a 256 > /tmp/first.txt
+          make site-offline
+          find build/site-offline -type f | sort | xargs shasum -a 256 > /tmp/second.txt
+          diff /tmp/first.txt /tmp/second.txt
+
+  secret-scan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # The action lists the PR's commits to scope its scan to them, which needs
+      # pull-requests:read. Read only: it does not write to the PR, see below.
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      # Comments off so the job needs nothing beyond contents:read. With them on the
+      # action asks for pull-requests:write to annotate the PR, and a least-privilege
+      # token gets a 403 instead. Findings still fail the job and appear in the log.
+      - uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2.3.9
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_ENABLE_COMMENTS: "false"
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "false"
+
+  sast:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5.4.2
+      - run: uvx --from semgrep==1.168.0 semgrep scan --error --metrics off --config p/python --config p/security-audit .
