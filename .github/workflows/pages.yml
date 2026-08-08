@@ -1,0 +1,102 @@
+# Publish site/ to GitHub Pages, after checking the bytes that are about to be published
+# rather than a rebuild of them.
+#
+# site/ is tracked in git and is built from CAL FIRE's acquired files, which are not in
+# git and never in CI. So this workflow cannot regenerate site/ and diff it, the way a
+# repository whose site renders from committed inputs would. What it does instead:
+#
+#   1. Builds from the committed fixtures twice and requires the two runs to be
+#      byte-identical, which is the determinism claim the README makes, checked here as
+#      well as in ci.yml.
+#   2. Runs tests/test_published_site.py over the committed site/, which requires the
+#      published artifacts to be a measurement of the real files rather than fixture
+#      output, and requires the provenance they publish to still match the reviewed
+#      constants in src/perimeter/sources.py. An acquisition that changes a version, a
+#      byte count or a hash without a rebuild of site/ fails here.
+#   3. Runs html-validate and axe-core over site/ itself, so the pages that get served
+#      are the pages the WCAG gate passed, not a fixture build that resembles them.
+#
+# What none of that proves is that site/ is what the current pipeline would produce from
+# CAL FIRE's files; only a machine holding those files can settle that, with `make site`
+# and no diff. The tests say so in as many words rather than implying more.
+#
+# No network for data. Every input read here is committed. Every action is pinned to the
+# full 40-char commit SHA of its tag, resolved 2026-08-07 via
+# `gh api repos/OWNER/REPO/git/matching-refs/tags`, and kept as `@<sha> # vX.Y.Z` so the
+# version stays readable next to the pin.
+#
+# Before the first deploy can succeed, Pages has to be told to take its source from this
+# workflow: Settings > Pages > Build and deployment > Source > GitHub Actions.
+name: publish-site
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5.4.2
+        with:
+          version: ">=0.11.0"
+          python-version: "3.12"
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "22"
+          cache: npm
+
+      - run: make sync
+
+      - name: the offline build must produce byte-identical output twice
+        run: |
+          make site-offline
+          find build/site-offline -type f | sort | xargs shasum -a 256 > /tmp/first.txt
+          make site-offline
+          find build/site-offline -type f | sort | xargs shasum -a 256 > /tmp/second.txt
+          diff /tmp/first.txt /tmp/second.txt
+
+      - name: the committed site/ must be a current measurement of the real files
+        run: uv run pytest tests/test_published_site.py -q
+
+      - run: make node-sync
+
+      - name: the pages being published must pass the same HTML and WCAG gates
+        run: |
+          npx html-validate "site/*.html"
+          node tools/a11y.mjs site
+
+      - uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5.0.0
+
+      - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3.0.1
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    # The two scopes the Pages deployment API needs, on the one job that needs them. The
+    # build job, which is the job that runs repository code, holds neither.
+    permissions:
+      pages: write # create the Pages deployment
+      id-token: write # mint the OIDC token that deployment is authenticated with
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4.0.5
