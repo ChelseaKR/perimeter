@@ -100,10 +100,13 @@ def write_rows(path: Path, rows: list[dict[str, Any]]) -> Acquired:
 def _get(url: str) -> dict[str, Any]:
     if not url.startswith("https://"):
         raise AcquisitionFailed(f"refusing to fetch a non-HTTPS endpoint: {url!r}")
-    # S310: the scheme is pinned to https above and the host comes from the reviewed
-    # endpoints in sources.py. No URL here is built from user input.
+    # Audited: both linters flag urllib for accepting schemes such as file://. The
+    # scheme is pinned to https immediately above, and the host comes from the reviewed
+    # endpoints in sources.py rather than from user input or from any fetched content.
+    # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
     request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})  # noqa: S310
     try:
+        # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
         with urllib.request.urlopen(request, timeout=TIMEOUT_SECONDS) as response:  # noqa: S310
             body = response.read()
             content_type = response.headers.get("Content-Type", "")
