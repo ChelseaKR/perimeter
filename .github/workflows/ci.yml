@@ -62,7 +62,7 @@ jobs:
       # Comments off so the job needs nothing beyond contents:read. With them on the
       # action asks for pull-requests:write to annotate the PR, and a least-privilege
       # token gets a 403 instead. Findings still fail the job and appear in the log.
-      - uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2.3.9
+      - uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITLEAKS_ENABLE_COMMENTS: "false"
