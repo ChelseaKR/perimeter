@@ -51,6 +51,9 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      # The action lists the PR's commits to scope its scan to them, which needs
+      # pull-requests:read. Read only: it does not write to the PR, see below.
+      pull-requests: read
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
