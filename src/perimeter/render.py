@@ -16,16 +16,35 @@ in CAL FIRE's own documentation that made the count worth doing.
 from __future__ import annotations
 
 import html
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 
+from perimeter.cells import present_tenths_of_percent
 from perimeter.coverage import DinsReport, FieldCoverage, PerimeterReport
+from perimeter.schema import Basis
 from perimeter.sources import DINS, FRAP, Source
 
 DISCLAIMER = (
     "Unofficial. Not affiliated with or endorsed by CAL FIRE, FRAP, or any California "
     "state agency."
 )
+
+BASIS_NOTE: dict[Basis, str] = {
+    Basis.PUBLISHED: (
+        "published. Every value this field declares is a code in the layer's own "
+        "coded-value domain, or a value the publisher's documentation states"
+    ),
+    Basis.INFERRED: (
+        "inferred. At least one value this field declares is documented nowhere, and "
+        "was read off the acquired file by this project. See docs/MARKERS.md"
+    ),
+}
+"""What to print beside a field whose markers rest on one basis or the other.
+
+The whole point of these pages is that the judgment calls are inspectable, and a reader
+cannot tell a documented code from an inference by looking at the value. So the page says
+which it is, per field, rather than leaving the distinction in the source.
+"""
 
 STATE_LABELS: tuple[tuple[str, str, str], ...] = (
     (
@@ -48,55 +67,65 @@ STATE_LABELS: tuple[tuple[str, str, str], ...] = (
     ),
 )
 
-STYLESHEET = """\
-:root {
-  color-scheme: light;
-  --surface: #fcfcfb;
-  --surface-raised: #ffffff;
-  --rule: #e2e0d9;
-  --rule-strong: #c9c6bc;
-  --ink: #14140f;
-  --ink-2: #52514e;
-  --ink-3: #6f6d66;
-  --accent: #1c5cab;
-  --present: #2a78d6;
-  --unknown: #eb6834;
-  --absent: #1baf7a;
-  --quote-bg: #f5f4f0;
+LIGHT: dict[str, str] = {
+    "surface": "#fcfcfb",
+    "surface-raised": "#ffffff",
+    "rule": "#e2e0d9",
+    "rule-strong": "#c9c6bc",
+    "ink": "#14140f",
+    "ink-2": "#52514e",
+    "ink-3": "#6f6d66",
+    "accent": "#1c5cab",
+    "present": "#2a78d6",
+    "unknown": "#eb6834",
+    "absent": "#189a6b",
+    "quote-bg": "#f5f4f0",
 }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    color-scheme: dark;
-    --surface: #1a1a19;
-    --surface-raised: #232321;
-    --rule: #383835;
-    --rule-strong: #4f4e4a;
-    --ink: #f7f6f2;
-    --ink-2: #c3c2b7;
-    --ink-3: #9d9b92;
-    --accent: #86b6ef;
-    --present: #3987e5;
-    --unknown: #d95926;
-    --absent: #199e70;
-    --quote-bg: #232321;
-  }
-}
-:root[data-theme="dark"] {
-  color-scheme: dark;
-  --surface: #1a1a19;
-  --surface-raised: #232321;
-  --rule: #383835;
-  --rule-strong: #4f4e4a;
-  --ink: #f7f6f2;
-  --ink-2: #c3c2b7;
-  --ink-3: #9d9b92;
-  --accent: #86b6ef;
-  --present: #3987e5;
-  --unknown: #d95926;
-  --absent: #199e70;
-  --quote-bg: #232321;
-}
+"""The light palette, as data so a test can measure it.
 
+Contrast is a property of these twelve values, and every pair the pages actually put
+together is checked against the WCAG 2.2 thresholds in ``tests/test_pages_html.py``.
+Keeping the palette here rather than inside a CSS string is what makes that check
+possible without a browser.
+"""
+
+DARK: dict[str, str] = {
+    "surface": "#1a1a19",
+    "surface-raised": "#232321",
+    "rule": "#383835",
+    "rule-strong": "#4f4e4a",
+    "ink": "#f7f6f2",
+    "ink-2": "#c3c2b7",
+    "ink-3": "#9d9b92",
+    "accent": "#86b6ef",
+    "present": "#3987e5",
+    "unknown": "#d95926",
+    "absent": "#199e70",
+    "quote-bg": "#232321",
+}
+"""The dark palette. Same token names, so no rule anywhere needs to know the theme."""
+
+
+def tokens(palette: Mapping[str, str], *, indent: str = "  ") -> str:
+    """One palette as custom-property declarations, in a fixed order."""
+    return "".join(f"{indent}--{name}: {value};\n" for name, value in palette.items())
+
+
+STYLESHEET = (
+    f"""\
+:root {{
+  color-scheme: light;
+{tokens(LIGHT)}}}
+@media (prefers-color-scheme: dark) {{
+  :root:not([data-theme="light"]) {{
+    color-scheme: dark;
+{tokens(DARK, indent="    ")}  }}
+}}
+:root[data-theme="dark"] {{
+  color-scheme: dark;
+{tokens(DARK)}}}
+"""
+    + """
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
 body {
@@ -107,6 +136,17 @@ body {
 }
 .wrap { max-width: 62rem; margin: 0 auto; padding: 0 1.5rem 5rem; }
 a { color: var(--accent); }
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
+}
+.skip-link {
+  position: absolute; left: -9999px; top: 0; z-index: 10;
+  background: var(--surface-raised); color: var(--accent);
+  padding: .6rem 1rem; border: 1px solid var(--rule-strong);
+}
+.skip-link:focus { left: .5rem; top: .5rem; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 h1, h2, h3, .tile-value, .num, thead th, .eyebrow, .legend, .badge, nav {
   font-family: ui-sans-serif, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
@@ -131,7 +171,7 @@ header.page { padding: 2.2rem 0 0; }
   border-radius: 999px; padding: .22rem .7rem; margin-bottom: 1.4rem;
 }
 
-.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: 1px; background: var(--rule); border: 1px solid var(--rule); margin: 2.2rem 0 1rem; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: 1px; background: var(--rule); border: 1px solid var(--rule); margin: 2.2rem 0 1rem; padding: 0; list-style: none; }
 .tile { background: var(--surface-raised); padding: 1.1rem 1.2rem 1.2rem; }
 .tile-value { font-size: 1.72rem; font-weight: 600; letter-spacing: -0.02em; line-height: 1.1; }
 .tile-label { font-size: .82rem; color: var(--ink-2); margin-top: .35rem; line-height: 1.4; }
@@ -145,15 +185,16 @@ thead th {
   color: var(--ink-3); font-weight: 600; padding: .7rem .8rem; border-bottom: 1px solid var(--rule-strong);
   white-space: nowrap;
 }
-tbody td { padding: .55rem .8rem; border-bottom: 1px solid var(--rule); vertical-align: middle; }
-tbody tr:last-child td { border-bottom: 0; }
+tbody td, tbody th { padding: .55rem .8rem; border-bottom: 1px solid var(--rule); vertical-align: middle; }
+tbody th { font: inherit; font-weight: 400; text-align: left; }
+tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
 td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 td.field { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .78rem; color: var(--ink-3); }
 td.name { min-width: 12rem; }
 .absent-note { color: var(--ink-3); font-style: italic; }
 
-.legend { display: flex; flex-wrap: wrap; gap: 1.2rem; font-size: .8rem; color: var(--ink-2); margin: 1.4rem 0 .2rem; }
-.legend span { display: flex; align-items: center; gap: .45rem; }
+.legend { display: flex; flex-wrap: wrap; gap: 1.2rem; font-size: .8rem; color: var(--ink-2); margin: 1.4rem 0 .2rem; padding: 0; list-style: none; }
+.legend li { display: flex; align-items: center; gap: .45rem; }
 .swatch { width: .8rem; height: .8rem; border-radius: 2px; flex: none; }
 .sw-present { background: var(--present); }
 .sw-unknown { background: var(--unknown); }
@@ -188,6 +229,7 @@ footer.page p { max-width: 44rem; }
 .card h3 { margin-top: 0; color: var(--ink); font-size: 1.08rem; }
 .card p { font-size: .9rem; color: var(--ink-2); margin-bottom: .9rem; }
 """
+)
 
 
 def esc(text: str) -> str:
@@ -234,12 +276,24 @@ def state_bar(present: int, unknown: int, absent: int) -> str:
 
 
 def legend() -> str:
+    """The three-state key.
+
+    The swatches are hidden from assistive technology because the words beside them say
+    the same thing, and every table that uses this key prints all three counts as
+    numbers in the same row as the bar they colour.
+    """
+    items = (
+        ("sw-present", "Recorded value"),
+        ("sw-unknown", "Recorded as unknown"),
+        ("sw-absent", "Empty cell"),
+    )
     return (
-        '<div class="legend">'
-        '<span><i class="swatch sw-present"></i>Recorded value</span>'
-        '<span><i class="swatch sw-unknown"></i>Recorded as unknown</span>'
-        '<span><i class="swatch sw-absent"></i>Empty cell</span>'
-        "</div>"
+        '<ul class="legend" role="list">'
+        + "".join(
+            f'<li><i class="swatch {cls}" aria-hidden="true"></i>{label}</li>'
+            for cls, label in items
+        )
+        + "</ul>"
     )
 
 
@@ -251,11 +305,11 @@ class Tile:
 
 def tiles(items: Sequence[Tile]) -> str:
     cells = "".join(
-        f'<div class="tile"><div class="tile-value">{esc(item.value)}</div>'
-        f'<div class="tile-label">{esc(item.label)}</div></div>'
+        f'<li class="tile"><div class="tile-value">{esc(item.value)}</div>'
+        f'<div class="tile-label">{esc(item.label)}</div></li>'
         for item in items
     )
-    return f'<div class="tiles">{cells}</div>'
+    return f'<ul class="tiles" role="list">{cells}</ul>'
 
 
 def caveat_block(source: Source) -> str:
@@ -300,7 +354,9 @@ def provenance_block(source: Source, *, is_fixture: bool) -> str:
     )
 
 
-def field_table(fields: Sequence[FieldCoverage], *, caption_id: str) -> str:
+def field_table(
+    fields: Sequence[FieldCoverage], *, caption_id: str, caption: str
+) -> str:
     rows = []
     for field in fields:
         marker_note = ""
@@ -309,7 +365,15 @@ def field_table(fields: Sequence[FieldCoverage], *, caption_id: str) -> str:
                 f"{esc(marker)} ({num(count)})"
                 for marker, count in sorted(field.markers.items())
             )
-            marker_note = f'<div class="absent-note">markers: {listed}</div>'
+            basis = BASIS_NOTE.get(field.basis)
+            suffix = f". Basis: {esc(basis)}" if basis else ""
+            marker_note = f'<div class="absent-note">markers: {listed}{suffix}</div>'
+        elif field.basis is not Basis.NONE:
+            # A field can declare a finding of absence without any marker ever firing.
+            # The basis still belongs on the page, because the finding is a judgment.
+            marker_note = (
+                f'<div class="absent-note">Basis: {esc(BASIS_NOTE[field.basis])}</div>'
+            )
         outside = ""
         if field.outside_domain:
             outside = (
@@ -320,8 +384,8 @@ def field_table(fields: Sequence[FieldCoverage], *, caption_id: str) -> str:
             )
         rows.append(
             "<tr>"
-            f'<td class="name">{esc(field.label)}{marker_note}{outside}'
-            f'<div class="field">{esc(field.name)}</div></td>'
+            f'<th scope="row" class="name">{esc(field.label)}{marker_note}{outside}'
+            f'<div class="field">{esc(field.name)}</div></th>'
             f'<td class="num">{num(field.present)}</td>'
             f'<td class="num">{num(field.explicit_unknown)}</td>'
             f'<td class="num">{num(field.not_recorded)}</td>'
@@ -331,13 +395,14 @@ def field_table(fields: Sequence[FieldCoverage], *, caption_id: str) -> str:
             "</tr>"
         )
     return (
-        f'{legend()}<div class="scroll tall"><table id="{caption_id}"><thead><tr>'
-        "<th>Field</th>"
-        '<th class="num">Recorded value</th>'
-        '<th class="num">Recorded as unknown</th>'
-        '<th class="num">Empty cell</th>'
-        '<th class="num">Value present</th>'
-        "<th>Split</th>"
+        f'{legend()}<div class="scroll tall"><table id="{caption_id}">'
+        f'<caption class="visually-hidden">{esc(caption)}</caption><thead><tr>'
+        '<th scope="col">Field</th>'
+        '<th scope="col" class="num">Recorded value</th>'
+        '<th scope="col" class="num">Recorded as unknown</th>'
+        '<th scope="col" class="num">Empty cell</th>'
+        '<th scope="col" class="num">Value present</th>'
+        '<th scope="col">Split</th>'
         f"</tr></thead><tbody>{''.join(rows)}</tbody></table></div>"
     )
 
@@ -375,10 +440,13 @@ def page(
 <style>{STYLESHEET}</style>
 </head>
 <body>
-<nav><div class="wrap"><span class="mark">Perimeter</span>{links}</div></nav>
+<a class="skip-link" href="#content">Skip to the measurement</a>
+<nav aria-label="Pages"><div class="wrap"><span class="mark">Perimeter</span>{links}</div></nav>
 <div class="wrap">
+<main id="content">
 {fixture_banner}
 {body}
+</main>
 <footer class="page">
 <p>{esc(DISCLAIMER)}</p>
 <p>Source data is published by the California Department of Forestry and Fire Protection
@@ -398,11 +466,7 @@ def perimeters_page(report: PerimeterReport, *, is_fixture: bool) -> str:
         if report.earliest_year is not None and report.latest_year is not None
         else "no year recorded on any record"
     )
-    irwin_share = pct(
-        None
-        if report.records == 0
-        else (report.irwin_present * 2000 + report.records) // (report.records * 2)
-    )
+    irwin_share = pct(present_tenths_of_percent(report.irwin_present, report.records))
 
     decade_rows = []
     for decade in report.thresholds:
@@ -412,7 +476,7 @@ def perimeters_page(report: PerimeterReport, *, is_fixture: bool) -> str:
         below = decade.below
         decade_rows.append(
             "<tr>"
-            f"<td>{esc(decade_label)}</td>"
+            f'<th scope="row">{esc(decade_label)}</th>'
             f'<td class="num">{num(decade.records)}</td>'
             f'<td class="num">{num(decade.acres_recorded)}</td>'
             + "".join(
@@ -425,11 +489,7 @@ def perimeters_page(report: PerimeterReport, *, is_fixture: bool) -> str:
     year_rows = []
     for cohort in report.years:
         year_label = "No year recorded" if cohort.year is None else str(cohort.year)
-        share = pct(
-            None
-            if cohort.records == 0
-            else (cohort.irwin_present * 2000 + cohort.records) // (cohort.records * 2)
-        )
+        share = pct(present_tenths_of_percent(cohort.irwin_present, cohort.records))
         bar = state_bar(
             cohort.irwin_present,
             cohort.irwin_explicit_unknown,
@@ -437,7 +497,7 @@ def perimeters_page(report: PerimeterReport, *, is_fixture: bool) -> str:
         )
         year_rows.append(
             "<tr>"
-            f"<td>{esc(year_label)}</td>"
+            f'<th scope="row">{esc(year_label)}</th>'
             f'<td class="num">{num(cohort.records)}</td>'
             f'<td class="num">{num(cohort.irwin_present)}</td>'
             f'<td class="num">{num(cohort.irwin_not_recorded)}</td>'
@@ -448,7 +508,8 @@ def perimeters_page(report: PerimeterReport, *, is_fixture: bool) -> str:
 
     duplicate_rows = "".join(
         "<tr>"
-        f'<td class="name">{esc(signal.key)}<div class="absent-note">{esc(signal.description)}</div></td>'
+        f'<th scope="row" class="name">{esc(signal.key)}'
+        f'<div class="absent-note">{esc(signal.description)}</div></th>'
         f'<td class="num">{num(signal.keyed_records)}</td>'
         f'<td class="num">{num(signal.distinct_keys)}</td>'
         f'<td class="num">{num(signal.reused_keys)}</td>'
@@ -460,7 +521,7 @@ def perimeters_page(report: PerimeterReport, *, is_fixture: bool) -> str:
     # Read the threshold list off the first cohort so the header matches the body
     # exactly. An empty report has no cohorts and therefore no threshold columns.
     threshold_headers = "".join(
-        f'<th class="num">Under {threshold} acres</th>'
+        f'<th scope="col" class="num">Under {threshold} acres</th>'
         for threshold in (
             sorted(report.thresholds[0].below) if report.thresholds else ()
         )
@@ -497,11 +558,24 @@ here look complete when they are not. Cause is the clearest case: no cause cell 
 and a large share of them carry the published code for
 <em>Unknown / Unidentified</em>. Collection method behaves the same way, which is what
 FRAP's release note about editing null collection methods to Unknown describes.</p>
-{field_table(report.fields, caption_id="frap-fields")}
+{
+        field_table(
+            report.fields,
+            caption_id="frap-fields",
+            caption="Perimeter fields, each counted in three states",
+        )
+    }
 <p class="measured">Markers listed under a field name are the exact text this project
 reviewed for that field before counting it as a marker rather than as a value. A field
 number of all zeros, for instance, is counted apart from recorded numbers, because reading
 it as an identifier would make thousands of unrelated fires appear to share one incident.</p>
+<p class="measured">Each field also carries the <strong>basis</strong> its markers rest
+on. A published basis means the value is a code in the layer's own domain, which anyone
+can re-read at the endpoint listed under Provenance below. An inferred basis means the
+publisher documents no such code and this project read the value off the file. Both are
+counted the same way; they are not worth the same confidence, so the page says which is
+which rather than leaving a reader to assume. The full audit, with the evidence and the
+effect of each call on the numbers above, is in <code>docs/MARKERS.md</code>.</p>
 
 <h2>Records per year, and IRWIN linkage inside each year</h2>
 <p>IRWIN is the federal incident identifier that links a perimeter to a federal incident
@@ -511,13 +585,15 @@ surprising. What the dataset does not publish alongside itself is where the iden
 starts appearing and how much of each recent year carries one. Years no record names are absent from this table
 rather than shown as years with zero fires, because the data cannot tell the difference
 between a year with no fires and a year whose fires are missing.</p>
-<div class="scroll tall"><table><thead><tr>
-<th>Fire year</th>
-<th class="num">Records</th>
-<th class="num">IRWIN ID present</th>
-<th class="num">IRWIN ID absent</th>
-<th class="num">Present</th>
-<th>Split</th>
+<div class="scroll tall"><table>
+<caption class="visually-hidden">Perimeter records per fire year, with IRWIN ID coverage inside each year</caption>
+<thead><tr>
+<th scope="col">Fire year</th>
+<th scope="col" class="num">Records</th>
+<th scope="col" class="num">IRWIN ID present</th>
+<th scope="col" class="num">IRWIN ID absent</th>
+<th scope="col" class="num">Present</th>
+<th scope="col">Split</th>
 </tr></thead><tbody>{"".join(year_rows)}</tbody></table></div>
 
 <h2>Surviving records against the published collection criteria</h2>
@@ -528,10 +604,12 @@ not an error and is not evidence of one: the criteria quoted are the current one
 eras used different cutoffs that this project has not established, and a fire may be
 submitted for reasons other than size. The counts are here so that a reader can see how
 much of each decade sits near the numbers FRAP names.</p>
-<div class="scroll"><table><thead><tr>
-<th>Decade</th>
-<th class="num">Records</th>
-<th class="num">Acreage recorded</th>
+<div class="scroll"><table>
+<caption class="visually-hidden">Surviving perimeter records per decade against each published collection acreage</caption>
+<thead><tr>
+<th scope="col">Decade</th>
+<th scope="col" class="num">Records</th>
+<th scope="col" class="num">Acreage recorded</th>
 {threshold_headers}
 </tr></thead><tbody>{"".join(decade_rows)}</tbody></table></div>
 
@@ -542,12 +620,25 @@ more. Deciding that two records describe one fire is a judgment about geometry a
 history, and this project downloads no geometry and makes no such judgment. Each row keys
 only the records carrying every part of that key, so a low count is never produced by
 missing values quietly padding the total.</p>
-<div class="scroll"><table><thead><tr>
-<th>Key</th>
-<th class="num">Records carrying the whole key</th>
-<th class="num">Distinct keys</th>
-<th class="num">Keys used more than once</th>
-<th class="num">Records sharing a key</th>
+<p class="measured">The year, unit and incident-number row depends on one judgment call
+worth stating plainly. The all-zeros local incident number is counted as a placeholder
+rather than as a number, so records carrying it are not keyed. Reading it as a number
+instead would key {num(report.placeholder_counterfactual.keyed_records)} records and
+report {num(report.placeholder_counterfactual.records_sharing_a_key)} of them as sharing
+a key, nearly all of that produced by unrelated fires in one unit and one year sharing a
+value that stands in for no number. That counterfactual is counted rather than asserted:
+it is in the JSON artifact beside this page under
+<code>marker_counterfactuals</code>. Nothing FRAP publishes documents the all-zeros
+value, so the call is an inference from the file, and <code>docs/MARKERS.md</code> sets
+out the evidence behind it.</p>
+<div class="scroll"><table>
+<caption class="visually-hidden">Perimeter records sharing an identifier or an identifying combination</caption>
+<thead><tr>
+<th scope="col">Key</th>
+<th scope="col" class="num">Records carrying the whole key</th>
+<th scope="col" class="num">Distinct keys</th>
+<th scope="col" class="num">Keys used more than once</th>
+<th scope="col" class="num">Records sharing a key</th>
 </tr></thead><tbody>{duplicate_rows}</tbody></table></div>
 
 <h2>Methodology and the caveats this page operationalizes</h2>
@@ -592,14 +683,11 @@ def dins_page(report: DinsReport, *, is_fixture: bool) -> str:
         else:
             label = value
             meaning = "A recorded damage band."
-        share = pct(
-            None
-            if report.records == 0
-            else (count * 2000 + report.records) // (report.records * 2)
-        )
+        share = pct(present_tenths_of_percent(count, report.records))
         damage_rows.append(
             "<tr>"
-            f'<td class="name">{esc(label)}<div class="absent-note">{esc(meaning)}</div></td>'
+            f'<th scope="row" class="name">{esc(label)}'
+            f'<div class="absent-note">{esc(meaning)}</div></th>'
             f'<td class="num">{num(count)}</td>'
             f'<td class="num">{share}</td>'
             "</tr>"
@@ -607,7 +695,8 @@ def dins_page(report: DinsReport, *, is_fixture: bool) -> str:
 
     access_rows = "".join(
         "<tr>"
-        f'<td class="name">{esc(row.label)}<div class="field">{esc(row.name)}</div></td>'
+        f'<th scope="row" class="name">{esc(row.label)}'
+        f'<div class="field">{esc(row.name)}</div></th>'
         f'<td class="num">{num(row.assessed_present)}</td>'
         f'<td class="num">{pct(row.assessed_tenths_pct)}</td>'
         f'<td class="num">{num(row.inaccessible_present)}</td>'
@@ -640,7 +729,8 @@ def dins_page(report: DinsReport, *, is_fixture: bool) -> str:
         )
         incident_rows.append(
             "<tr>"
-            f'<td class="name">{esc(name)}<div class="absent-note">{esc(number)}</div></td>'
+            f'<th scope="row" class="name">{esc(name)}'
+            f'<div class="absent-note">{esc(number)}</div></th>'
             f"<td>{esc(year)}</td>"
             f'<td class="num">{num(incident.records)}</td>'
             f'<td class="num">{num(incident.access.assessed)}</td>'
@@ -649,7 +739,7 @@ def dins_page(report: DinsReport, *, is_fixture: bool) -> str:
             "</tr>"
         )
     incident_headers = "".join(
-        f'<th class="num">{esc(label)}</th>'
+        f'<th scope="col" class="num">{esc(label)}</th>'
         for label in ("Structure type", "Roof", "Eaves", "Vent screen", "APN")
     )
 
@@ -684,10 +774,12 @@ FIRE publishes for it draws two lines that matter more than any other for readin
 here. <em>No Damage</em> is a finding: an inspector looked at the structure and recorded
 that it was undamaged. <em>Inaccessible</em> is a different finding: the structure was
 identified but could not be reached. Neither is an empty cell, and neither is a zero.</p>
-<div class="scroll"><table><thead><tr>
-<th>Recorded value</th>
-<th class="num">Records</th>
-<th class="num">Share</th>
+<div class="scroll"><table>
+<caption class="visually-hidden">Structure records per recorded damage value</caption>
+<thead><tr>
+<th scope="col">Recorded value</th>
+<th scope="col" class="num">Records</th>
+<th scope="col" class="num">Share</th>
 </tr></thead><tbody>{"".join(damage_rows)}</tbody></table></div>
 
 <h2>Three states, field by field</h2>
@@ -696,7 +788,25 @@ absence such as <em>No Eaves</em> or <em>No Fence</em>, which are observations r
 missing data. A recorded unknown is a published code or a marker word standing where a
 value would go. An empty cell is what CAL FIRE describes as an attribute that could not be
 determined.</p>
-{field_table(report.fields, caption_id="dins-fields")}
+{
+        field_table(
+            report.fields,
+            caption_id="dins-fields",
+            caption="Damage inspection fields, each counted in three states",
+        )
+    }
+<p class="measured">Each field carries the <strong>basis</strong> its markers rest on. A
+published basis means the value appears in the layer's own coded-value domain, which
+anyone can re-read at the endpoint listed under Provenance below. An inferred basis means
+CAL FIRE documents no such code for that field and this project read the value off the
+file. Two calls on this page move enough records to name here. The distance to a utility
+or miscellaneous structure is published with Not Applicable spelled <code>NA</code>, and
+the file also carries <code>N/A</code>; the two never appear in the same incident and
+they fall on opposite sides of the 2020 incidents, so both are counted as the published
+finding rather than one being read as missing data. And the site address carries two
+whole placeholder strings rather than marker words, which are counted apart from recorded
+addresses. Both calls, their evidence and their effect on these counts are set out in
+<code>docs/MARKERS.md</code>.</p>
 
 <h2>Assessed structures against structures that could not be reached</h2>
 <p>This is the split that separates "not inspected" from "inspected, field blank". CAL
@@ -705,12 +815,14 @@ the schema records the outcome directly in the damage field. A construction attr
 missing on a structure recorded as Inaccessible is a different fact from the same
 attribute missing on a structure that was assessed, and reporting one completeness number
 across both would hide that.</p>
-<div class="scroll tall"><table><thead><tr>
-<th>Field</th>
-<th class="num">Present, assessed</th>
-<th class="num">Share of assessed</th>
-<th class="num">Present, inaccessible</th>
-<th class="num">Share of inaccessible</th>
+<div class="scroll tall"><table>
+<caption class="visually-hidden">Field completeness on assessed records against records recorded as Inaccessible</caption>
+<thead><tr>
+<th scope="col">Field</th>
+<th scope="col" class="num">Present, assessed</th>
+<th scope="col" class="num">Share of assessed</th>
+<th scope="col" class="num">Present, inaccessible</th>
+<th scope="col" class="num">Share of inaccessible</th>
 </tr></thead><tbody>{access_rows}</tbody></table></div>
 
 <h2>Coverage per incident</h2>
@@ -720,12 +832,14 @@ name it, by incident name, incident number and start year. Records that differ i
 an incident number was recorded are kept apart rather than merged, because merging them
 would mean assuming they are the same incident. The full per-field counts for every
 incident are in the JSON artifact beside this page.</p>
-<div class="scroll tall"><table><thead><tr>
-<th>Incident</th>
-<th>Start year</th>
-<th class="num">Records</th>
-<th class="num">Assessed</th>
-<th class="num">Inaccessible</th>
+<div class="scroll tall"><table>
+<caption class="visually-hidden">Records, access split and field completeness for every incident these records name</caption>
+<thead><tr>
+<th scope="col">Incident</th>
+<th scope="col">Start year</th>
+<th scope="col" class="num">Records</th>
+<th scope="col" class="num">Assessed</th>
+<th scope="col" class="num">Inaccessible</th>
 {incident_headers}
 </tr></thead><tbody>{"".join(incident_rows)}</tbody></table></div>
 <p class="measured">The five columns after the record counts are the share of that
@@ -769,6 +883,7 @@ a code meaning the value could not be determined, and how many hold nothing at a
 are the numbers here. Nothing on these pages models fire risk, tracks an incident, or
 estimates a loss.</p>
 
+<h2>The two measurements</h2>
 <div class="card-grid">
 <div class="card">
 <h3>Historical fire perimeter completeness</h3>
@@ -789,12 +904,15 @@ not be reached and a structure inspected and found undamaged kept visible throug
 <h2>How absence is handled</h2>
 <p>Every measured cell is counted in one of three states, and the three are never
 collapsed into each other:</p>
-<div class="scroll"><table><thead><tr>
-<th>State</th><th>What it means</th>
+<div class="scroll"><table>
+<caption class="visually-hidden">The three states every measured cell is counted in</caption>
+<thead><tr>
+<th scope="col">State</th><th scope="col">What it means</th>
 </tr></thead><tbody>
 {
         "".join(
-            f'<tr><td class="name">{esc(label)}</td><td>{esc(meaning)}</td></tr>'
+            f'<tr><th scope="row" class="name">{esc(label)}</th>'
+            f"<td>{esc(meaning)}</td></tr>"
             for _key, label, meaning in STATE_LABELS
         )
     }
@@ -804,6 +922,21 @@ field a dataset never collected is not a field full of zeroes. Where a share wou
 denominator, these pages print words saying so rather than a number. Where a value that
 reads like a missing-data marker turns up in a field this project has not reviewed for
 that marker, the build stops rather than guessing what it meant.</p>
+
+<h2>Which judgment calls rest on what</h2>
+<p>Deciding that a cell holds a marker rather than a value is a judgment, and the two
+measurement pages label every field with the basis its markers rest on. Twelve of the
+twenty-seven fields that declare any marker or finding are <strong>published</strong>:
+the value is a code in the layer's own coded-value domain, or a sentence in the
+publisher's documentation, and it can be re-read at the endpoints listed under Sources
+below. The other fifteen are <strong>inferred</strong>: the field is free text, or the
+value is one the published domain does not carry, and this project read it off the
+acquired file. Both sets are counted the same way and neither is a defect in either
+dataset; both publishers document the domains they constrain and say which fields are
+free text. The difference is in how much weight a reader should put on the call, so the
+pages print it rather than leaving it to be assumed. Every entry, with its evidence, the
+URL it can be checked against, its effect on the published figures and a confidence, is
+in <code>docs/MARKERS.md</code>.</p>
 
 <h2>Sources</h2>
 <p>Both datasets are published by the California Department of Forestry and Fire

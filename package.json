@@ -1,0 +1,17 @@
+{
+  "name": "perimeter-page-checks",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Headless HTML conformance and WCAG checks for the built pages. No runtime dependency: nothing here ships in the site.",
+  "type": "module",
+  "license": "Apache-2.0",
+  "scripts": {
+    "htmlvalidate": "html-validate",
+    "a11y": "node tools/a11y.mjs"
+  },
+  "devDependencies": {
+    "axe-core": "4.13.0",
+    "html-validate": "11.6.2",
+    "jsdom": "30.0.1"
+  }
+}

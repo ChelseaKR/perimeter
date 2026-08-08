@@ -14,3 +14,6 @@ coverage.xml
 data/raw/
 build/
 
+# Page-check toolchain. package.json and package-lock.json are in git; the tree is not.
+node_modules/
+

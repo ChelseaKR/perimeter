@@ -16,6 +16,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from perimeter.cells import present_tenths_of_percent
 from perimeter.coverage import (
     DinsReport,
     FieldCoverage,
@@ -24,7 +25,11 @@ from perimeter.coverage import (
     perimeter_report,
 )
 from perimeter.dins import AccessSplit, load_inspections
-from perimeter.perimeters import COLLECTION_ACRE_THRESHOLDS, load_perimeters
+from perimeter.perimeters import (
+    COLLECTION_ACRE_THRESHOLDS,
+    DuplicateSignal,
+    load_perimeters,
+)
 from perimeter.sources import DINS, FRAP, Source
 
 FIELD_STATE_ORDER = ("present", "explicit_unknown", "not_recorded")
@@ -76,12 +81,24 @@ def _field_json(field: FieldCoverage) -> dict[str, Any]:
         "outside_published_domain": field.outside_domain,
         "outside_published_domain_distinct": field.outside_domain_distinct,
         "outside_published_domain_values": field.outside_domain_values,
+        "marker_basis": field.basis.value,
     }
     if field.zero_values is not None:
         payload["recorded_zero_values"] = field.zero_values
     if field.note:
         payload["note"] = field.note
     return payload
+
+
+def _signal_json(signal: DuplicateSignal) -> dict[str, Any]:
+    return {
+        "key": signal.key,
+        "description": signal.description,
+        "keyed_records": signal.keyed_records,
+        "distinct_keys": signal.distinct_keys,
+        "reused_keys": signal.reused_keys,
+        "records_sharing_a_key": signal.records_sharing_a_key,
+    }
 
 
 def _access_json(access: AccessSplit) -> dict[str, Any]:
@@ -105,6 +122,9 @@ def perimeters_payload(report: PerimeterReport, *, is_fixture: bool) -> dict[str
         "records_without_year": report.records_without_year,
         "irwin_id_present": report.irwin_present,
         "fields": [_field_json(field) for field in report.fields],
+        "irwin_id_present_tenths_pct": present_tenths_of_percent(
+            report.irwin_present, report.records
+        ),
         "years": [
             {
                 "year": cohort.year,
@@ -112,20 +132,14 @@ def perimeters_payload(report: PerimeterReport, *, is_fixture: bool) -> dict[str
                 "irwin_present": cohort.irwin_present,
                 "irwin_explicit_unknown": cohort.irwin_explicit_unknown,
                 "irwin_not_recorded": cohort.irwin_not_recorded,
+                "irwin_present_tenths_pct": present_tenths_of_percent(
+                    cohort.irwin_present, cohort.records
+                ),
             }
             for cohort in report.years
         ],
-        "duplicate_signals": [
-            {
-                "key": signal.key,
-                "description": signal.description,
-                "keyed_records": signal.keyed_records,
-                "distinct_keys": signal.distinct_keys,
-                "reused_keys": signal.reused_keys,
-                "records_sharing_a_key": signal.records_sharing_a_key,
-            }
-            for signal in report.duplicates
-        ],
+        "duplicate_signals": [_signal_json(signal) for signal in report.duplicates],
+        "marker_counterfactuals": [_signal_json(report.placeholder_counterfactual)],
         "acre_thresholds": {
             "thresholds": list(COLLECTION_ACRE_THRESHOLDS),
             "note": (
@@ -158,6 +172,10 @@ def dins_payload(report: DinsReport, *, is_fixture: bool) -> dict[str, Any]:
         "records_not_attributable_to_an_incident": report.unattributed_records,
         "access": _access_json(report.access),
         "damage_values": report.damage,
+        "damage_values_tenths_pct": {
+            value: present_tenths_of_percent(count, report.records)
+            for value, count in report.damage.items()
+        },
         "fields": [_field_json(field) for field in report.fields],
         "field_state_order": list(FIELD_STATE_ORDER),
         "completeness_by_access": [
