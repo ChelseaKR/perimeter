@@ -19,3 +19,14 @@ updates:
       default-days: 7
     open-pull-requests-limit: 5
     labels: ["dependencies", "ci"]
+
+  # The page-check toolchain: html-validate, axe-core and jsdom. Development only.
+  # Nothing from npm ships in the site; the pages carry no script at all.
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 5
+    labels: ["dependencies", "ci"]

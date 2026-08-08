@@ -1,5 +1,6 @@
 # Least-privilege GITHUB_TOKEN, SHA-pinned actions, and the merge-blocking gates:
-# SAST, secret scan, and `make verify` (lint, format, types, tests, SCA).
+# SAST, secret scan, and `make verify` (lint, format, types, tests, SCA, and the
+# HTML-conformance and WCAG checks over the built pages).
 #
 # Every action is pinned to the full 40-char commit SHA of its tag, resolved
 # 2026-08-07 via `gh api repos/OWNER/REPO/commits/TAG`. Actions stay
@@ -35,6 +36,14 @@ jobs:
         with:
           version: ">=0.11.0"
           python-version: "3.12"
+
+      # `make verify` ends in `make pages`, which runs html-validate and axe-core over
+      # the pages built from committed fixtures. Nothing is served and nothing is
+      # deployed: both checkers read files off disk.
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "22"
+          cache: npm
 
       - name: make verify (byte-for-byte the local target)
         run: make verify
@@ -77,4 +86,4 @@ jobs:
         with:
           persist-credentials: false
       - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5.4.2
-      - run: uvx --from semgrep==1.168.0 semgrep scan --error --metrics off --config p/python --config p/security-audit .
+      - run: uvx --from semgrep==1.168.0 semgrep scan --error --metrics off --config p/python --config p/javascript --config p/security-audit .

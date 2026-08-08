@@ -208,6 +208,39 @@ def duplicate_signals(records: Sequence[Record]) -> list[DuplicateSignal]:
     ]
 
 
+PLACEHOLDER_SIGNAL_KEY = "year_unit_incident_number_placeholder_read_as_a_number"
+
+
+def placeholder_counterfactual(records: Sequence[Record]) -> DuplicateSignal:
+    """The local-incident-number key, recomputed as if the placeholder were a number.
+
+    One judgment call in ``schema.py`` decides whether an all-zeros local incident
+    number is an identifier or a placeholder, and it moves this count by an order of
+    magnitude. Nothing FRAP publishes documents that value, so the call is an inference
+    and a reader is entitled to see what it costs. This counts the other reading, so the
+    difference is a number on the page rather than an assertion about one.
+
+    Never presented as a duplicate finding. It is the counterfactual, labelled as one.
+    """
+    keys: list[tuple[str, ...]] = []
+    for record in records:
+        year = year_of(record)
+        if year is None:
+            continue
+        unit = _present(record, "UNIT_ID")
+        cell = record.cell("INC_NUM")
+        number = cell.value() if cell.is_present else cell.marker
+        if unit is not None and number is not None:
+            keys.append((str(year), unit, number))
+    return _signal(
+        PLACEHOLDER_SIGNAL_KEY,
+        "The same key as above, recomputed with the all-zeros local incident number "
+        "read as a number rather than as a placeholder. Published as the counterfactual "
+        "for that judgment call, not as a count of duplicate fires.",
+        keys,
+    )
+
+
 @dataclass(frozen=True)
 class ThresholdCohort:
     """Surviving records in one decade, against FRAP's published acreage criteria."""

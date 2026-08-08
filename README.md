@@ -27,7 +27,10 @@ California Historical Fire Perimeters, version firep25_1, retrieved 2026-08-07:
   method is the same shape: no empty cells, 15,081 recorded as `Unknown`, 35.4% recorded.
   Counting only nulls would call both fields complete.
 - 12,469 records carry an all-zeros local incident number, counted apart from the 9,910
-  recorded numbers.
+  recorded numbers. FRAP publishes no domain for that field, so this reading is an
+  inference and the page says so. Reading the value as a number instead would report
+  12,230 records as sharing an incident key rather than 376. Both counts are published;
+  the evidence is in `docs/MARKERS.md`.
 - Records sharing an identifier, counted as candidates: 8 IRWIN IDs used by more than one
   record, covering 23 records.
 - Surviving records counted per decade against the 10, 50 and 300 acre figures in FRAP's
@@ -47,6 +50,11 @@ California Historical Fire Perimeters, version firep25_1, retrieved 2026-08-07:
   on 56.6% of records, carries `Unknown` on 52,364, and is blank on 5,214.
 - Per-incident completeness for every incident, because an average across the file
   describes no incident in particular.
+- The distance from a residence to a utility or miscellaneous structure is recorded on
+  37,783 records (28.5%). CAL FIRE publishes Not Applicable for that field spelled `NA`
+  and publishes it for the propane-tank field spelled `N/A`; the file carries both
+  spellings in the utility field, in eras that do not overlap, and both are counted as
+  the published finding. See `docs/MARKERS.md`.
 
 ## How absence is handled
 
@@ -72,13 +80,70 @@ An ordinary value outside a published domain is deliberately *not* an error. It 
 and published as `outside_published_domain`, because it is a real thing about the file and
 crashing on it would hide it.
 
+## Which judgment calls rest on what
+
+Twenty-seven of the fifty-four measured fields declare a marker, a code or a finding of
+absence. Twelve of those are **published**: the value is in the layer's own coded-value
+domain, or in FRAP's metadata document, or in CAL FIRE's DINS database dictionary. The
+other fifteen are **inferred**: the field is free text, or the value is one the published
+domain does not carry, and this project read it off the acquired file.
+
+Both are counted the same way, and neither is a defect in either dataset. Both publishers
+document the domains they constrain and say which fields are free text. What differs is
+how much weight a reader should put on the call, so every field carries its basis in
+`schema.py`, in the JSON artifacts as `marker_basis`, and on the pages beside its marker
+list.
+
+`docs/MARKERS.md` is the audit: per field, the declared values, the evidence, the URL it
+can be checked against, the effect on the published figures, and a confidence. Where a
+call has a counterfactual worth counting, it is counted rather than described, and
+published in the artifact under `marker_counterfactuals`.
+
 ## Build
 
 ```sh
 uv sync
-make verify          # lint, format, types, tests, audit
+npm ci
+make verify          # lint, format, types, tests, SCA, and the page checks
 make site-offline    # build from committed fixtures; runs anywhere, no network
 ```
+
+`make verify` ends in `make pages`, which builds the pages from the committed fixtures and
+checks them two ways: `html-validate` for HTML conformance and the markup-level
+accessibility rules, and `axe-core` in a headless DOM for the WCAG 2.0, 2.1 and 2.2 A and
+AA rule sets. Nothing is served and nothing is deployed; both read the files off disk. The
+same gate runs in CI.
+
+### What the page checks cover, and what still needs a person
+
+Gated, in CI:
+
+- HTML conformance, heading order, duplicate ids, landmark structure, `lang`, and every
+  table header carrying a `scope` and every table a caption. Checked twice, by
+  `html-validate` and by parser-based assertions in `tests/test_pages_html.py`.
+- The WCAG A and AA rule sets that axe-core can decide in a DOM with no layout.
+- Contrast. Both palettes are data in `render.py`, so every foreground and background the
+  stylesheet puts together is measured against the WCAG thresholds, in both themes,
+  arithmetically. This is the one criterion axe cannot check headlessly, because jsdom
+  paints nothing.
+- Every number in a table cell or a tile traces to the JSON artifact, and every number in
+  prose is either one of those, part of a quote from the publisher, or on a reviewed list
+  in `tests/test_pages_html.py` with a reason.
+
+**Not checked, and needing human eyes:**
+
+- **Visual layout.** Nothing here renders the pages. Column widths, the wide tables inside
+  their scroll containers, the tile grid at its wrapping points, and whether the sticky
+  table headers behave are all unverified.
+- **Small screens and reflow.** WCAG 2.2 SC 1.4.10 needs a viewport. The pages are built
+  to reflow, and that has not been observed.
+- **Print.** No print stylesheet is defined and no print output has been looked at.
+- **Focus appearance in practice.** A focus ring is defined and the skip link is present
+  and points at the main landmark, but SC 2.4.11 is about how the indicator looks against
+  what is behind it, which needs a renderer.
+- **Target size.** SC 2.5.8 needs box geometry, which jsdom does not compute.
+- **A screen reader.** Conformant markup is not the same as a good listening experience.
+  Nothing here substitutes for reading a page with one.
 
 To build from CAL FIRE's real files, acquire them first (see `PROVENANCE.md`):
 
@@ -115,8 +180,10 @@ here is how much of each published field is actually filled in, and what the bla
 | `src/perimeter/artifacts.py` | Deterministic JSON |
 | `src/perimeter/render.py` | The static pages |
 | `src/perimeter/acquire.py` | The only code that touches the network. Run by hand, never in CI |
+| `tools/a11y.mjs` | axe-core over the built pages in a headless DOM |
 | `site/` | The built pages and their JSON artifacts |
 | `PROVENANCE.md` | Per-source detail, quoted caveats, and what is excluded |
+| `docs/MARKERS.md` | The marker audit: every judgment call, its evidence, and what it costs |
 
 ## Licence
 

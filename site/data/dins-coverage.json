@@ -218,11 +218,11 @@
       "name": "PROPANETANKDISTANCE"
     },
     {
-      "assessed_present": 31210,
-      "assessed_tenths_pct": 237,
+      "assessed_present": 37740,
+      "assessed_tenths_pct": 286,
       "assessed_total": 131931,
-      "inaccessible_present": 29,
-      "inaccessible_tenths_pct": 49,
+      "inaccessible_present": 43,
+      "inaccessible_tenths_pct": 73,
       "inaccessible_total": 591,
       "label": "Utility or misc structure distance",
       "name": "UTILITYMISCSTRUCTUREDISTANCE"
@@ -308,11 +308,11 @@
       "name": "APN"
     },
     {
-      "assessed_present": 124383,
-      "assessed_tenths_pct": 943,
+      "assessed_present": 123711,
+      "assessed_tenths_pct": 938,
       "assessed_total": 131931,
-      "inaccessible_present": 428,
-      "inaccessible_tenths_pct": 724,
+      "inaccessible_present": 427,
+      "inaccessible_tenths_pct": 723,
       "inaccessible_total": 591,
       "label": "Site address (parcel)",
       "name": "SITEADDRESS"
@@ -386,6 +386,14 @@
     "Minor (10-25%)": 1356,
     "No Damage": 54414
   },
+  "damage_values_tenths_pct": {
+    "Affected (>0-10%)": 38,
+    "Destroyed (>50%)": 531,
+    "Inaccessible": 4,
+    "Major (25-50%)": 5,
+    "Minor (10-25%)": 10,
+    "No Damage": 411
+  },
   "field_state_order": [
     "present",
     "explicit_unknown",
@@ -395,6 +403,7 @@
     {
       "explicit_unknown": 0,
       "label": "Damage",
+      "marker_basis": "published",
       "markers": {},
       "name": "DAMAGE",
       "not_recorded": 0,
@@ -409,6 +418,7 @@
     {
       "explicit_unknown": 0,
       "label": "Structure type",
+      "marker_basis": "none",
       "markers": {},
       "name": "STRUCTURETYPE",
       "not_recorded": 0,
@@ -427,6 +437,7 @@
     {
       "explicit_unknown": 0,
       "label": "Structure category",
+      "marker_basis": "none",
       "markers": {},
       "name": "STRUCTURECATEGORY",
       "not_recorded": 0,
@@ -442,6 +453,7 @@
     {
       "explicit_unknown": 0,
       "label": "Incident name",
+      "marker_basis": "none",
       "markers": {},
       "name": "INCIDENTNAME",
       "not_recorded": 0,
@@ -455,6 +467,7 @@
     {
       "explicit_unknown": 0,
       "label": "Incident number",
+      "marker_basis": "none",
       "markers": {},
       "name": "INCIDENTNUM",
       "not_recorded": 0,
@@ -468,6 +481,7 @@
     {
       "explicit_unknown": 0,
       "label": "Incident start date",
+      "marker_basis": "none",
       "markers": {},
       "name": "INCIDENTSTARTDATE",
       "not_recorded": 0,
@@ -481,6 +495,7 @@
     {
       "explicit_unknown": 0,
       "label": "Hazard type",
+      "marker_basis": "none",
       "markers": {},
       "name": "HAZARDTYPE",
       "not_recorded": 0,
@@ -494,6 +509,7 @@
     {
       "explicit_unknown": 0,
       "label": "County",
+      "marker_basis": "none",
       "markers": {},
       "name": "COUNTY",
       "not_recorded": 30,
@@ -507,6 +523,7 @@
     {
       "explicit_unknown": 0,
       "label": "CAL FIRE unit",
+      "marker_basis": "none",
       "markers": {},
       "name": "CALFIREUNIT",
       "not_recorded": 0,
@@ -520,6 +537,7 @@
     {
       "explicit_unknown": 772,
       "label": "Community",
+      "marker_basis": "inferred",
       "markers": {
         "-": 43,
         "n/a": 50,
@@ -529,6 +547,7 @@
       },
       "name": "COMMUNITY",
       "not_recorded": 77248,
+      "note": "Free text with no published domain, so every marker here is read off the file. The field also carries the same place under several spellings, which this project does not merge; it counts whether a cell holds a community, not how many communities there are.",
       "outside_published_domain": 0,
       "outside_published_domain_distinct": 0,
       "outside_published_domain_values": {},
@@ -539,6 +558,7 @@
     {
       "explicit_unknown": 27565,
       "label": "City",
+      "marker_basis": "inferred",
       "markers": {
         "n/a": 731,
         "na": 26824,
@@ -547,7 +567,7 @@
       },
       "name": "CITY",
       "not_recorded": 4924,
-      "note": "A large share of records carry a marker word in this field rather than a city. Read as text it would become a place name, so it is counted apart from both a recorded city and an empty cell.",
+      "note": "A large share of records carry a marker word in this field rather than a city. Read as text it would become a place name, so it is counted apart from both a recorded city and an empty cell. CITY has no published domain, so this is inferred. One thing the file shows is worth a reader's attention: every record holding NA belongs to an incident that started in 2020, and no record in that cohort holds the value Unincorporated that neighbouring years use. That pattern reads as a value applied to a load rather than determined per structure, which is why NA is not counted as a recorded city. Whether those cells are better read as a recorded marker or as an empty cell cannot be told from the file, and the distinction does not move any published present count, because neither state counts as a value.",
       "outside_published_domain": 0,
       "outside_published_domain_distinct": 0,
       "outside_published_domain_values": {},
@@ -558,6 +578,7 @@
     {
       "explicit_unknown": 18535,
       "label": "Roof construction",
+      "marker_basis": "published",
       "markers": {
         "unknown": 18535
       },
@@ -579,12 +600,14 @@
     {
       "explicit_unknown": 52364,
       "label": "Eaves",
+      "marker_basis": "inferred",
       "markers": {
         "not applicable": 893,
         "unknown": 51471
       },
       "name": "EAVES",
       "not_recorded": 5214,
+      "note": "'Unknown' and 'No Eaves' are both published domain values. 'Not Applicable' is not, and appears in the file anyway; it is counted as a marker rather than as a value, which is the reading that does not turn an undetermined eave into an observed one. That single addition is what makes this field inferred rather than published.",
       "outside_published_domain": 2,
       "outside_published_domain_distinct": 1,
       "outside_published_domain_values": {
@@ -597,6 +620,7 @@
     {
       "explicit_unknown": 40139,
       "label": "Vent screen",
+      "marker_basis": "published",
       "markers": {
         "unknown": 40139
       },
@@ -618,6 +642,7 @@
     {
       "explicit_unknown": 17540,
       "label": "Exterior siding",
+      "marker_basis": "published",
       "markers": {
         "unknown": 17540
       },
@@ -638,6 +663,7 @@
     {
       "explicit_unknown": 33469,
       "label": "Window pane",
+      "marker_basis": "published",
       "markers": {
         "unknown": 33469
       },
@@ -657,6 +683,7 @@
     {
       "explicit_unknown": 15777,
       "label": "Deck or porch on grade",
+      "marker_basis": "published",
       "markers": {
         "unknown": 15777
       },
@@ -674,6 +701,7 @@
     {
       "explicit_unknown": 18750,
       "label": "Deck or porch elevated",
+      "marker_basis": "published",
       "markers": {
         "unknown": 18750
       },
@@ -691,6 +719,7 @@
     {
       "explicit_unknown": 20235,
       "label": "Patio cover or carport",
+      "marker_basis": "published",
       "markers": {
         "unknown": 20235
       },
@@ -706,6 +735,7 @@
     {
       "explicit_unknown": 15133,
       "label": "Fence attached to structure",
+      "marker_basis": "published",
       "markers": {
         "unknown": 15133
       },
@@ -721,12 +751,13 @@
     {
       "explicit_unknown": 6646,
       "label": "Propane tank distance",
+      "marker_basis": "inferred",
       "markers": {
         "unknown": 6646
       },
       "name": "PROPANETANKDISTANCE",
       "not_recorded": 77329,
-      "note": "'N/A' is published in the domain as 'Not Applicable', an inspector finding that the question does not apply, so it is present rather than missing. 'Unknown' is not in this field's published domain but appears in the file, and is counted as a marker.",
+      "note": "'N/A' is published in the domain as 'Not Applicable', an inspector finding that the question does not apply, so it is present rather than missing. 'Unknown' is not in this field's published domain but appears in the file, and is counted as a marker; that addition is inferred, and it is what makes this field inferred rather than published.",
       "outside_published_domain": 0,
       "outside_published_domain_distinct": 0,
       "outside_published_domain_values": {},
@@ -735,34 +766,35 @@
       "total": 132522
     },
     {
-      "explicit_unknown": 6544,
+      "explicit_unknown": 0,
       "label": "Utility or misc structure distance",
-      "markers": {
-        "n/a": 6544
-      },
+      "marker_basis": "inferred",
+      "markers": {},
       "name": "UTILITYMISCSTRUCTUREDISTANCE",
       "not_recorded": 94739,
-      "note": "The published domain spells Not Applicable as 'NA'. The file also carries 'N/A' in this field. This project does not assume the two spellings mean the same thing: 'NA' is the published finding and 'N/A' is counted as a marker.",
-      "outside_published_domain": 243,
-      "outside_published_domain_distinct": 2,
+      "note": "The published domain spells Not Applicable as 'NA'. The file carries 'N/A' as well, and this project reads the two as one finding under two spellings rather than as two facts. Four things in the file support that. The spellings never occur together: no incident uses both, and every 'N/A' belongs to an incident that started in 2018 or 2019 while every 'NA' belongs to one that started in 2020 or later. Recorded distances appear on both sides of that line, so the change is a change of spelling and not of whether the question was asked. The sibling field PROPANETANKDISTANCE publishes 'N/A' as its own Not Applicable code and keeps that spelling across the same boundary, which is what a per-field domain revision looks like. And both spellings sit beside a propane Not Applicable at almost the same rate, 82 percent against 85 percent, which a marker for undetermined data would not do. Both are therefore counted as the published finding. 'N/A' is additionally reported under outside_published_domain, because the domain published today does not carry that spelling, so both facts reach the reader. CAL FIRE publishes no domain history, so the reading of 'N/A' as the earlier spelling is inferred.",
+      "outside_published_domain": 6787,
+      "outside_published_domain_distinct": 3,
       "outside_published_domain_values": {
         "30": 140,
-        "50": 103
+        "50": 103,
+        "N/A": 6544
       },
-      "present": 31239,
-      "present_tenths_pct": 236,
+      "present": 37783,
+      "present_tenths_pct": 285,
       "total": 132522
     },
     {
       "explicit_unknown": 8739,
       "label": "Where fire started on structure",
+      "marker_basis": "inferred",
       "markers": {
         "not applicable": 23,
         "unknown": 8716
       },
       "name": "WHEREFIRESTARTEDONSTRUCTURE",
       "not_recorded": 120122,
-      "note": "Collected only where the structure was affected, so its blank rate is read against the affected subset rather than the whole file.",
+      "note": "Collected only where the structure was affected, so its blank rate is read against the affected subset rather than the whole file. 'Unknown' is a published domain value; 'Not Applicable' is not, and the 23 records carrying it are counted as markers on an inference.",
       "outside_published_domain": 157,
       "outside_published_domain_distinct": 7,
       "outside_published_domain_values": {
@@ -781,13 +813,14 @@
     {
       "explicit_unknown": 5828,
       "label": "What the fire started from",
+      "marker_basis": "inferred",
       "markers": {
         "not applicable": 18,
         "unknown": 5810
       },
       "name": "WHATDIDFIRESTARTFROM",
       "not_recorded": 121846,
-      "note": "Collected only where the structure was affected.",
+      "note": "Collected only where the structure was affected. As with the field beside it, 'Unknown' is published and 'Not Applicable', on 18 records, is not, so that marker is inferred.",
       "outside_published_domain": 5,
       "outside_published_domain_distinct": 4,
       "outside_published_domain_values": {
@@ -803,6 +836,7 @@
     {
       "explicit_unknown": 27707,
       "label": "Defensive actions taken",
+      "marker_basis": "published",
       "markers": {
         "unknown": 27707
       },
@@ -823,6 +857,7 @@
     {
       "explicit_unknown": 0,
       "label": "Units in structure",
+      "marker_basis": "none",
       "markers": {},
       "name": "NUMBEROFUNITPERSTRUCTURE",
       "not_recorded": 70593,
@@ -837,6 +872,7 @@
     {
       "explicit_unknown": 0,
       "label": "Damaged outbuildings",
+      "marker_basis": "none",
       "markers": {},
       "name": "NOOUTBUILDINGSDAMAGED",
       "not_recorded": 70583,
@@ -851,6 +887,7 @@
     {
       "explicit_unknown": 0,
       "label": "Undamaged outbuildings",
+      "marker_basis": "none",
       "markers": {},
       "name": "NOOUTBUILDINGSNOTDAMAGED",
       "not_recorded": 70564,
@@ -865,6 +902,7 @@
     {
       "explicit_unknown": 0,
       "label": "Damaged or destroyed cars",
+      "marker_basis": "none",
       "markers": {},
       "name": "NOOFCARSONPROPERTY",
       "not_recorded": 76334,
@@ -879,13 +917,14 @@
     {
       "explicit_unknown": 43,
       "label": "APN (parcel)",
+      "marker_basis": "inferred",
       "markers": {
         "none": 42,
         "unknown": 1
       },
       "name": "APN",
       "not_recorded": 864,
-      "note": "Added by a spatial join after collection, per CAL FIRE's description, so its coverage measures the join rather than the field inspection.",
+      "note": "Added by a spatial join after collection, per CAL FIRE's description, so its coverage measures the join rather than the field inspection. No domain is published for it, so both markers are read off the file.",
       "outside_published_domain": 0,
       "outside_published_domain_distinct": 0,
       "outside_published_domain_values": {},
@@ -894,25 +933,29 @@
       "total": 132522
     },
     {
-      "explicit_unknown": 59,
+      "explicit_unknown": 732,
       "label": "Site address (parcel)",
+      "marker_basis": "inferred",
       "markers": {
         "-": 3,
-        "none": 56
+        "no address available": 513,
+        "none": 56,
+        "null null unknown ca 00000": 160
       },
       "name": "SITEADDRESS",
       "not_recorded": 7652,
-      "note": "Added by the same post-collection spatial join as APN.",
+      "note": "Added by the same post-collection spatial join as APN, and free text with no published domain, so every marker here is inferred. Two of them are whole placeholder addresses rather than single words: the literal text 'No Address Available', and a composed placeholder reading 'NULL NULL UNKNOWN CA 00000'. Neither trips the single-token marker net, and this audit found them by reading the field's value distribution. Counting them as recorded addresses would publish a join that failed as a join that succeeded.",
       "outside_published_domain": 0,
       "outside_published_domain_distinct": 0,
       "outside_published_domain_values": {},
-      "present": 124811,
-      "present_tenths_pct": 942,
+      "present": 124138,
+      "present_tenths_pct": 937,
       "total": 132522
     },
     {
       "explicit_unknown": 0,
       "label": "Year built (parcel)",
+      "marker_basis": "none",
       "markers": {},
       "name": "YEARBUILT",
       "not_recorded": 30431,
@@ -927,6 +970,7 @@
     {
       "explicit_unknown": 0,
       "label": "Assessed improved value (parcel)",
+      "marker_basis": "none",
       "markers": {},
       "name": "ASSESSEDIMPROVEDVALUE",
       "not_recorded": 6040,
@@ -941,6 +985,7 @@
     {
       "explicit_unknown": 1529,
       "label": "Street name (field determined)",
+      "marker_basis": "inferred",
       "markers": {
         "n/a": 18,
         "na": 1204,
@@ -949,6 +994,7 @@
       },
       "name": "STREETNAME",
       "not_recorded": 4333,
+      "note": "Free text with no published domain, so every marker is read off the file.",
       "outside_published_domain": 0,
       "outside_published_domain_distinct": 0,
       "outside_published_domain_values": {},
@@ -959,6 +1005,7 @@
     {
       "explicit_unknown": 9,
       "label": "Street type (field determined)",
+      "marker_basis": "inferred",
       "markers": {
         "-": 7,
         "n/a": 1,
@@ -966,7 +1013,7 @@
       },
       "name": "STREETTYPE",
       "not_recorded": 6705,
-      "note": "'None' is a published domain value meaning the road carries no street type, so it is a present value rather than a blank.",
+      "note": "'None' is a published domain value meaning the road carries no street type, so it is a present value rather than a blank. The three markers are not published anywhere and are read off the file; they cover nine records between them. Two further records read 'not given' and one reads 'not noted'. Those are left as recorded values outside the published domain, where they are counted and named, rather than folded into markers on a reading of three cells.",
       "outside_published_domain": 1516,
       "outside_published_domain_distinct": 8,
       "outside_published_domain_values": {
@@ -986,6 +1033,7 @@
     {
       "explicit_unknown": 0,
       "label": "Latitude",
+      "marker_basis": "none",
       "markers": {},
       "name": "LATITUDE",
       "not_recorded": 0,
@@ -1000,6 +1048,7 @@
     {
       "explicit_unknown": 0,
       "label": "Longitude",
+      "marker_basis": "none",
       "markers": {},
       "name": "LONGITUDE",
       "not_recorded": 0,
@@ -13244,8 +13293,8 @@
           4093
         ],
         "SITEADDRESS": [
-          23560,
-          0,
+          23400,
+          160,
           64
         ],
         "STREETNAME": [
@@ -13269,8 +13318,8 @@
           0
         ],
         "UTILITYMISCSTRUCTUREDISTANCE": [
-          5958,
-          3973,
+          9931,
+          0,
           13693
         ],
         "VENTSCREEN": [
@@ -13678,8 +13727,8 @@
           0
         ],
         "UTILITYMISCSTRUCTUREDISTANCE": [
-          638,
-          527,
+          1165,
+          0,
           725
         ],
         "VENTSCREEN": [
@@ -14087,8 +14136,8 @@
           0
         ],
         "UTILITYMISCSTRUCTUREDISTANCE": [
-          33,
-          16,
+          49,
+          0,
           79
         ],
         "VENTSCREEN": [
@@ -14293,8 +14342,8 @@
           0
         ],
         "UTILITYMISCSTRUCTUREDISTANCE": [
-          4,
-          3,
+          7,
+          0,
           10
         ],
         "VENTSCREEN": [
@@ -14496,8 +14545,8 @@
           0
         ],
         "UTILITYMISCSTRUCTUREDISTANCE": [
-          1,
-          1,
+          2,
+          0,
           10
         ],
         "VENTSCREEN": [
@@ -15314,8 +15363,8 @@
           0
         ],
         "UTILITYMISCSTRUCTUREDISTANCE": [
-          3,
-          3,
+          6,
+          0,
           0
         ],
         "VENTSCREEN": [
@@ -15725,8 +15774,8 @@
           0
         ],
         "UTILITYMISCSTRUCTUREDISTANCE": [
-          19,
-          4,
+          23,
+          0,
           20
         ],
         "VENTSCREEN": [
@@ -16132,8 +16181,8 @@
           0
         ],
         "UTILITYMISCSTRUCTUREDISTANCE": [
-          3,
-          2,
+          5,
+          0,
           0
         ],
         "VENTSCREEN": [
@@ -16542,8 +16591,8 @@
           0
         ],
         "UTILITYMISCSTRUCTUREDISTANCE": [
-          66,
-          25,
+          91,
+          0,
           4
         ],
         "VENTSCREEN": [
@@ -16948,8 +16997,8 @@
           0
         ],
         "UTILITYMISCSTRUCTUREDISTANCE": [
-          1,
-          1,
+          2,
+          0,
           2
         ],
         "VENTSCREEN": [
@@ -17563,8 +17612,8 @@
           0
         ],
         "UTILITYMISCSTRUCTUREDISTANCE": [
-          24,
-          3,
+          27,
+          0,
           2
         ],
         "VENTSCREEN": [
@@ -17769,8 +17818,8 @@
           0
         ],
         "UTILITYMISCSTRUCTUREDISTANCE": [
-          89,
-          24,
+          113,
+          0,
           160
         ],
         "VENTSCREEN": [
@@ -18380,8 +18429,8 @@
           0
         ],
         "UTILITYMISCSTRUCTUREDISTANCE": [
-          22,
-          4,
+          26,
+          0,
           20
         ],
         "VENTSCREEN": [
@@ -19396,8 +19445,8 @@
           0
         ],
         "UTILITYMISCSTRUCTUREDISTANCE": [
-          2,
-          10,
+          12,
+          0,
           0
         ],
         "VENTSCREEN": [
@@ -20417,8 +20466,8 @@
           0
         ],
         "UTILITYMISCSTRUCTUREDISTANCE": [
-          4,
-          7,
+          11,
+          0,
           53
         ],
         "VENTSCREEN": [
@@ -20623,8 +20672,8 @@
           0
         ],
         "UTILITYMISCSTRUCTUREDISTANCE": [
-          317,
-          564,
+          881,
+          0,
           1126
         ],
         "VENTSCREEN": [
@@ -20831,8 +20880,8 @@
           0
         ],
         "UTILITYMISCSTRUCTUREDISTANCE": [
-          0,
           77,
+          0,
           18
         ],
         "VENTSCREEN": [
@@ -21444,8 +21493,8 @@
           0
         ],
         "UTILITYMISCSTRUCTUREDISTANCE": [
-          0,
           10,
+          0,
           32
         ],
         "VENTSCREEN": [
@@ -21647,8 +21696,8 @@
           0
         ],
         "UTILITYMISCSTRUCTUREDISTANCE": [
-          0,
           1,
+          0,
           0
         ],
         "VENTSCREEN": [
@@ -21854,8 +21903,8 @@
           0
         ],
         "UTILITYMISCSTRUCTUREDISTANCE": [
-          215,
-          1203,
+          1418,
+          0,
           150
         ],
         "VENTSCREEN": [
@@ -22467,8 +22516,8 @@
           0
         ],
         "UTILITYMISCSTRUCTUREDISTANCE": [
-          18,
-          18,
+          36,
+          0,
           20
         ],
         "VENTSCREEN": [
@@ -23283,8 +23332,8 @@
           0
         ],
         "UTILITYMISCSTRUCTUREDISTANCE": [
-          1,
-          37,
+          38,
+          0,
           84
         ],
         "VENTSCREEN": [
@@ -23692,8 +23741,8 @@
           0
         ],
         "UTILITYMISCSTRUCTUREDISTANCE": [
-          100,
-          18,
+          118,
+          0,
           2
         ],
         "VENTSCREEN": [
@@ -23897,8 +23946,8 @@
           0
         ],
         "UTILITYMISCSTRUCTUREDISTANCE": [
-          6,
-          4,
+          10,
+          0,
           1
         ],
         "VENTSCREEN": [
@@ -24103,8 +24152,8 @@
           0
         ],
         "UTILITYMISCSTRUCTUREDISTANCE": [
-          10,
-          9,
+          19,
+          0,
           56
         ],
         "VENTSCREEN": [
@@ -31460,8 +31509,8 @@
           0
         ],
         "SITEADDRESS": [
-          3149,
-          0,
+          2636,
+          513,
           56
         ],
         "STREETNAME": [

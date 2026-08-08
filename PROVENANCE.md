@@ -55,6 +55,15 @@ Perimeters (all)", is the unfiltered one and is the only layer read. Layers 1 an
 filtered views (recent large fires, and 1950 onward) and measuring them would be measuring
 a filter.
 
+FRAP's Wildland Fire Perimeters metadata document, linked from the dataset page, carries
+the attribute table and the release notes. It is the source for the field definitions
+quoted in `docs/MARKERS.md`, alongside the coded-value domains the layer itself returns.
+
+| | |
+|---|---|
+| Metadata document | https://calfire-forestry.maps.arcgis.com/home/item.html?id=a31aa1efe1d6466f8530b501c30ab00a |
+| Layer domains | `https://services1.arcgis.com/jUJYIo9tSA7EHvfZ/arcgis/rest/services/California_Historic_Fire_Perimeters/FeatureServer/0?f=pjson` |
+
 ### What FRAP says about this dataset
 
 > Although the dataset represents the most complete digital record of fire perimeters in
@@ -100,6 +109,16 @@ the field *aliases* rather than the field names, including one alias containing 
 entity, so a rename upstream could shift which column a measurement is about without the
 build noticing. The GeoServices endpoint returns canonical field names and is listed among
 the dataset's own resources.
+
+CAL FIRE publishes a database dictionary for this dataset, linked from the dataset page.
+It gives each field's definition, size and whether it carries a domain, and it is the
+second source, after the layer's own coded-value domains, that `docs/MARKERS.md` checks
+every DINS declaration against.
+
+| | |
+|---|---|
+| Database dictionary | https://calfire-forestry.maps.arcgis.com/sharing/rest/content/items/db241103701846fa8c5b945cfeedda07/data |
+| Layer domains | `https://services1.arcgis.com/jUJYIo9tSA7EHvfZ/arcgis/rest/services/POSTFIRE_MASTER_DATA_SHARE/FeatureServer/0?f=pjson` |
 
 ### What CAL FIRE says about this dataset
 

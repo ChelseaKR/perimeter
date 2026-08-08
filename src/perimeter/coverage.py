@@ -26,11 +26,12 @@ from perimeter.perimeters import (
     ThresholdCohort,
     YearCohort,
     duplicate_signals,
+    placeholder_counterfactual,
     threshold_cohorts,
     year_cohorts,
 )
 from perimeter.records import Record
-from perimeter.schema import DINS_FIELDS, FRAP_FIELDS, FieldSpec
+from perimeter.schema import DINS_FIELDS, FRAP_FIELDS, Basis, FieldSpec
 
 OUTSIDE_DOMAIN_VALUE_CAP = 12
 """How many out-of-domain values to name per field. The full count is always published."""
@@ -43,6 +44,7 @@ class FieldCoverage:
     name: str
     label: str
     note: str
+    basis: Basis
     present: int
     explicit_unknown: int
     not_recorded: int
@@ -91,6 +93,7 @@ def field_coverage(records: Sequence[Record], spec: FieldSpec) -> FieldCoverage:
         name=spec.name,
         label=spec.label,
         note=spec.note,
+        basis=spec.basis,
         present=states.get("present", 0),
         explicit_unknown=states.get("explicit_unknown", 0),
         not_recorded=states.get("not_recorded", 0),
@@ -119,6 +122,7 @@ class PerimeterReport:
     fields: list[FieldCoverage]
     years: list[YearCohort]
     duplicates: list[DuplicateSignal]
+    placeholder_counterfactual: DuplicateSignal
     thresholds: list[ThresholdCohort]
 
     @property
@@ -146,6 +150,7 @@ def perimeter_report(records: Sequence[Record]) -> PerimeterReport:
         fields=field_coverages(records, FRAP_FIELDS),
         years=year_cohorts(records),
         duplicates=duplicate_signals(records),
+        placeholder_counterfactual=placeholder_counterfactual(records),
         thresholds=threshold_cohorts(records),
     )
 

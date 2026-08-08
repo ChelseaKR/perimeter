@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from perimeter.cells import Cell, CellState, SentinelDriftError
@@ -10,12 +12,14 @@ from perimeter.schema import (
     DINS_FIELDS_BY_NAME,
     FRAP_FIELDS,
     FRAP_FIELDS_BY_NAME,
+    Basis,
     FieldSpec,
     SchemaDriftError,
     require_columns,
 )
 
 PLAIN = FieldSpec("PLAIN", "Plain")
+ALL_FIELDS = (*FRAP_FIELDS, *DINS_FIELDS)
 
 
 @pytest.mark.parametrize("raw", [None, "", "   ", "\t"])
@@ -66,11 +70,41 @@ def test_the_same_word_is_read_differently_in_different_fields() -> None:
     assert apn.state is CellState.EXPLICIT_UNKNOWN
 
 
-def test_the_two_not_applicable_spellings_are_not_assumed_to_match() -> None:
-    """The published domain spells it NA; N/A also appears and is not merged into it."""
+def test_both_not_applicable_spellings_are_the_published_finding() -> None:
+    """NA is the published code. N/A is the same finding under the pre-2020 spelling.
+
+    See docs/MARKERS.md: the two spellings never share an incident, they fall on
+    opposite sides of the 2020 incidents, and both sit beside a propane Not Applicable
+    at the same rate. Counting N/A as missing data would publish 6,544 inspector
+    findings as undetermined cells.
+    """
     spec = DINS_FIELDS_BY_NAME["UTILITYMISCSTRUCTUREDISTANCE"]
     assert spec.classify("NA", where="r").is_present
-    assert spec.classify("N/A", where="r").state is CellState.EXPLICIT_UNKNOWN
+    assert spec.classify("N/A", where="r").is_present
+    assert not spec.unknown_markers
+
+
+def test_the_undocumented_spelling_is_still_reported_as_outside_the_domain() -> None:
+    """Present, and outside the domain published today. Both facts reach the reader."""
+    spec = DINS_FIELDS_BY_NAME["UTILITYMISCSTRUCTUREDISTANCE"]
+    assert not spec.outside_domain(spec.classify("NA", where="r"))
+    assert spec.outside_domain(spec.classify("N/A", where="r"))
+
+
+def test_a_whole_placeholder_address_is_not_a_recorded_address() -> None:
+    """Two DINS site addresses are placeholder strings rather than marker words."""
+    spec = DINS_FIELDS_BY_NAME["SITEADDRESS"]
+    for text in ("No Address Available", "NULL  NULL    UNKNOWN CA 00000"):
+        assert spec.classify(text, where="r").state is CellState.EXPLICIT_UNKNOWN, text
+    assert spec.classify("580 LOMMEL RD CALISTOGA CA 94515", where="r").is_present
+
+
+def test_the_all_zeros_incident_number_is_not_an_identifier() -> None:
+    """FRAP publishes no domain for INC_NUM; see docs/MARKERS.md for the evidence."""
+    spec = FRAP_FIELDS_BY_NAME["INC_NUM"]
+    assert spec.classify("00000000", where="r").state is CellState.EXPLICIT_UNKNOWN
+    assert spec.classify("00012345", where="r").is_present
+    assert spec.basis is Basis.INFERRED
 
 
 def test_an_unreviewed_marker_stops_the_build() -> None:
@@ -154,3 +188,107 @@ def test_every_published_finding_of_absence_survives_classification(
     for spec in specs:
         for value in spec.recorded_absences:
             assert spec.classify(value, where="r").is_present, f"{spec.name}={value}"
+
+
+# --------------------------------------------------------------------------------------
+# The marker audit: every judgment call carries the ground it stands on.
+# docs/MARKERS.md is the audit itself; these are the invariants it must keep holding.
+# --------------------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("spec", ALL_FIELDS, ids=lambda s: s.name)
+def test_a_field_that_declares_a_judgment_call_declares_its_basis(
+    spec: FieldSpec,
+) -> None:
+    """No unlabelled judgment calls. A declared marker is either documented or inferred."""
+    if spec.declares_vocabulary:
+        assert spec.basis is not Basis.NONE, (
+            f"{spec.name} declares a vocabulary but no basis; see docs/MARKERS.md"
+        )
+    else:
+        assert spec.basis is Basis.NONE, (
+            f"{spec.name} declares a basis but no vocabulary to justify"
+        )
+
+
+@pytest.mark.parametrize("spec", ALL_FIELDS, ids=lambda s: s.name)
+def test_a_published_basis_means_every_declared_value_is_in_the_domain(
+    spec: FieldSpec,
+) -> None:
+    """The claim "published" is checkable: the values must be in the published domain.
+
+    Field-level codes and findings must all appear in ``domain_values``. A field with no
+    published domain cannot honestly claim a published basis at all.
+    """
+    if spec.basis is not Basis.PUBLISHED:
+        return
+    assert spec.domain_values is not None, (
+        f"{spec.name} claims published with no domain"
+    )
+    lowered = {value.lower() for value in spec.domain_values}
+    for value in spec.unknown_codes | spec.recorded_absences:
+        assert value in spec.domain_values, f"{spec.name}: {value!r} is not published"
+    for marker in spec.unknown_markers:
+        assert marker in lowered, f"{spec.name}: marker {marker!r} is not published"
+
+
+def test_the_count_of_inferred_fields_is_the_one_the_pages_state() -> None:
+    """The pages and the module docstring print these two numbers. Keep them true."""
+    inferred = [s for s in ALL_FIELDS if s.basis is Basis.INFERRED]
+    published = [s for s in ALL_FIELDS if s.basis is Basis.PUBLISHED]
+    assert (len(inferred), len(published)) == (15, 12)
+
+
+@pytest.mark.parametrize("spec", ALL_FIELDS, ids=lambda s: s.name)
+def test_an_inferred_field_says_in_its_own_note_that_it_is_inferred(
+    spec: FieldSpec,
+) -> None:
+    """A reader of schema.py must not have to cross-reference to learn this."""
+    if spec.basis is not Basis.INFERRED:
+        return
+    assert "infer" in spec.note.lower() or "read off the file" in spec.note.lower(), (
+        f"{spec.name}: an inferred field must say so in its note"
+    )
+
+
+# --------------------------------------------------------------------------------------
+# docs/MARKERS.md is the audit. It must not drift away from what it audits.
+# --------------------------------------------------------------------------------------
+
+MARKERS_DOC = (Path(__file__).resolve().parents[1] / "docs" / "MARKERS.md").read_text(
+    encoding="utf-8"
+)
+
+
+@pytest.mark.parametrize("spec", ALL_FIELDS, ids=lambda s: s.name)
+def test_every_judgment_call_is_written_up_in_the_audit(spec: FieldSpec) -> None:
+    """A declaration nobody wrote up is a judgment call nobody can inspect."""
+    if spec.basis is Basis.NONE:
+        return
+    assert f"`{spec.name}`" in MARKERS_DOC, (
+        f"{spec.name} declares a vocabulary but docs/MARKERS.md does not cover it"
+    )
+
+
+def test_the_audit_states_the_split_it_actually_found() -> None:
+    inferred = sum(1 for spec in ALL_FIELDS if spec.basis is Basis.INFERRED)
+    published = sum(1 for spec in ALL_FIELDS if spec.basis is Basis.PUBLISHED)
+    assert "**Twelve are published. Fifteen rest on inference.**" in MARKERS_DOC
+    assert (published, inferred) == (12, 15)
+    assert "fifty-four measured fields" in MARKERS_DOC
+    assert len(ALL_FIELDS) == 54
+
+
+def test_the_audit_carries_no_em_dashes() -> None:
+    assert "—" not in MARKERS_DOC
+
+
+def test_the_audit_names_the_documents_it_was_checked_against() -> None:
+    """An evidence basis with no URL beside it cannot be checked by a reader."""
+    for url in (
+        "California_Historic_Fire_Perimeters/FeatureServer/0",
+        "POSTFIRE_MASTER_DATA_SHARE/FeatureServer/0",
+        "db241103701846fa8c5b945cfeedda07",
+        "a31aa1efe1d6466f8530b501c30ab00a",
+    ):
+        assert url in MARKERS_DOC, url

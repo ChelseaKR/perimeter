@@ -1,9 +1,23 @@
 """The reviewed field registry: what each column may hold, and what stops the build.
 
-Every marker in this file was read off the layer's own published coded-value domains
-(the ``domain`` blocks the ArcGIS GeoService returns for each field) and cross-read
-against the dataset descriptions on data.cnra.ca.gov and data.ca.gov. Nothing here is
-inferred from the values that happen to be in a downloaded file.
+Every declaration here carries the basis it rests on, because some of them rest on
+different ground and a reader cannot tell which from the value alone.
+
+* :attr:`Basis.PUBLISHED` means the marker or finding is a code in the layer's own
+  coded-value domain (the ``domain`` block the ArcGIS GeoService returns for that field)
+  or is stated in the publisher's prose. ``CAUSE = 14`` and DINS ``No Damage`` are of
+  this kind, and the domain can be re-read at the endpoint in ``PROVENANCE.md``.
+* :attr:`Basis.INFERRED` means no published domain or sentence documents the value, and
+  the declaration was read off the distribution of the acquired file itself. FRAP's
+  ``INC_NUM`` is free text with no domain at all, so treating its all-zeros value as a
+  placeholder is an inference, however well the counts support it.
+
+Fifteen of the twenty-seven fields that declare any vocabulary are inferred. That is not
+a defect in either dataset: both publishers document their domains for the fields they
+constrain and say plainly which fields are free text. It is a fact about this project's
+judgment calls, and it is published rather than hidden, on the pages and in
+``docs/MARKERS.md``, which records the evidence, the source URL and the effect on the
+published figures for every entry below.
 
 Two rules, both fail-closed:
 
@@ -20,6 +34,7 @@ domain. That is a real thing to count and publish, so coverage reports it as
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import Enum
 
 from perimeter.cells import (
     SUSPECTED_SENTINELS,
@@ -31,6 +46,25 @@ from perimeter.cells import (
 
 class SchemaDriftError(ValueError):
     """The source no longer carries a column this project measures."""
+
+
+class Basis(Enum):
+    """Where a field's declared vocabulary came from.
+
+    This is the difference between "the publisher says so" and "the file looks like it".
+    Both are legitimate grounds for a measurement; publishing them as the same thing is
+    not, because a reader deciding whether to rely on a count needs to know which one
+    they are being handed.
+    """
+
+    NONE = "none"
+    """The field declares no marker, code or finding of absence, so nothing to justify."""
+
+    PUBLISHED = "published"
+    """Every declared value is in the layer's coded-value domain or the publisher's prose."""
+
+    INFERRED = "inferred"
+    """At least one declared value was read off the acquired file's own distribution."""
 
 
 @dataclass(frozen=True)
@@ -72,7 +106,23 @@ class FieldSpec:
     numeric: bool = False
     """Counts and measures, where a recorded zero is a value and a blank is not."""
 
+    basis: Basis = Basis.NONE
+    """Where this field's declared vocabulary came from. See :class:`Basis`.
+
+    A field declaring nothing is :attr:`Basis.NONE`. A field whose every declared value
+    appears in the published domain is :attr:`Basis.PUBLISHED`. One carrying even a
+    single value the publisher does not document is :attr:`Basis.INFERRED`, and says so
+    on the page, because the weakest declaration sets what a reader can rely on.
+    """
+
     note: str = ""
+
+    @property
+    def declares_vocabulary(self) -> bool:
+        """True when this field makes any judgment call that needs a basis."""
+        return bool(
+            self.unknown_codes or self.unknown_markers or self.recorded_absences
+        )
 
     def classify(self, raw: object, *, where: str) -> Cell:
         """Sort one cell into present, explicit-unknown, or not-recorded.
@@ -222,31 +272,46 @@ FRAP_FIELDS: tuple[FieldSpec, ...] = (
         "FIRE_NAME",
         "Fire name",
         unknown_markers=frozenset({"unknown", "none", "n/a"}),
+        basis=Basis.INFERRED,
         note="A small number of records carry a marker word where the name goes. "
-        "Counting those as names would put a fire called N/A on a map.",
+        "Counting those as names would put a fire called N/A on a map. FIRE_NAME is "
+        "published as free text with no coded-value domain, so these three markers are "
+        "read off the file rather than off a documented vocabulary.",
     ),
     FieldSpec(
         "INC_NUM",
         "Local incident number",
         unknown_markers=frozenset({"00000000"}),
-        note="An all-zeros incident number stands in a large share of records. It is "
-        "counted apart from recorded numbers rather than read as an identifier, because "
-        "reading it as one would make thousands of unrelated fires across many units and "
-        "many decades appear to share a single incident.",
+        basis=Basis.INFERRED,
+        note="An all-zeros incident number stands in a large share of records. INC_NUM "
+        "is published as free text with no coded-value domain, so nothing documents "
+        "00000000 as a placeholder and this reading is inferred from the file. The "
+        "inference is what the distribution supports: the all-zeros value is shared by "
+        "records spanning 64 reporting units, 115 distinct fire years and nine "
+        "agencies, and it thins out as recorded numbers appear, from every record "
+        "before 1940 to a single record in the 2020s. A local incident number names one "
+        "incident within one unit, so reading it as an identifier would put dozens of "
+        "unrelated fires in one unit and one year on a single incident.",
     ),
     FieldSpec(
         "FIRE_NUM",
         "Fire number (historical use)",
         unknown_markers=frozenset({"<null>", "00000000"}),
+        basis=Basis.INFERRED,
         note="Carries the literal text <Null> in a few records, and an all-zeros "
         "placeholder in several thousand more. Both are markers written into the cell "
-        "rather than empty cells, and both are counted apart from recorded numbers.",
+        "rather than empty cells, and both are counted apart from recorded numbers. "
+        "FIRE_NUM has no published domain, so both readings are inferred. One record "
+        "carries a bare 0 rather than the padded form and is counted as a recorded "
+        "number; see docs/MARKERS.md, which leaves that single record alone rather "
+        "than extending the inference to a shape the file uses once.",
     ),
     FieldSpec(
         "CAUSE",
         "Cause",
         unknown_codes=frozenset({"14"}),
         domain_values=frozenset(FRAP_CAUSE_CODES),
+        basis=Basis.PUBLISHED,
         note="Code 14 is the published 'Unknown / Unidentified' value. It is a recorded "
         "determination that the cause is unknown, not an empty cell.",
     ),
@@ -255,6 +320,7 @@ FRAP_FIELDS: tuple[FieldSpec, ...] = (
         "Collection method",
         unknown_codes=frozenset({"8"}),
         domain_values=frozenset(FRAP_COLLECTION_METHOD_CODES),
+        basis=Basis.PUBLISHED,
         note="Code 8 is the published 'Unknown' value. FRAP's firep25_1 release notes "
         "record that 12,097 fires' collection methods were edited from null to Unknown, "
         "which moves cells between two of the three states this project counts.",
@@ -279,6 +345,11 @@ FRAP_FIELDS: tuple[FieldSpec, ...] = (
         "COMPLEX_ID",
         "Complex ID",
         unknown_markers=frozenset({"00000000"}),
+        basis=Basis.INFERRED,
+        note="One record carries the all-zeros form. The field has no published domain "
+        "and mixes short alphanumeric codes, braced GUIDs and zero-padded numbers, so "
+        "this reading is inferred by analogy with the same shape in INC_NUM and "
+        "FIRE_NUM rather than from anything documented.",
     ),
     FieldSpec("DECADES", "Decade"),
 )
@@ -354,6 +425,7 @@ DINS_FIELDS: tuple[FieldSpec, ...] = (
         "Damage",
         recorded_absences=frozenset({DINS_NO_DAMAGE}),
         domain_values=DINS_DAMAGE_VALUES,
+        basis=Basis.PUBLISHED,
         note="'No Damage' is an inspection finding and 'Inaccessible' records that the "
         "structure could not be reached. Neither is an empty cell, and an empty cell is "
         "neither of them.",
@@ -412,14 +484,28 @@ DINS_FIELDS: tuple[FieldSpec, ...] = (
         "COMMUNITY",
         "Community",
         unknown_markers=frozenset({"unknown", "n/a", "na", "none", "-"}),
+        basis=Basis.INFERRED,
+        note="Free text with no published domain, so every marker here is read off the "
+        "file. The field also carries the same place under several spellings, which "
+        "this project does not merge; it counts whether a cell holds a community, not "
+        "how many communities there are.",
     ),
     FieldSpec(
         "CITY",
         "City",
         unknown_markers=frozenset({"na", "n/a", "unknown", "none"}),
+        basis=Basis.INFERRED,
         note="A large share of records carry a marker word in this field rather than a "
         "city. Read as text it would become a place name, so it is counted apart from "
-        "both a recorded city and an empty cell.",
+        "both a recorded city and an empty cell. CITY has no published domain, so this "
+        "is inferred. One thing the file shows is worth a reader's attention: every "
+        "record holding NA belongs to an incident that started in 2020, and no record "
+        "in that cohort holds the value Unincorporated that neighbouring years use. "
+        "That pattern reads as a value applied to a load rather than determined per "
+        "structure, which is why NA is not counted as a recorded city. Whether those "
+        "cells are better read as a recorded marker or as an empty cell cannot be told "
+        "from the file, and the distinction does not move any published present count, "
+        "because neither state counts as a value.",
     ),
     FieldSpec(
         "ROOFCONSTRUCTION",
@@ -428,6 +514,7 @@ DINS_FIELDS: tuple[FieldSpec, ...] = (
         domain_values=frozenset(
             {"Wood", "Asphalt", "Concrete", "Tile", "Metal", "Other", "Unknown"}
         ),
+        basis=Basis.PUBLISHED,
     ),
     FieldSpec(
         "EAVES",
@@ -435,11 +522,18 @@ DINS_FIELDS: tuple[FieldSpec, ...] = (
         unknown_markers=_UNKNOWN | frozenset({"not applicable"}),
         recorded_absences=frozenset({"No Eaves"}),
         domain_values=frozenset({"Enclosed", "Unenclosed", "No Eaves", "Unknown"}),
+        basis=Basis.INFERRED,
+        note="'Unknown' and 'No Eaves' are both published domain values. 'Not "
+        "Applicable' is not, and appears in the file anyway; it is counted as a marker "
+        "rather than as a value, which is the reading that does not turn an "
+        "undetermined eave into an observed one. That single addition is what makes "
+        "this field inferred rather than published.",
     ),
     FieldSpec(
         "VENTSCREEN",
         "Vent screen",
         unknown_markers=_UNKNOWN,
+        basis=Basis.PUBLISHED,
         recorded_absences=frozenset({"No Vents"}),
         domain_values=frozenset(
             {
@@ -455,6 +549,7 @@ DINS_FIELDS: tuple[FieldSpec, ...] = (
         "EXTERIORSIDING",
         "Exterior siding",
         unknown_markers=_UNKNOWN,
+        basis=Basis.PUBLISHED,
         domain_values=frozenset(
             {"Metal", "Stucco Brick Cement", "Vinyl", "Wood", "Other", "Unknown"}
         ),
@@ -464,6 +559,7 @@ DINS_FIELDS: tuple[FieldSpec, ...] = (
         "Window pane",
         unknown_markers=_UNKNOWN,
         recorded_absences=frozenset({"No Windows"}),
+        basis=Basis.PUBLISHED,
         domain_values=frozenset({"Single Pane", "Multi Pane", "No Windows", "Unknown"}),
     ),
     FieldSpec(
@@ -471,6 +567,7 @@ DINS_FIELDS: tuple[FieldSpec, ...] = (
         "Deck or porch on grade",
         unknown_markers=_UNKNOWN,
         recorded_absences=frozenset({"No Deck/Porch"}),
+        basis=Basis.PUBLISHED,
         domain_values=frozenset(
             {"Composite", "Wood", "Masonry/Concrete", "No Deck/Porch", "Unknown"}
         ),
@@ -480,6 +577,7 @@ DINS_FIELDS: tuple[FieldSpec, ...] = (
         "Deck or porch elevated",
         unknown_markers=_UNKNOWN,
         recorded_absences=frozenset({"No Deck/Porch"}),
+        basis=Basis.PUBLISHED,
         domain_values=frozenset(
             {"Composite", "Wood", "Masonry/Concrete", "No Deck/Porch", "Unknown"}
         ),
@@ -489,6 +587,7 @@ DINS_FIELDS: tuple[FieldSpec, ...] = (
         "Patio cover or carport",
         unknown_markers=_UNKNOWN,
         recorded_absences=frozenset({"No Patio Cover/Carport"}),
+        basis=Basis.PUBLISHED,
         domain_values=frozenset(
             {
                 "Combustible",
@@ -503,6 +602,7 @@ DINS_FIELDS: tuple[FieldSpec, ...] = (
         "Fence attached to structure",
         unknown_markers=_UNKNOWN,
         recorded_absences=frozenset({"No Fence"}),
+        basis=Basis.PUBLISHED,
         domain_values=frozenset(
             {"Combustible", "Non Combustible", "No Fence", "Unknown"}
         ),
@@ -513,25 +613,41 @@ DINS_FIELDS: tuple[FieldSpec, ...] = (
         unknown_markers=_UNKNOWN,
         recorded_absences=frozenset({"N/A"}),
         domain_values=frozenset({"0-10", "11-20", "21-30", ">30", "N/A"}),
+        basis=Basis.INFERRED,
         note="'N/A' is published in the domain as 'Not Applicable', an inspector "
         "finding that the question does not apply, so it is present rather than "
         "missing. 'Unknown' is not in this field's published domain but appears in the "
-        "file, and is counted as a marker.",
+        "file, and is counted as a marker; that addition is inferred, and it is what "
+        "makes this field inferred rather than published.",
     ),
     FieldSpec(
         "UTILITYMISCSTRUCTUREDISTANCE",
         "Utility or misc structure distance",
-        unknown_markers=frozenset({"n/a"}),
-        recorded_absences=frozenset({"NA"}),
+        recorded_absences=frozenset({"NA", "N/A"}),
         domain_values=frozenset({"<30'", "30-50'", ">50'", "NA"}),
-        note="The published domain spells Not Applicable as 'NA'. The file also carries "
-        "'N/A' in this field. This project does not assume the two spellings mean the "
-        "same thing: 'NA' is the published finding and 'N/A' is counted as a marker.",
+        basis=Basis.INFERRED,
+        note="The published domain spells Not Applicable as 'NA'. The file carries "
+        "'N/A' as well, and this project reads the two as one finding under two "
+        "spellings rather than as two facts. Four things in the file support that. The "
+        "spellings never occur together: no incident uses both, and every 'N/A' belongs "
+        "to an incident that started in 2018 or 2019 while every 'NA' belongs to one "
+        "that started in 2020 or later. Recorded distances appear on both sides of that "
+        "line, so the change is a change of spelling and not of whether the question "
+        "was asked. The sibling field PROPANETANKDISTANCE publishes 'N/A' as its own "
+        "Not Applicable code and keeps that spelling across the same boundary, which is "
+        "what a per-field domain revision looks like. And both spellings sit beside a "
+        "propane Not Applicable at almost the same rate, 82 percent against 85 percent, "
+        "which a marker for undetermined data would not do. Both are therefore counted "
+        "as the published finding. 'N/A' is additionally reported under "
+        "outside_published_domain, because the domain published today does not carry "
+        "that spelling, so both facts reach the reader. CAL FIRE publishes no domain "
+        "history, so the reading of 'N/A' as the earlier spelling is inferred.",
     ),
     FieldSpec(
         "WHEREFIRESTARTEDONSTRUCTURE",
         "Where fire started on structure",
         unknown_markers=_UNKNOWN | frozenset({"not applicable"}),
+        basis=Basis.INFERRED,
         domain_values=frozenset(
             {
                 "Roof",
@@ -547,21 +663,27 @@ DINS_FIELDS: tuple[FieldSpec, ...] = (
             }
         ),
         note="Collected only where the structure was affected, so its blank rate is "
-        "read against the affected subset rather than the whole file.",
+        "read against the affected subset rather than the whole file. 'Unknown' is a "
+        "published domain value; 'Not Applicable' is not, and the 23 records carrying "
+        "it are counted as markers on an inference.",
     ),
     FieldSpec(
         "WHATDIDFIRESTARTFROM",
         "What the fire started from",
         unknown_markers=_UNKNOWN | frozenset({"not applicable"}),
+        basis=Basis.INFERRED,
         domain_values=frozenset(
             {"Direct flame impingement", "Embers", "Radiant Heat", "Unknown"}
         ),
-        note="Collected only where the structure was affected.",
+        note="Collected only where the structure was affected. As with the field "
+        "beside it, 'Unknown' is published and 'Not Applicable', on 18 records, is "
+        "not, so that marker is inferred.",
     ),
     FieldSpec(
         "DEFENSIVEACTIONS",
         "Defensive actions taken",
         unknown_markers=_UNKNOWN,
+        basis=Basis.PUBLISHED,
         domain_values=frozenset(
             {
                 "Combination of Actions",
@@ -582,14 +704,25 @@ DINS_FIELDS: tuple[FieldSpec, ...] = (
         "APN",
         "APN (parcel)",
         unknown_markers=frozenset({"none", "unknown"}),
+        basis=Basis.INFERRED,
         note="Added by a spatial join after collection, per CAL FIRE's description, so "
-        "its coverage measures the join rather than the field inspection.",
+        "its coverage measures the join rather than the field inspection. No domain is "
+        "published for it, so both markers are read off the file.",
     ),
     FieldSpec(
         "SITEADDRESS",
         "Site address (parcel)",
-        unknown_markers=frozenset({"none", "-"}),
-        note="Added by the same post-collection spatial join as APN.",
+        unknown_markers=frozenset(
+            {"none", "-", "no address available", "null null unknown ca 00000"}
+        ),
+        basis=Basis.INFERRED,
+        note="Added by the same post-collection spatial join as APN, and free text with "
+        "no published domain, so every marker here is inferred. Two of them are whole "
+        "placeholder addresses rather than single words: the literal text 'No Address "
+        "Available', and a composed placeholder reading 'NULL NULL UNKNOWN CA 00000'. "
+        "Neither trips the single-token marker net, and this audit found them by "
+        "reading the field's value distribution. Counting them as recorded addresses "
+        "would publish a join that failed as a join that succeeded.",
     ),
     FieldSpec("YEARBUILT", "Year built (parcel)", numeric=True),
     FieldSpec(
@@ -599,12 +732,15 @@ DINS_FIELDS: tuple[FieldSpec, ...] = (
         "STREETNAME",
         "Street name (field determined)",
         unknown_markers=frozenset({"unknown", "na", "none", "n/a"}),
+        basis=Basis.INFERRED,
+        note="Free text with no published domain, so every marker is read off the file.",
     ),
     FieldSpec(
         "STREETTYPE",
         "Street type (field determined)",
         unknown_markers=frozenset({"-", "unk", "n/a"}),
         recorded_absences=frozenset({"None"}),
+        basis=Basis.INFERRED,
         domain_values=frozenset(
             {
                 "Alley",
@@ -628,7 +764,12 @@ DINS_FIELDS: tuple[FieldSpec, ...] = (
             }
         ),
         note="'None' is a published domain value meaning the road carries no street "
-        "type, so it is a present value rather than a blank.",
+        "type, so it is a present value rather than a blank. The three markers are not "
+        "published anywhere and are read off the file; they cover nine records between "
+        "them. Two further records read 'not given' and one reads 'not noted'. Those "
+        "are left as recorded values outside the published domain, where they are "
+        "counted and named, rather than folded into markers on a reading of three "
+        "cells.",
     ),
     FieldSpec("LATITUDE", "Latitude", numeric=True),
     FieldSpec("LONGITUDE", "Longitude", numeric=True),
