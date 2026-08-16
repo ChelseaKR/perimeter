@@ -195,6 +195,36 @@ here is how much of each published field is actually filled in, and what the bla
 | `PROVENANCE.md` | Per-source detail, quoted caveats, and what is excluded |
 | `docs/MARKERS.md` | The marker audit: every judgment call, its evidence, and what it costs |
 
+## Standards conformance
+
+This repository is held to the portfolio's shared engineering standards, pinned in
+`.standards-version` to `v2.0.0`. Every row states what is true on 2026-08-15, not what is
+intended. "Applies, not met" is a recorded gap; a blank state is a defect and
+`tests/test_standards_conformance.py` fails on one.
+
+Read one caveat first. The standards program's applicability manifest has no entry for
+this repository, so nothing has ever decided which of the fifteen standards bind it. The
+scoping below was derived here, from each standard's own applicability section, and it is
+this table's reading rather than the registry's. A manifest entry supersedes it.
+
+| Standard | State |
+|---|---|
+| Code Quality | Applies. uv, ruff, mypy `--strict`, pytest with branch coverage at 100% over `src/` with nothing omitted, against a 90% floor. `make lock-check` runs `uv lock --check`, because CQ-09's prescribed `uv sync --frozen` exits 0 on lockfile drift (measured 2026-08-15) |
+| Security & Supply-Chain | Applies. semgrep, gitleaks, pip-audit, `npm audit`, CodeQL over actions/python/javascript, every action SHA-pinned, `permissions: contents: read` at the top of every workflow, `persist-credentials: false` on every checkout. Not met: no SBOM, no OpenSSF Scorecard workflow, no `osv-scanner` alongside pip-audit (SEC-11, SEC-13), no scheduled trufflehog run (SEC-19), and Dependabot alerts are disabled on the repository, so SEC-15 has nothing to read |
+| CI/CD | Applies, not met. `main` has no ruleset and no branch protection, so the gates report and block nothing. The `protect-main` profile is committed at `.github/rulesets/main.json` and deliberately not applied; applying it is a live repository setting |
+| Observability | Applies, Tier C. A library and a CLI writing to stdout, plus static pages with no script. No hosted service, no telemetry, no SLO surface. Not met: no operations runbook |
+| Accessibility | Applies. html-validate and axe-core over the built pages in CI, contrast measured arithmetically over both palettes, and the same structural floor asserted from Python. Not met: no ACR, two axe rules suppressed for want of a renderer, and the manual checks README names under "What still needs a person" are unverified |
+| Internationalization | Applies, not met. Civic data presented to the public is in scope per I18N section 1, and these pages are English only with no catalog and no `docs/I18N.md` declaration |
+| AI Evaluation | Not applicable. No model, no LLM, no generated text anywhere in the pipeline or the pages |
+| Quality & Metrics | Applies. Fail-closed gates throughout: schema drift, sentinel drift, the coverage floor, and page checks that fail on a number no pipeline produced. Not met: no Definition of Done and no metrics ledger |
+| Documentation | Applies. README, `PROVENANCE.md`, `docs/MARKERS.md`, `CONTRIBUTING.md`, `SECURITY.md`, `CHANGELOG.md`, `CITATION.cff`, a `docs/adr/` log, this table, and a `.standards-version` pin that `tests/test_standards_conformance.py` reads |
+| Release & Versioning | Applies, not met. Version `0.1.0` in `pyproject.toml` and `CITATION.cff`, no tag cut, no signed tag, no release workflow, no published artifact |
+| Responsible-Tech Framework | Applies. Unofficial framing on every served page, no claim about any agency's infrastructure or security posture, no address, parcel number or assessed value republished, and an acquisition path that stops rather than routing around an access control. Not met: no dated ethics, transparency or residual-risk artifacts |
+| Performance | Applies, not met. Three static pages, no script shipped, no web font; that is a good starting position and it is not a measurement. No budget recorded and no Lighthouse run |
+| Incident Response | Applies. `SECURITY.md` routes reports to GitHub private vulnerability reporting with a 72-hour acknowledgment SLA. Not met: no severity convention, no secret-leak runbook, no committed-postmortem requirement |
+| Data Governance | Applies, L1. Openly licensed public civic data, republished only as counts. Handled defensively above the tier because the DINS file carries site addresses and parcel numbers: `data/raw/` is gitignored, fixtures are hand-written rather than sampled, and no identifying field is republished. Not met: `PROVENANCE.md` carries source, licence, version, retrieval date, record count, byte count and hash per source, but no refresh cadence, staleness SLA or stated tier |
+| AI Development Measurement | Applies, not met. No baseline and no outcome metrics recorded for this repository's development stream |
+
 ## Licence
 
 Apache-2.0. Source data is published by CAL FIRE under a Creative Commons Attribution
