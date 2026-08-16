@@ -1,6 +1,17 @@
-# Least-privilege GITHUB_TOKEN, SHA-pinned actions, and the merge-blocking gates:
-# SAST, secret scan, and `make verify` (lockfile drift, lint, format, types, tests, SCA,
-# the HTML-conformance and WCAG checks over the built pages, and the determinism check).
+# Least-privilege GITHUB_TOKEN, SHA-pinned actions, and the gates that run on every pull
+# request: SAST, secret scan, workflow SAST, and `make verify` (lockfile drift, lint,
+# format, types, tests, SCA, the HTML-conformance and WCAG checks over the built pages,
+# and the determinism check). CodeQL runs from codeql.yml.
+#
+# These gates report. As of 2026-08-15 they block nothing. `main` carries no ruleset and
+# no branch protection: `gh api repos/ChelseaKR/perimeter/rulesets` returns `[]`,
+# `branches/main` returns `"protected": false`, and `branches/main/protection` 404s. So
+# `main` can be force-pushed, deleted, or pushed to with every check on this page red.
+# This header used to open by calling these gates merge-blocking, which was the opposite
+# of what the server enforces, and a reader who opened the file to check the posture was
+# told the wrong thing. The profile that would make the sentence true is committed at
+# `.github/rulesets/main.json`; applying it is a live repository setting and the owner's
+# call. Edit this paragraph when the ruleset goes on, not before.
 #
 # Every action is pinned to the full 40-char commit SHA of its tag, resolved
 # 2026-08-07 via `gh api repos/OWNER/REPO/commits/TAG`. Actions stay

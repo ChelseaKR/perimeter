@@ -1,0 +1,18 @@
+# CI-CD-STANDARD §6. Routing for the paths where a bad change is hardest to see.
+#
+# `require_code_owner_review` is false in .github/rulesets/main.json, because a
+# self-review is not code-owner approval and this repository has one maintainer. The
+# routing file is kept anyway: it is what a second maintainer turns on, and it records
+# which paths are the security-critical ones. CONTRIBUTING.md already names the same
+# three: workflows, schema.py and sources.py.
+
+*                       @ChelseaKR
+
+/.github/workflows/     @ChelseaKR   # workflow edits are the poisoned-pipeline surface
+/.github/rulesets/      @ChelseaKR   # the protection profile itself
+/.github/dependabot.yml @ChelseaKR
+/SECURITY.md            @ChelseaKR
+
+# The two reviewed registries. A change here moves published numbers.
+/src/perimeter/schema.py   @ChelseaKR
+/src/perimeter/sources.py  @ChelseaKR
