@@ -62,13 +62,12 @@ jobs:
 
       - run: make sync
 
+      # tools/determinism.sh, not an inlined pipeline. The version this replaces could not
+      # fail: `find` on a missing directory exits 1, but under the default `bash -e` shell
+      # without `pipefail` the pipeline reported xargs' status and the step stayed green,
+      # and with no files to hash both sides came out identical, so an empty build passed.
       - name: the offline build must produce byte-identical output twice
-        run: |
-          make site-offline
-          find build/site-offline -type f | sort | xargs shasum -a 256 > /tmp/first.txt
-          make site-offline
-          find build/site-offline -type f | sort | xargs shasum -a 256 > /tmp/second.txt
-          diff /tmp/first.txt /tmp/second.txt
+        run: make determinism
 
       - name: the committed site/ must be a current measurement of the real files
         run: uv run pytest tests/test_published_site.py -q

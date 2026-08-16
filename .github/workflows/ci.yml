@@ -1,6 +1,6 @@
 # Least-privilege GITHUB_TOKEN, SHA-pinned actions, and the merge-blocking gates:
-# SAST, secret scan, and `make verify` (lint, format, types, tests, SCA, and the
-# HTML-conformance and WCAG checks over the built pages).
+# SAST, secret scan, and `make verify` (lockfile drift, lint, format, types, tests, SCA,
+# the HTML-conformance and WCAG checks over the built pages, and the determinism check).
 #
 # Every action is pinned to the full 40-char commit SHA of its tag, resolved
 # 2026-08-07 via `gh api repos/OWNER/REPO/commits/TAG`. Actions stay
@@ -37,7 +37,7 @@ jobs:
           version: ">=0.11.0"
           python-version: "3.12"
 
-      # `make verify` ends in `make pages`, which runs html-validate and axe-core over
+      # `make verify` includes `make pages`, which runs html-validate and axe-core over
       # the pages built from committed fixtures. Nothing is served and nothing is
       # deployed: both checkers read files off disk.
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -45,16 +45,15 @@ jobs:
           node-version: "22"
           cache: npm
 
+      # `make verify` ends in `make determinism`: two builds into two directories,
+      # compared by tools/determinism.sh. That check used to be four lines inlined here,
+      # and it could not fail. `find` on a missing directory exits 1, but under the
+      # default `bash -e` shell without `pipefail` a pipeline reports its last command's
+      # status, so the step stayed green; and with no files to hash both sides came out
+      # identical, so an empty build passed. The script refuses an empty or missing tree,
+      # and tests/test_determinism_gate.py runs it against trees that should fail it.
       - name: make verify (byte-for-byte the local target)
         run: make verify
-
-      - name: the offline build must produce byte-identical output twice
-        run: |
-          make site-offline
-          find build/site-offline -type f | sort | xargs shasum -a 256 > /tmp/first.txt
-          make site-offline
-          find build/site-offline -type f | sort | xargs shasum -a 256 > /tmp/second.txt
-          diff /tmp/first.txt /tmp/second.txt
 
   secret-scan:
     runs-on: ubuntu-latest
