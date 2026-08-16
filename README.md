@@ -109,11 +109,11 @@ published in the artifact under `marker_counterfactuals`.
 ```sh
 uv sync
 npm ci
-make verify          # lint, format, types, tests, SCA, and the page checks
+make verify          # lockfile, lint, format, types, tests, SCA, page checks, determinism
 make site-offline    # build from committed fixtures; runs anywhere, no network
 ```
 
-`make verify` ends in `make pages`, which builds the pages from the committed fixtures and
+`make verify` includes `make pages`, which builds the pages from the committed fixtures and
 checks them two ways: `html-validate` for HTML conformance and the markup-level
 accessibility rules, and `axe-core` in a headless DOM for the WCAG 2.0, 2.1 and 2.2 A and
 AA rule sets. Nothing is served and nothing is deployed; both read the files off disk. The
@@ -160,6 +160,10 @@ make site
 Output is deterministic: the same inputs produce byte-identical JSON and HTML. There is no
 wall clock anywhere in the artifacts, retrieval dates come from the reviewed constants in
 `src/perimeter/sources.py`, and every published share is computed with integer arithmetic.
+`make determinism` is the check behind that sentence: two builds into two directories,
+compared by `tools/determinism.sh`, which refuses an empty or missing tree rather than
+calling it a match. `tests/test_determinism_gate.py` runs that script against trees that
+should fail it, so the gate is known to be able to fail.
 
 `data/raw/` is gitignored and CI never touches the network. A build from fixtures stamps
 `is_fixture: true` and publishes `null` for every acquisition fact, so fixture output
@@ -186,6 +190,7 @@ here is how much of each published field is actually filled in, and what the bla
 | `src/perimeter/render.py` | The static pages |
 | `src/perimeter/acquire.py` | The only code that touches the network. Run by hand, never in CI |
 | `tools/a11y.mjs` | axe-core over the built pages in a headless DOM |
+| `tools/determinism.sh` | Compare two build trees; refuse an empty or missing one |
 | `site/` | The built pages and their JSON artifacts |
 | `PROVENANCE.md` | Per-source detail, quoted caveats, and what is excluded |
 | `docs/MARKERS.md` | The marker audit: every judgment call, its evidence, and what it costs |

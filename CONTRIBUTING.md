@@ -11,9 +11,12 @@ make verify
 `make verify` is the single local gate and is byte-for-byte identical to the `verify` job
 in `.github/workflows/ci.yml`. If it is green locally, CI is green.
 
-It ends in `make pages`, which builds the pages from the committed fixtures and runs
+It includes `make pages`, which builds the pages from the committed fixtures and runs
 `html-validate` and `axe-core` over them. That needs node; everything before it needs only
-uv. The page checks are duplicated from Python in `tests/test_pages_html.py`, so the
+uv. It begins with `make lock-check`, which is the lockfile-drift gate: `uv sync --frozen`
+installs the locked set without checking that the lock still satisfies `pyproject.toml`,
+so it exits 0 on drift and only `uv lock --check` exits 1. It ends with
+`make determinism`. The page checks are duplicated from Python in `tests/test_pages_html.py`, so the
 structural floor and the contrast measurement still run if node is unavailable, but a
 change to `render.py` is not finished until `make pages` is green.
 

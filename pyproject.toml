@@ -64,7 +64,13 @@ markers = [
 [tool.coverage.run]
 branch = true
 source = ["src"]
-omit = ["src/perimeter/acquire.py"]  # network acquisition; exercised by hand, never in CI
+# No omit list. acquire.py was excluded here until 2026-08-15, on the reasoning that it
+# is run by hand and never in CI. That is true of the *network call* and false of the
+# module: every refusal it makes (HTTPS only, stop on 401/403/429, refuse a non-JSON
+# challenge page, pause between pages) is testable with the socket substituted, and
+# tests/test_acquire.py now does exactly that. Omitting it moved the reported figure from
+# 88% to 100% and let the 90% floor pass over the one module carrying this project's
+# stated promises about somebody else's server.
 [tool.coverage.report]
 fail_under = 90   # CODE-QUALITY-STANDARD §2 floor for a measurement library
 show_missing = true
