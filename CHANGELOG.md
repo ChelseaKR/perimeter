@@ -6,6 +6,53 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project a
 
 ## [Unreleased]
 
+### Changed, gates that could not fail
+
+- **The determinism check is a script with its own tests.** The inlined version could not
+  fail: a workflow `run:` block uses `bash -e` without `pipefail`, so `find` on a missing
+  directory exited 1 into a pipeline that reported success, and with no files to hash both
+  runs came out identical, so an empty build passed. Both runs also went into the same
+  directory. `tools/determinism.sh` compares two trees, refuses an empty or missing one,
+  and `tests/test_determinism_gate.py` runs it against thirteen cases that should fail it.
+- **`make lock-check` is the lockfile-drift gate**, running `uv lock --check`.
+  `uv sync --frozen` was doing that job and cannot: measured 2026-08-15 against a
+  `pyproject.toml` this lockfile does not satisfy, `uv lock --check` exits 1,
+  `uv sync --locked` exits 1, `uv sync --frozen` exits 0. Every target after it runs
+  `uv run`, which rewrites `uv.lock`, so the old arrangement went green and then repaired
+  what it was checking. `uv sync --frozen` stays as the install.
+- **The coverage floor no longer omits the module that touches the network.**
+  `src/perimeter/acquire.py` was excluded, which moved the reported figure from 88% to
+  100% and let the 90% floor pass over the one module carrying this project's promises
+  about somebody else's server. `tests/test_acquire.py` exercises those promises offline
+  with `urlopen` substituted: HTTPS only, the honest User-Agent, stopping on 401, 403 and
+  429 rather than working around them, refusing a non-JSON challenge page, refusing an
+  ArcGIS error payload, the pause between pages, and the paging walk. Nothing is omitted
+  and the tree is genuinely at 100%.
+- **`ci.yml` no longer calls its gates merge-blocking.** `main` has no ruleset and no
+  branch protection, so `verify`, `secret-scan` and `sast` report and block nothing. The
+  header says that. `.github/rulesets/main.json` carries the `protect-main` profile that
+  would make the old sentence true, committed and deliberately not applied.
+
+### Added, workflow scanning and standards onboarding
+
+- **zizmor and CodeQL.** Nothing in this repository read `.github/workflows/` until now,
+  which is why five dependabot pull requests that change nothing but `pages.yml` carry
+  green checks from jobs that never open the file. zizmor runs online, because its offline
+  default silently skips the audits that need the API. CodeQL covers actions, python and
+  javascript-typescript, and fails when there is no SARIF to read as well as when there
+  are findings.
+- **`docs/adr/`**, which had existed and been empty since the scaffold while the decisions
+  it should hold were argued in prose. Back-filled: the three-state cell model, counting an
+  out-of-domain value rather than raising on it, and the published-versus-inferred marker
+  basis. Plus a new one, ADR-0004, on what it takes to adopt a gate here.
+- **A Standards Conformance table in `README.md`** and a `.standards-version` pin, read by
+  `tests/test_standards_conformance.py` so neither is decoration. The table records the
+  gaps as gaps, and states that the standards program's applicability manifest has no
+  entry for this repository, so the scoping is this table's reading rather than the
+  registry's.
+- `.github/CODEOWNERS`, routing workflows, the ruleset directory, dependabot config and
+  the two reviewed registries.
+
 ### Added, marker audit and page checks
 
 - **`docs/MARKERS.md`, the marker audit.** Every value this project treats as a
