@@ -1,0 +1,98 @@
+# CodeQL over the three languages this repository actually contains: the Actions
+# workflows, the Python package, and the Node checkers in tools/.
+#
+# CICD-20 requires `language: actions`; SEC-08 requires the deep analysis on the rest.
+# Until this file existed, nothing here read the workflows at all: `verify` runs
+# `make verify`, which never opens them; gitleaks looks for secrets; and semgrep's
+# p/python, p/javascript and p/security-audit rule sets carry no GitHub Actions rules.
+#
+# The findings gate is local rather than "the alerts will show up in the Security tab".
+# Uploading SARIF to code scanning does not fail a build, and a required check that
+# cannot go red is not a gate. `analyze` writes SARIF to disk, the step below refuses to
+# pass when there is no SARIF to read, and any finding fails the job. The SARIF is also
+# uploaded, so the alerts are still browsable.
+#
+# CI-CD-STANDARD §11e: PRs into main plus a weekly schedule. No push:main trigger; the
+# pull_request run already covers it.
+#
+# Every action is pinned to the full 40-char commit SHA of its tag, resolved 2026-08-15
+# via `gh api repos/OWNER/REPO/commits/TAG`.
+name: codeql
+
+on:
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "23 5 * * 2"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  analyze:
+    # This display name is the required-status-check context in
+    # .github/rulesets/main.json. Renaming it means updating the live ruleset first, or
+    # the required check silently stops matching anything and the gate goes away.
+    name: codeql (actions · python · javascript)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read # read the repository's own workflows; no write anywhere
+      security-events: write # upload SARIF to code scanning
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # `security-extended` rather than `security-and-quality`: the gate below fails on
+      # any result at all, and the quality queries report maintainability notes that are
+      # not what SEC-08 and CICD-20 are about. A gate that fires on a style note gets
+      # loosened, and a loosened gate is how the ones this repository just removed
+      # started. Security queries only, and every one of them merge-blocking.
+      - uses: github/codeql-action/init@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd # v4.37.7
+        with:
+          languages: actions,python,javascript-typescript
+          queries: security-extended
+
+      - uses: github/codeql-action/analyze@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd # v4.37.7
+        with:
+          upload: always
+          output: codeql-results
+
+      # The gate. A required check that passes when the scanner produced nothing is the
+      # shape of gate this repository keeps finding and removing, so no SARIF is a
+      # failure here rather than a silent pass.
+      - name: zero findings, and refuse to pass without scan evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -d '' sarif < <(find codeql-results -type f -name '*.sarif' -print0)
+          if (( ${#sarif[@]} == 0 )); then
+            echo '::error::CodeQL produced no SARIF; refusing to pass without evidence.'
+            exit 1
+          fi
+          for file in "${sarif[@]}"; do
+            if ! jq -e '
+              .version == "2.1.0"
+              and ((.runs | type) == "array")
+              and ((.runs | length) > 0)
+              and all(.runs[]; .results == null or ((.results | type) == "array"))
+            ' "$file" >/dev/null; then
+              echo "::error::invalid or empty CodeQL SARIF: $file"
+              exit 1
+            fi
+          done
+          findings=$(jq -s '[.[] | .runs[]?.results[]?] | length' "${sarif[@]}")
+          if (( findings != 0 )); then
+            jq -rs '.[] | .runs[]?.results[]?
+                    | "\(.ruleId // "unknown rule"): \(.message.text // "finding")"' \
+              "${sarif[@]}"
+            echo "::error::CodeQL reported $findings finding(s)."
+            exit 1
+          fi
+          echo "CodeQL: ${#sarif[@]} SARIF file(s), zero findings."
