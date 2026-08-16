@@ -86,3 +86,28 @@ jobs:
           persist-credentials: false
       - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
       - run: uvx --from semgrep==1.168.0 semgrep scan --error --metrics off --config p/python --config p/javascript --config p/security-audit .
+
+  # CICD-19. Nothing in this repository looked at the workflows themselves until now:
+  # `verify` runs `make verify`, which never reads them, gitleaks scans for secrets, and
+  # semgrep's p/python, p/javascript and p/security-audit rule sets carry no GitHub
+  # Actions rules. pages.yml only triggers on push to main, so the five open dependabot
+  # PRs that change nothing but pages.yml went green against three checks, none of which
+  # read the file they changed. This job and codeql.yml are what close that.
+  zizmor:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+      # Online mode, on purpose. zizmor defaults to offline and, in that mode, silently
+      # drops the audits that need the API: whether a pinned SHA is still reachable from
+      # its tag, and whether a `uses:` resolves upstream at all. A gate that quietly runs
+      # a subset of itself is the failure mode this repository is trying not to have.
+      # GITHUB_TOKEN's contents:read is the whole permission it needs.
+      - name: workflow static analysis (zizmor, online)
+        run: uvx --from zizmor==1.29.0 zizmor --format=plain .github/workflows/
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
