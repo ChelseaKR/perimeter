@@ -44,12 +44,18 @@ STANDARDS = (
     "AI Development Measurement",
 )
 
+# The verdict has to be the first thing in the cell, and it has to be one of these
+# forms. The punctuation is not decoration: the portfolio's conformance reader accepts
+# a verdict only when the character straight after `Applies` is whitespace, `:`, `(`,
+# `-` or an em dash, so `Applies.` and `Applies, not met.` were unreadable to it and
+# this table's fifteen honest rows scored as one invalid state. Keep any new form
+# inside that grammar.
 STATES = (
-    "Applies.",
-    "Applies, not met.",
-    "Applies, Tier",
-    "Applies, L",
-    "Not applicable.",
+    "Applies:",
+    "Applies (not met)",
+    "Applies (Tier",
+    "Applies (L",
+    "N/A (",
 )
 
 

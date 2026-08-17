@@ -6,6 +6,22 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project a
 
 ## [Unreleased]
 
+### Changed, the conformance table is now readable by the thing that reads it
+
+- **`make sync` installs with `uv sync --locked`.** `make lock-check` still runs first
+  inside `make verify` and is unchanged, but `make sync` is also documented as an entry
+  point on its own, and run that way `--frozen` had no drift gate in front of it.
+  `--locked` makes the same comparison `uv lock --check` makes and exits 1 the same way.
+- **The Standards Conformance table's verdicts were in a form the portfolio's
+  conformance reader rejects.** That reader takes a verdict only when the character
+  straight after `Applies` is whitespace, `:`, `(`, `-` or an em dash, so `Applies.`,
+  `Applies, not met.`, `Applies, Tier C.`, `Applies, L1.` and `Not applicable.` all read
+  as invalid, and fifteen accurately written rows scored as one broken cell. The
+  verdicts are now `Applies:`, `Applies (not met).`, `Applies (Tier C).`,
+  `Applies (L1).` and `N/A (...)`. Not one row's meaning changed, and no gap changed
+  state. `tests/test_standards_conformance.py` enforces the new grammar and says why the
+  punctuation is load-bearing.
+
 ### Fixed, a download that could come back short and say nothing
 
 - **The paging walk stepped its offset by the page it asked for, not the page it got.**

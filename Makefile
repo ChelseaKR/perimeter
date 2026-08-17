@@ -14,8 +14,12 @@ verify: lock-check sync lint format typecheck test audit pages determinism
 lock-check:
 	uv lock --check
 
+# `--locked`, not `--frozen`, for the same measured reason: `--locked` exits 1 on a lock
+# that no longer satisfies pyproject.toml. `lock-check` already runs first in `verify`,
+# but `make sync` is also a documented entry point on its own, and on its own `--frozen`
+# had no gate in front of it.
 sync:
-	uv sync --frozen
+	uv sync --locked
 
 lint:
 	uv run ruff check .
