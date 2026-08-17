@@ -37,8 +37,19 @@ from perimeter.sources import DINS, FRAP, Source
 USER_AGENT = "perimeter-coverage/0.1 (+https://github.com/ChelseaKR/perimeter)"
 """Names the project and where to look it up, so an operator can see who is calling."""
 
+WHERE = "1=1"
+"""The predicate every request uses. The count check and the walk must agree on it."""
+
 PAGE_SIZE = 2000
-"""The layers publish maxRecordCount 2000. Asking for more would just be ignored."""
+"""Records asked for per page. Both layers publish ``maxRecordCount`` 2000, read from the
+layer metadata on 2026-08-16.
+
+That number is the layer's to change and is not a promise about what any page will hold.
+Asked for 3,000 on 2026-08-16 the POSTFIRE layer answered with 2,000 rows and
+``exceededTransferLimit`` true, which is the standard behaviour whenever
+``resultRecordCount`` exceeds ``maxRecordCount``. So the walk below steps its offset by the
+length of the page it was handed, never by the length it asked for.
+"""
 
 PAUSE_SECONDS = 0.2
 TIMEOUT_SECONDS = 180
@@ -130,6 +141,29 @@ def _get(url: str) -> dict[str, Any]:
     return parsed
 
 
+def layer_record_count(endpoint: str) -> int:
+    """How many records the layer says it holds, under the predicate the walk uses.
+
+    The walk below can only be as honest as the pages it is handed. A layer that stops
+    early, a page the walk steps over, a query the service quietly truncates: each of them
+    ends in a file that looks finished, hashes cleanly, and describes a fraction of the
+    layer. None of that is visible from inside the walk, so this asks the layer for its
+    own total and :func:`acquire` refuses to write anything that does not match it.
+    """
+    query = urllib.parse.urlencode(
+        {"where": WHERE, "returnCountOnly": "true", "f": "json"}
+    )
+    payload = _get(f"{endpoint}?{query}")
+    count = payload.get("count")
+    if not isinstance(count, int) or isinstance(count, bool):
+        raise AcquisitionFailed(
+            f"{endpoint} answered returnCountOnly with no count: {payload!r}. There is "
+            "nothing to check a download against without it, and a download nothing "
+            "checked is not an acquisition."
+        )
+    return count
+
+
 def fetch_layer(endpoint: str, fields: tuple[str, ...]) -> list[dict[str, Any]]:
     """Page through a layer's attributes, geometry excluded."""
     rows: list[dict[str, Any]] = []
@@ -137,7 +171,7 @@ def fetch_layer(endpoint: str, fields: tuple[str, ...]) -> list[dict[str, Any]]:
     while True:
         query = urllib.parse.urlencode(
             {
-                "where": "1=1",
+                "where": WHERE,
                 "outFields": ",".join(fields),
                 "returnGeometry": "false",
                 "orderByFields": "OBJECTID ASC",
@@ -153,13 +187,35 @@ def fetch_layer(endpoint: str, fields: tuple[str, ...]) -> list[dict[str, Any]]:
         rows.extend(feature["attributes"] for feature in features)
         if not payload.get("exceededTransferLimit") and len(features) < PAGE_SIZE:
             break
-        offset += PAGE_SIZE
+        # Step by the page that arrived, not by the page that was asked for. `resultOffset`
+        # means "skip this many records", so a layer capping the page below PAGE_SIZE and
+        # setting exceededTransferLimit leaves a block of records between the end of this
+        # page and the next offset. Stepping by PAGE_SIZE walks over that block, and the
+        # walk still ends normally: the missing records look exactly like records that were
+        # never there.
+        offset += len(features)
         time.sleep(PAUSE_SECONDS)
     return rows
 
 
 def acquire(source: Source, fields: tuple[str, ...], out_dir: Path) -> Acquired:
+    """Read the layer whole, or write nothing at all.
+
+    The record count this returns is copied into ``sources.py`` by hand, printed on both
+    pages under Provenance, and published in the JSON artifacts. A short download that
+    reaches the build is not published as a failed download; it is published as a smaller
+    dataset, with a hash and a date beside it. So the layer's own total is read first and
+    the walk is checked against it before any file is written.
+    """
+    expected = layer_record_count(source.endpoint)
     rows = fetch_layer(source.endpoint, fields)
+    if len(rows) != expected:
+        raise AcquisitionFailed(
+            f"{source.key}: the layer reports {expected} records and the walk collected "
+            f"{len(rows)}. Nothing was written. If the layer was republished mid-walk, "
+            "re-run the acquisition; if it was not, the walk is dropping records and "
+            "must be fixed before any count from this file is published."
+        )
     acquired = write_rows(out_dir / source.raw_file, rows)
     return Acquired(
         source_key=source.key,

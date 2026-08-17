@@ -14,9 +14,11 @@ from __future__ import annotations
 
 import io
 import json
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 from urllib.error import HTTPError
+from urllib.parse import parse_qs, urlparse
 
 import pytest
 
@@ -28,10 +30,30 @@ from perimeter.acquire import (
     AcquisitionFailed,
     acquire,
     fetch_layer,
+    layer_record_count,
     main,
     write_rows,
 )
 from perimeter.sources import DINS, FRAP
+
+
+@pytest.fixture(autouse=True)
+def no_socket_reaches_cal_fire(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The docstring above says the real endpoints are never contacted. Enforce it.
+
+    Every test here substitutes either `_get` or `urlopen`, and until this fixture
+    existed that was a convention rather than a rule: a test that forgot, or a code path
+    that grew a second request, would quietly fetch from CAL FIRE's servers instead of
+    failing. A test that reaches this now fails with a message saying what to substitute.
+    """
+
+    def refuse(*args: object, **kwargs: object) -> None:
+        raise AssertionError(
+            "a test tried to open a socket to a real endpoint; substitute "
+            "acquire._get or urllib.request.urlopen in the test"
+        )
+
+    monkeypatch.setattr(acquire_mod.urllib.request, "urlopen", refuse)
 
 
 class FakeResponse(io.BytesIO):
@@ -287,15 +309,127 @@ def test_a_full_page_without_the_transfer_flag_is_still_followed(
     assert len(rows) == PAGE_SIZE
 
 
+def capped_layer(total: int, cap: int) -> Callable[[str], dict[str, Any]]:
+    """A layer holding `total` records that never returns more than `cap` per page.
+
+    This is not a hypothetical shape. It is what a GeoServices layer does whenever
+    `resultRecordCount` is above its own `maxRecordCount`: it answers with a short page
+    and sets `exceededTransferLimit`. Measured against the live POSTFIRE layer on
+    2026-08-16, a request for 3,000 records came back with 2,000 and the flag set.
+
+    The fake honours `resultOffset` the way the real service does, so a walk that steps
+    its offset by more than the page it was handed steps over real records.
+    """
+
+    def fake_get(url: str) -> dict[str, Any]:
+        query = parse_qs(urlparse(url).query)
+        offset = int(query["resultOffset"][0])
+        asked = int(query["resultRecordCount"][0])
+        served = max(0, min(asked, cap, total - offset))
+        return {
+            "features": [
+                {"attributes": {"OBJECTID": offset + i}} for i in range(served)
+            ],
+            "exceededTransferLimit": offset + served < total,
+        }
+
+    return fake_get
+
+
+def test_a_capped_page_does_not_step_over_the_records_it_withheld(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The walk must advance by the page it got, never by the page it asked for.
+
+    A layer whose maxRecordCount sits below PAGE_SIZE answers every request with a
+    shorter page. Advancing the offset by PAGE_SIZE there skips every record between the
+    end of the page and the start of the next offset, and nothing says so: the walk ends
+    normally, the file is written, the hash is recorded, and every count downstream
+    describes a fraction of the layer as though it were the whole of it.
+    """
+    total, cap = 5_000, 1_000
+    monkeypatch.setattr(acquire_mod, "_get", capped_layer(total, cap))
+    monkeypatch.setattr(acquire_mod.time, "sleep", lambda _: None)
+    rows = fetch_layer("https://example.invalid/query", ("OBJECTID",))
+    assert [row["OBJECTID"] for row in rows] == list(range(total)), (
+        f"the layer holds {total} records and the walk collected {len(rows)}"
+    )
+
+
+# --- layer_record_count: the second opinion the walk is checked against --------------
+
+
+def test_the_count_query_asks_the_layer_the_same_question_the_walk_asks(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A count under a different predicate would not be a check on this walk at all."""
+    urls: list[str] = []
+
+    def fake_get(url: str) -> dict[str, Any]:
+        urls.append(url)
+        return {"count": 7}
+
+    monkeypatch.setattr(acquire_mod, "_get", fake_get)
+    assert layer_record_count("https://example.invalid/query") == 7
+
+    def counting_get(url: str) -> dict[str, Any]:
+        urls.append(url)
+        return {"features": []}
+
+    monkeypatch.setattr(acquire_mod, "_get", counting_get)
+    fetch_layer("https://example.invalid/query", ("OBJECTID",))
+
+    counted, walked = (parse_qs(urlparse(url).query) for url in urls)
+    assert counted["returnCountOnly"] == ["true"]
+    assert counted["where"] == walked["where"], (
+        "the total is only a check on this walk if both ask the same question"
+    )
+
+
+@pytest.mark.parametrize(
+    "payload", [{}, {"count": None}, {"count": "132522"}, {"count": True}]
+)
+def test_a_count_response_with_no_usable_count_is_refused(
+    monkeypatch: pytest.MonkeyPatch, payload: dict[str, Any]
+) -> None:
+    """Unverifiable is not the same as verified. Without a total there is no check."""
+    monkeypatch.setattr(acquire_mod, "_get", lambda url: payload)
+    with pytest.raises(AcquisitionFailed, match="no count"):
+        layer_record_count("https://example.invalid/query")
+
+
 # --- acquire and main ---------------------------------------------------------------
+
+
+def one_row_layer(monkeypatch: pytest.MonkeyPatch, *, count: int = 1) -> None:
+    """A layer holding one record, with its self-reported total under the test's control."""
+    monkeypatch.setattr(
+        acquire_mod, "fetch_layer", lambda endpoint, fields: [{"OBJECTID": 1}]
+    )
+    monkeypatch.setattr(acquire_mod, "layer_record_count", lambda endpoint: count)
+
+
+def test_a_short_walk_writes_nothing_at_all(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """The gate behind every published count: a partial download is not an acquisition.
+
+    Without this, a walk that came back with a fraction of the layer would be written,
+    hashed, dated and copied into sources.py as though it were the whole file, and the
+    pages would report its counts as the coverage of the layer.
+    """
+    one_row_layer(monkeypatch, count=132_522)
+    with pytest.raises(AcquisitionFailed) as caught:
+        acquire(FRAP, ("OBJECTID",), tmp_path)
+    assert "132522" in str(caught.value)
+    assert "collected 1" in str(caught.value)
+    assert not (tmp_path / FRAP.raw_file).exists(), "a short download reached disk"
 
 
 def test_acquire_records_the_source_it_was_asked_for(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    monkeypatch.setattr(
-        acquire_mod, "fetch_layer", lambda endpoint, fields: [{"OBJECTID": 1}]
-    )
+    one_row_layer(monkeypatch)
     result = acquire(FRAP, ("OBJECTID",), tmp_path)
     assert result.source_key == FRAP.key
     assert result.endpoint == FRAP.endpoint
@@ -306,9 +440,7 @@ def test_acquire_records_the_source_it_was_asked_for(
 def test_main_writes_a_manifest_for_both_sources(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    monkeypatch.setattr(
-        acquire_mod, "fetch_layer", lambda endpoint, fields: [{"OBJECTID": 1}]
-    )
+    one_row_layer(monkeypatch)
     assert main(["--out", str(tmp_path)]) == 0
     manifest = json.loads((tmp_path / "acquisition.json").read_text(encoding="utf-8"))
     assert [entry["source"] for entry in manifest] == [FRAP.key, DINS.key]
@@ -321,9 +453,7 @@ def test_main_writes_a_manifest_for_both_sources(
 def test_main_can_be_pointed_at_one_source(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    monkeypatch.setattr(
-        acquire_mod, "fetch_layer", lambda endpoint, fields: [{"OBJECTID": 1}]
-    )
+    one_row_layer(monkeypatch)
     assert main(["--out", str(tmp_path), "--source", DINS.key]) == 0
     manifest = json.loads((tmp_path / "acquisition.json").read_text(encoding="utf-8"))
     assert [entry["source"] for entry in manifest] == [DINS.key]

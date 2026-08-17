@@ -21,6 +21,12 @@ so a build is reproducible without asking CAL FIRE's servers for anything. Re-ru
 acquisition on an unchanged layer produces a byte-identical file, because the writer sorts
 keys and pins its separators; the SHA-256 below is what to compare against.
 
+Before the walk starts, the layer is asked how many records match the predicate the walk
+uses, and nothing is written unless the walk comes back with that many. A short download
+is the one failure that does not look like one: it produces a complete-looking file with a
+hash and a date, and every count taken from it describes a fraction of the layer in the
+same words it would use for all of it. The record counts below are the layers' own totals.
+
 Geometry is not requested. Every measurement here is over attributes, so `returnGeometry`
 is false on every request. That keeps the download small and keeps this project honest
 about what it can speak to: nothing on either page describes the shape, extent or accuracy

@@ -45,6 +45,33 @@ def test_a_missing_measured_column_stops_the_build() -> None:
         parse([{"ID": 1, "NAME": "Cedar"}])
 
 
+def test_a_column_that_goes_missing_after_the_first_row_stops_the_build() -> None:
+    """The drift check has to read the file, not a sample of one row of it.
+
+    Checking only the first row makes the refusal unable to fire on any file whose first
+    row is intact. The rest of the file loses the column silently: `row.get` returns None
+    for every later row, the cells are classified as empty, and the field is published as
+    one nobody filled in. That is the exact misreading `SchemaDriftError` exists to stop,
+    and it is indistinguishable on the page from a field the agency genuinely left blank.
+    """
+    rows: list[dict[str, object]] = [
+        {"ID": 1, "NAME": "Cedar", "SIZE": 1},
+        {"ID": 2, "NAME": "Bear", "SIZE": 2},
+        {"ID": 3, "NAME": "Camp"},
+    ]
+    with pytest.raises(SchemaDriftError, match="SIZE") as caught:
+        parse(rows)
+    assert "row 2" in str(caught.value), str(caught.value)
+
+
+def test_a_file_whose_rows_all_carry_the_columns_is_parsed() -> None:
+    """The check above must not refuse a file that is merely large."""
+    rows: list[dict[str, object]] = [
+        {"ID": index, "NAME": f"F{index}", "SIZE": index} for index in range(50)
+    ]
+    assert len(parse(rows)) == 50
+
+
 def test_a_row_without_an_identifier_stops_the_build() -> None:
     with pytest.raises(SchemaDriftError, match="has no ID"):
         parse([{"ID": 1, "NAME": "a", "SIZE": 1}, {"ID": "  ", "NAME": "b", "SIZE": 2}])
