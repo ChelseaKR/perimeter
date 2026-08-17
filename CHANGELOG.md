@@ -6,6 +6,35 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project a
 
 ## [Unreleased]
 
+### Fixed, a download that could come back short and say nothing
+
+- **The paging walk stepped its offset by the page it asked for, not the page it got.**
+  `resultOffset` means "skip this many records", so a layer that caps a page below
+  `PAGE_SIZE` and sets `exceededTransferLimit` leaves a block of records between the end
+  of the page and the next offset. Stepping by `PAGE_SIZE` walked over that block and the
+  walk still ended normally: against a layer holding 5,000 records and capping pages at
+  1,000, the acquisition collected 3,000 and reported success. The published counts would
+  have described three fifths of a layer as the whole of it, with a hash and a retrieval
+  date beside them. Both layers publish `maxRecordCount` 2000 today, which is why the
+  acquisition on record is complete: the layers' own `returnCountOnly` totals, read
+  2026-08-16, are 23,334 and 132,522, exactly the counts in `sources.py`. The walk now
+  advances by the length of the page it was handed.
+- **An acquisition is checked against the layer's own record total before anything is
+  written.** `layer_record_count` asks the layer how many records match the same
+  predicate the walk uses, and `acquire` refuses, writing no file, when the two disagree.
+  Short reads of any cause now stop instead of arriving as a smaller dataset.
+- **Schema drift is checked on every row, not on the first one.** The check read
+  `rows[0]` alone, so it could not fail on any file whose first row was intact: a column
+  that disappeared further down was classified as an empty cell for every later record
+  and published as a field nobody filled in. Measured at DINS scale the per-row check
+  costs nothing detectable, 4.56s against 4.58s over 132,522 rows.
+- **The published artifacts must have measured every record they say was acquired.**
+  `records` and `source.acquired_record_count` are two counts of the same file taken at
+  two different moments, and nothing compared them.
+- **`tests/test_acquire.py` enforces its own claim** that the real endpoints are never
+  contacted. It was a convention; an autouse fixture now fails any test that reaches for
+  a socket.
+
 ### Changed, gates that could not fail
 
 - **The determinism check is a script with its own tests.** The inlined version could not

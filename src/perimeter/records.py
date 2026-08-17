@@ -72,17 +72,21 @@ def parse_records(
     """
     if not rows:
         return []
-    columns = set(rows[0])
     # Every measured column is required, not only the identity columns. Without this a
     # column that vanished upstream would be classified as not-recorded for every record
     # and published as a field nobody filled in, which is a different claim entirely.
-    require_columns(
-        columns,
-        (*required, *(spec.name for spec in specs)),
-        source=source,
-    )
+    #
+    # And every row, not only the first. A check that reads one row out of a hundred
+    # thousand cannot fail on any file whose first row is intact, which is most of them:
+    # the column goes missing further down, every later cell reads as empty, and the
+    # refusal never fires. The page then shows a field the agency stopped populating as a
+    # field the agency left blank, which is the one reading this project exists to refuse.
+    required_columns = (*required, *(spec.name for spec in specs))
+    needed = frozenset(required_columns)
     records: list[Record] = []
     for index, row in enumerate(rows):
+        if not needed <= row.keys():
+            require_columns(set(row), required_columns, source=f"{source} row {index}")
         raw_id = row.get(id_field)
         identifier = "" if raw_id is None else str(raw_id).strip()
         if not identifier:

@@ -80,6 +80,26 @@ def test_the_published_artifacts_carry_the_reviewed_provenance(
     assert artifact(name)["source"] == _source_json(source, is_fixture=False)
 
 
+@pytest.mark.parametrize("name", [name for name, _ in ARTIFACTS])
+def test_the_published_measurement_counted_every_record_that_was_acquired(
+    name: str,
+) -> None:
+    """The measured total and the acquired total are the same number or something is off.
+
+    These are two counts of the same file taken at two different moments: one written
+    down when the layer was downloaded, one produced by the build that read it. They can
+    only disagree if the file the build read is not the file that was acquired, which is
+    what a truncated download, a half-written file or a stale `data/raw/` looks like from
+    here. Nothing else in this suite compares them, and a page that reports a fraction of
+    a layer reads exactly like a page that reports all of it.
+    """
+    payload = artifact(name)
+    assert payload["records"] == payload["source"]["acquired_record_count"], (
+        f"{name} measures {payload['records']} records but was acquired with "
+        f"{payload['source']['acquired_record_count']}"
+    )
+
+
 @pytest.mark.parametrize(("name", "source"), MEASUREMENTS)
 def test_a_published_measurement_page_names_its_source_and_when_it_was_read(
     name: str, source: Source
