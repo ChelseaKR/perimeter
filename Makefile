@@ -3,7 +3,12 @@
 
 # CI / `make verify` body: the two MUST stay byte-for-byte identical.
 # See CONTRIBUTING.md and .github/workflows/ci.yml.
-verify: lock-check sync lint format typecheck test audit pages determinism
+#
+# node-sync runs before test, not only as part of pages. tests/test_a11y_gate.py runs
+# tools/a11y.mjs against pages that should fail it, which needs node_modules present;
+# without this it would skip, and a skipped gate test reads as a passing one. Make builds
+# each target once per invocation, so pages naming node-sync too costs nothing.
+verify: lock-check sync node-sync lint format typecheck test audit pages determinism
 
 # The lockfile-drift gate. `uv sync --frozen` is NOT one: measured 2026-08-15 against a
 # pyproject.toml this lockfile does not satisfy, `uv lock --check` exits 1,

@@ -126,7 +126,14 @@ Gated, in CI:
 - HTML conformance, heading order, duplicate ids, landmark structure, `lang`, and every
   table header carrying a `scope` and every table a caption. Checked twice, by
   `html-validate` and by parser-based assertions in `tests/test_pages_html.py`.
-- The WCAG A and AA rule sets that axe-core can decide in a DOM with no layout.
+- The WCAG A and AA rule sets that axe-core can decide in a DOM with no layout. A rule
+  axe runs and cannot decide comes back `incomplete`, not `violation`, and that is not a
+  pass: `tools/a11y.mjs` fails on any undecided rule that is not declared in it with a
+  reason and with where the rule's subject is checked instead, and it prints every
+  undecided rule on every run, passing or failing. Three are declared and land on all
+  three pages (`color-contrast`, `landmark-one-main`, `page-has-heading-one`); the latter
+  two are decided from the markup in `tests/test_pages_html.py` instead.
+  `tests/test_a11y_gate.py` runs the gate against pages that should fail it.
 - Contrast. Both palettes are data in `render.py`, so every foreground and background the
   stylesheet puts together is measured against the WCAG thresholds, in both themes,
   arithmetically. This is the one criterion axe cannot check headlessly, because jsdom
@@ -189,7 +196,7 @@ here is how much of each published field is actually filled in, and what the bla
 | `src/perimeter/artifacts.py` | Deterministic JSON |
 | `src/perimeter/render.py` | The static pages |
 | `src/perimeter/acquire.py` | The only code that touches the network. Run by hand, never in CI |
-| `tools/a11y.mjs` | axe-core over the built pages in a headless DOM |
+| `tools/a11y.mjs` | axe-core over the built pages in a headless DOM; an undecided rule is not a pass |
 | `tools/determinism.sh` | Compare two build trees; refuse an empty or missing one |
 | `site/` | The built pages and their JSON artifacts |
 | `PROVENANCE.md` | Per-source detail, quoted caveats, and what is excluded |
@@ -213,7 +220,7 @@ this table's reading rather than the registry's. A manifest entry supersedes it.
 | Security & Supply-Chain | Applies: semgrep, gitleaks, pip-audit, `npm audit`, CodeQL over actions/python/javascript, every action SHA-pinned, `permissions: contents: read` at the top of every workflow, `persist-credentials: false` on every checkout. Not met: no SBOM, no OpenSSF Scorecard workflow, no `osv-scanner` alongside pip-audit (SEC-11, SEC-13), no scheduled trufflehog run (SEC-19), and Dependabot alerts are disabled on the repository, so SEC-15 has nothing to read |
 | CI/CD | Applies (not met). `main` has no ruleset and no branch protection, so the gates report and block nothing. The `protect-main` profile is committed at `.github/rulesets/main.json` and deliberately not applied; applying it is a live repository setting |
 | Observability | Applies (Tier C). A library and a CLI writing to stdout, plus static pages with no script. No hosted service, no telemetry, no SLO surface. Not met: no operations runbook |
-| Accessibility | Applies: html-validate and axe-core over the built pages in CI, contrast measured arithmetically over both palettes, and the same structural floor asserted from Python. Not met: no ACR, two axe rules suppressed for want of a renderer, and the manual checks README names under "What still needs a person" are unverified |
+| Accessibility | Applies: html-validate and axe-core over the built pages in CI, contrast measured arithmetically over both palettes, and the same structural floor asserted from Python. An axe rule that comes back undecided fails the gate unless it is declared with a reason and with where it is checked instead, and every undecided rule is printed on every run. Not met: no ACR; three rules are undecided in jsdom on all three pages (`color-contrast`, `landmark-one-main`, `page-has-heading-one`), of which only the first is not decided elsewhere; and the manual checks README names under "What still needs a person" are unverified. This row previously read "two axe rules suppressed for want of a renderer", which was wrong in both halves: measured 2026-08-18, three rules are undecided rather than two, and `target-size`, named as one of the two, is reported by axe on none of these pages in either bucket, so it was never suppressed; it never fires |
 | Internationalization | Applies (not met). Civic data presented to the public is in scope per I18N section 1, and these pages are English only with no catalog and no `docs/I18N.md` declaration |
 | AI Evaluation | N/A (no model, no LLM, no generated text anywhere in the pipeline or the pages) |
 | Quality & Metrics | Applies: fail-closed gates throughout, covering schema drift, sentinel drift, the coverage floor, and page checks that fail on a number no pipeline produced. Not met: no Definition of Done and no metrics ledger |
