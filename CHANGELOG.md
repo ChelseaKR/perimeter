@@ -6,6 +6,44 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project a
 
 ## [Unreleased]
 
+### Fixed, the WCAG gate called a rule it could not decide a rule that passed
+
+- **`tools/a11y.mjs` read only axe's `violations` bucket.** axe returns four: `passes`,
+  `violations`, `inapplicable`, and `incomplete`, the rules it ran and could not decide.
+  Anything undecided was invisible to the gate, which printed `ok <page>` and a closing
+  `N page(s) clean against 6 rule sets`, and exited 0. Measured 2026-08-18 against a page
+  carrying a focusable link inside `aria-hidden="true"`, a real 4.1.2 problem that axe
+  files as undecided in jsdom: the gate reported the page as clean and exited 0. Same for
+  an `<iframe>` axe could not reach into, whose contents were therefore never checked at
+  all. This is the repository's own subject, "could not determine" rendered as a
+  recorded value, in the check that backs its accessibility claim. An undecided rule now
+  fails the gate unless it is declared in `UNDECIDABLE_HERE` with the reason and with
+  where the rule's subject is checked instead.
+- **What was not decided is now printed on every run, passing or failing.** The gate's
+  only output format said "clean against 6 rule sets" while three rules per page were
+  undecided and named nowhere. Each page's line now carries its undecided count and rule
+  ids, and the run ends with every declared rule, why it cannot be decided here, and
+  where it is covered. A declared rule axe never reports is marked as such, so a
+  declaration that has stopped matching anything does not sit in the file looking like
+  coverage.
+- **The gate had no failure evidence at all**, while `tools/determinism.sh` had thirteen
+  cases and ADR 0004 requires it. `tests/test_a11y_gate.py` runs it against fourteen
+  inputs: no argument, a missing directory, a directory with no pages, an image with no
+  alt text, a page with no `lang`, one bad page among good ones, a focusable link inside
+  `aria-hidden`, an untested frame, and the disclosure a clean run owes.
+- **`make verify` runs `node-sync` before `test`.** The new gate tests need
+  `node_modules` present, and without this they would skip, and a skipped gate test reading
+  as a passing one being the same failure. They refuse to skip when `CI` is set. Make
+  builds each target once per invocation, so `pages` naming `node-sync` too costs
+  nothing.
+- **README's Accessibility conformance row said "two axe rules suppressed for want of a
+  renderer", which was wrong in both halves.** Measured: three rules come back undecided
+  on all three pages (`color-contrast`, `landmark-one-main`, `page-has-heading-one`), and
+  `target-size`, named as one of the two, appears in neither `violations` nor
+  `incomplete` on any page. It was never suppressed; it never fires. Two of the three
+  are decided from the markup in `tests/test_pages_html.py`, so the substantive gap is
+  one rule, not two.
+
 ### Changed, the conformance table is now readable by the thing that reads it
 
 - **`make sync` installs with `uv sync --locked`.** `make lock-check` still runs first
