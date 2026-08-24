@@ -662,10 +662,9 @@ DINS_FIELDS: tuple[FieldSpec, ...] = (
                 "Unknown",
             }
         ),
-        note="Collected only where the structure was affected, so its blank rate is "
-        "read against the affected subset rather than the whole file. 'Unknown' is a "
-        "published domain value; 'Not Applicable' is not, and the 23 records carrying "
-        "it are counted as markers on an inference.",
+        note="Collected only where the structure was affected per CAL FIRE's dictionary. "
+        "'Unknown' is a published domain value; 'Not Applicable' is not, and the 23 "
+        "records carrying it are counted as markers on an inference.",
     ),
     FieldSpec(
         "WHATDIDFIRESTARTFROM",
@@ -675,9 +674,9 @@ DINS_FIELDS: tuple[FieldSpec, ...] = (
         domain_values=frozenset(
             {"Direct flame impingement", "Embers", "Radiant Heat", "Unknown"}
         ),
-        note="Collected only where the structure was affected. As with the field "
-        "beside it, 'Unknown' is published and 'Not Applicable', on 18 records, is "
-        "not, so that marker is inferred.",
+        note="Collected only where the structure was affected per CAL FIRE's dictionary. "
+        "As with the field beside it, 'Unknown' is published and 'Not Applicable', on "
+        "18 records, is not, so that marker is inferred.",
     ),
     FieldSpec(
         "DEFENSIVEACTIONS",

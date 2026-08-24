@@ -794,7 +794,7 @@
       },
       "name": "WHEREFIRESTARTEDONSTRUCTURE",
       "not_recorded": 120122,
-      "note": "Collected only where the structure was affected, so its blank rate is read against the affected subset rather than the whole file. 'Unknown' is a published domain value; 'Not Applicable' is not, and the 23 records carrying it are counted as markers on an inference.",
+      "note": "Collected only where the structure was affected per CAL FIRE's dictionary. 'Unknown' is a published domain value; 'Not Applicable' is not, and the 23 records carrying it are counted as markers on an inference.",
       "outside_published_domain": 157,
       "outside_published_domain_distinct": 7,
       "outside_published_domain_values": {
@@ -820,7 +820,7 @@
       },
       "name": "WHATDIDFIRESTARTFROM",
       "not_recorded": 121846,
-      "note": "Collected only where the structure was affected. As with the field beside it, 'Unknown' is published and 'Not Applicable', on 18 records, is not, so that marker is inferred.",
+      "note": "Collected only where the structure was affected per CAL FIRE's dictionary. As with the field beside it, 'Unknown' is published and 'Not Applicable', on 18 records, is not, so that marker is inferred.",
       "outside_published_domain": 5,
       "outside_published_domain_distinct": 4,
       "outside_published_domain_values": {
