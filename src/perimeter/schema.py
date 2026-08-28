@@ -662,10 +662,13 @@ DINS_FIELDS: tuple[FieldSpec, ...] = (
                 "Unknown",
             }
         ),
-        note="Collected only where the structure was affected, so its blank rate is "
-        "read against the affected subset rather than the whole file. 'Unknown' is a "
-        "published domain value; 'Not Applicable' is not, and the 23 records carrying "
-        "it are counted as markers on an inference.",
+        note='D4 records this field as "Only recorded for Affected 1-9% damage '
+        'category". That is a restriction CAL FIRE states on its own collection, and '
+        "it is not one this measurement applies: the counts below are over every "
+        "record in the file, as they are for every field here, because nothing in this "
+        "pipeline counts a field over less than the records it is handed. "
+        "'Unknown' is a published domain value; 'Not Applicable' is not, and the 23 "
+        "records carrying it are counted as markers on an inference.",
     ),
     FieldSpec(
         "WHATDIDFIRESTARTFROM",
@@ -675,9 +678,12 @@ DINS_FIELDS: tuple[FieldSpec, ...] = (
         domain_values=frozenset(
             {"Direct flame impingement", "Embers", "Radiant Heat", "Unknown"}
         ),
-        note="Collected only where the structure was affected. As with the field "
-        "beside it, 'Unknown' is published and 'Not Applicable', on 18 records, is "
-        "not, so that marker is inferred.",
+        note="Nothing in the documents this audit was checked against restricts when "
+        "this field is collected. The audit gives its source as D3 and D4, and the "
+        'only thing D4 adds is "May not be reliably determined". The counts below are '
+        "over every record in the file. As with the field beside it, 'Unknown' is "
+        "published and 'Not Applicable', on 18 records, is not, so that marker is "
+        "inferred.",
     ),
     FieldSpec(
         "DEFENSIVEACTIONS",

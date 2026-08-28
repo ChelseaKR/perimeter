@@ -53,6 +53,32 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project a
   "what still needs a person" list loses reflow and target size and keeps print, focus
   appearance, a screen reader, and looking at the layout. See ADR-0008.
 
+### Fixed, a field note that described a measurement nobody made
+
+- **`WHEREFIRESTARTEDONSTRUCTURE` told a reader its blank rate was "read against the
+  affected subset rather than the whole file", and no such subset exists anywhere in
+  this pipeline.** `field_coverage` derives a field's total from the records it is
+  handed and `dins_report` hands it all 132,522, so the published `total` for that
+  field is the whole file and always was. The false sentence shipped inside the same
+  JSON object as the 2.8% it purported to describe. The note now quotes what D4
+  actually says, "Only recorded for Affected 1-9% damage category", names it as CAL
+  FIRE's restriction on collection rather than this project's on counting, and says
+  plainly that the counts are over every record. Reported as #23.
+- **`WHATDIDFIRESTARTFROM` carried the same claim in shorter form, with nothing behind
+  it.** `docs/MARKERS.md` gives that field's source as D3 and D4 and records only that
+  D4 adds "May not be reliably determined". The note now says that, and says the counts
+  are over every record. It does not borrow the other field's restriction: D4's
+  "Affected 1-9%" is a named damage band recorded for one field and not the other, and
+  writing it as "where the structure was affected" would widen it to four damage bands
+  under CAL FIRE's name.
+- **Nothing in this repository read a field note until now.** Four gates in
+  `tests/test_field_notes.py`, each also run against input it must reject: a note may
+  not claim a population narrower than the file; every field's total is every record it
+  was handed, in the code and in the published artifacts and per incident; a quotation
+  in a note must be transcribed in `docs/MARKERS.md` on that field's own line; and the
+  note in `schema.py` and the note in the published artifact are one sentence. See
+  ADR-0005.
+
 ### Fixed, the WCAG gate called a rule it could not decide a rule that passed
 
 - **`tools/a11y.mjs` read only axe's `violations` bucket.** axe returns four: `passes`,
