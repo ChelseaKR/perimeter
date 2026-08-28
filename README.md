@@ -56,7 +56,10 @@ California Historical Fire Perimeters, version firep25_1, retrieved 2026-08-07:
   identified, could not be reached.
 - Field completeness reported separately for assessed records and inaccessible ones, so a
   blank on a structure nobody could get to is not counted as the same fact as a blank on
-  one that was inspected.
+  one that was inspected. Both are counted from the damage field, so a record whose
+  damage field recorded nothing is in neither, and that third population is counted and
+  published per field too. There are none in this retrieval, and the page says so rather
+  than leaving a reader to add the two columns up and find the file short.
 - Construction attributes are where the three-state split matters most. Eaves is recorded
   on 56.6% of records, carries `Unknown` on 52,364, and is blank on 5,214.
 - Per-incident completeness for every incident, because an average across the file

@@ -214,3 +214,45 @@ def test_a_bar_segment_over_nothing_is_zero_width_not_a_division_error() -> None
 
     assert _width(0, 0) == "0"
     assert _width(1, 2) == "50.00"
+
+
+def test_the_access_table_publishes_the_population_it_leaves_out(built: Path) -> None:
+    """Two of three populations are shown; all three are published, so nothing vanishes."""
+    payload = json.loads(
+        (built / "data" / "dins-coverage.json").read_text(encoding="utf-8")
+    )
+    for row in payload["completeness_by_access"]:
+        counted = (
+            row["assessed_total"]
+            + row["inaccessible_total"]
+            + row["undetermined_total"]
+        )
+        assert counted == payload["records"], (
+            f"{row['name']}: the access table accounts for {counted} of "
+            f"{payload['records']} records"
+        )
+
+
+def test_the_page_says_what_the_two_access_columns_are_counted_over(
+    built: Path,
+) -> None:
+    html = (built / "dins.html").read_text(encoding="utf-8")
+    assert "which between them is every record in this file" in html
+    assert "There are none here." in html
+
+
+def test_the_page_names_the_records_the_access_columns_leave_out() -> None:
+    """No record in the published file lands here, so the sentence needs its own test."""
+    from dataclasses import replace
+
+    report = dins_report(load_inspections(DINS_FIXTURE))
+    with_gap = replace(
+        report,
+        by_access=[
+            replace(row, undetermined_present=1, undetermined_total=3)
+            for row in report.by_access
+        ],
+    )
+    html = dins_page(with_gap, is_fixture=True)
+    assert "are in neither, because their damage field records nothing" in html
+    assert "which between them is every record in this file" not in html

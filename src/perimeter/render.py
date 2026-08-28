@@ -732,6 +732,34 @@ def dins_page(report: DinsReport, *, is_fixture: bool) -> str:
         for row in report.by_access
     )
 
+    # What the two columns are counted over, and what they are not counted over. The
+    # denominators are two populations of a three-way split, so a record whose damage
+    # field says nothing about access is in neither, and the page says how many rather
+    # than leaving a reader to add the columns up and find the file is short. There are
+    # none in the acquired file today, which is a fact worth printing and not a reason
+    # to leave the sentence out.
+    undetermined = report.by_access[0].undetermined_total if report.by_access else 0
+    if undetermined:
+        access_note = (
+            f"<p>The two columns are counted over {num(report.access.assessed)} "
+            f"assessed records and {num(report.access.inaccessible)} recorded as "
+            f"Inaccessible. {num(undetermined)} are in neither, because their damage "
+            "field records nothing and so says nothing about whether the structure was "
+            "reached. Their completeness is not in this table; it is published per "
+            "field, in the JSON artifact beside this page, as "
+            "<code>undetermined_present</code> and <code>undetermined_total</code>.</p>"
+        )
+    else:
+        access_note = (
+            f"<p>The two columns are counted over {num(report.access.assessed)} "
+            f"assessed records and {num(report.access.inaccessible)} recorded as "
+            "Inaccessible, which between them is every record in this file. A record "
+            "whose damage field recorded nothing would be in neither column, since "
+            "that field is what says whether a structure was reached. There are none "
+            "here. The count is published per field in the JSON artifact beside this "
+            "page, so a later retrieval carrying some cannot pass unremarked.</p>"
+        )
+
     incident_fields = (
         "STRUCTURETYPE",
         "ROOFCONSTRUCTION",
@@ -851,6 +879,9 @@ across both would hide that.</p>
 <th scope="col" class="num">Present, inaccessible</th>
 <th scope="col" class="num">Share of inaccessible</th>
 </tr></thead><tbody>{access_rows}</tbody></table></section>
+
+</tr></thead><tbody>{access_rows}</tbody></table></div>
+{access_note}
 
 <h2>Coverage per incident</h2>
 <p>Completeness is not evenly distributed across incidents, and an average across the
