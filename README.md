@@ -235,21 +235,37 @@ here is how much of each published field is actually filled in, and what the bla
 ## Standards conformance
 
 This repository is held to the portfolio's shared engineering standards, pinned in
-`.standards-version` to `v2.0.0`. Every row states what is true on 2026-08-15, not what is
+`.standards-version` to `v2.0.0`. Every row states what is true on 2026-08-27, not what is
 intended. "Applies (not met)" is a recorded gap; a blank state is a defect and
 `tests/test_standards_conformance.py` fails on one.
 
-Read one caveat first. The standards program's applicability manifest has no entry for
-this repository, so nothing has ever decided which of the fifteen standards bind it. The
-scoping below was derived here, from each standard's own applicability section, and it is
-this table's reading rather than the registry's. A manifest entry supersedes it.
+**Which standards bind this repository is the registry's decision, and the registry has
+made it.** The applicability manifest carries an entry for `perimeter`, added
+2026-08-15. Read 2026-08-27, it records the archetype as `civic-data-tool`, publication
+as cleared and public since 2026-08-08, the tier as `B+C` (the published Pages site is
+the B surface, the local Python and Node build is the C one), and the flags as
+`html: true`, `hosted: true`, `dockerfile: false`, `llm: false`, `bilingual: false`. Of
+the fifteen standards it marks fourteen as applying and AI Evaluation as N/A, for
+"deterministic coverage counting over published CAL FIRE/FRAP datasets; no LLM/model
+component".
+
+This table used to open by saying the manifest had no entry and that the scoping below
+was this table's reading rather than the registry's. That was true when it was written
+and stopped being true the same week, and nothing here noticed, because the only test
+reading the sentence was one asserting it was still present. The scoping now matches the
+registry on all fifteen rows. One row moved to get there: Observability was recorded as
+Tier C, and the registry says `B+C`.
+
+The registry lives in another repository, so this is a transcription with a date, the
+same way `docs/MARKERS.md` transcribes CAL FIRE's documents rather than reading them at
+build time. Nothing in CI can check it against the source.
 
 | Standard | State |
 |---|---|
 | Code Quality | Applies: uv, ruff, mypy `--strict`, pytest with branch coverage at 100% over `src/` with nothing omitted, against a 90% floor. `make lock-check` runs `uv lock --check`, because CQ-09's prescribed `uv sync --frozen` exits 0 on lockfile drift (measured 2026-08-15) |
 | Security & Supply-Chain | Applies: semgrep, gitleaks, pip-audit, `npm audit`, CodeQL over actions/python/javascript, every action SHA-pinned, `permissions: contents: read` at the top of every workflow, `persist-credentials: false` on every checkout. Not met: no SBOM, no OpenSSF Scorecard workflow, no `osv-scanner` alongside pip-audit (SEC-11, SEC-13), no scheduled trufflehog run (SEC-19), and Dependabot alerts are disabled on the repository, so SEC-15 has nothing to read |
 | CI/CD | Applies (not met). `main` has no ruleset and no branch protection, so the gates report and block nothing. The `protect-main` profile is committed at `.github/rulesets/main.json` and deliberately not applied; applying it is a live repository setting |
-| Observability | Applies (Tier C). A library and a CLI writing to stdout, plus static pages with no script. No hosted service, no telemetry, no SLO surface. Not met: no operations runbook |
+| Observability | Applies (Tier B+C), which is what the manifest records and what OBS section 0 asks a repo with two surfaces to state. Tier C is the library and CLI writing to stdout: OTel is out of scope with no network surface, which section 10 allows a Tier C surface to declare. Tier B is the published Pages site. Not met, and the B half is the larger gap: section 8 asks a Tier B frontend for a Core Web Vitals RUM beacon, which means shipping a script that reports readers of a civic-data page back to somebody, and these pages ship no script and this project takes no telemetry; that refusal is a position, not an oversight, and the standard has no N/A for it. Also not met: the Lighthouse-CI lab gate on LCP, INP and CLS, which does not need a beacon and is the half that could be built; no `docs/ROADMAP.md` carrying the tier declaration section 0 requires; and no operations runbook |
 | Accessibility | Applies: html-validate and axe-core over the built pages in CI, in jsdom and again in Chromium, plus SC 1.4.10 Reflow at 320 by 256, contrast measured arithmetically over both palettes, and the same structural floor asserted from Python. An axe rule that comes back undecided fails the jsdom gate unless it is declared with a reason and with where it is checked instead; the browser run declares nothing and fails on any undecided rule. Nothing is suppressed anywhere, so there is no `waivers.yml` and A11Y-06 and A11Y-09 are met rather than waived. Not met: no ACR, and the manual checks README names under "What still needs a person" are unverified. Measured 2026-08-27: the browser run found `scrollable-region-focusable`, serious, on both measurement pages, which the jsdom run cannot see; the scroll containers are now named sections with `tabindex="0"` |
 | Internationalization | Applies (not met). Civic data presented to the public is in scope per I18N section 1, and these pages are English only with no catalog and no `docs/I18N.md` declaration |
 | AI Evaluation | N/A (no model, no LLM, no generated text anywhere in the pipeline or the pages) |

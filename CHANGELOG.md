@@ -6,6 +6,31 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project a
 
 ## [Unreleased]
 
+### Fixed, a caveat that was true when written, false a week later, and pinned by a test
+
+- **The Standards Conformance table said the applicability manifest had no entry for
+  this repository. It has had one since 2026-08-15.** The entry records the archetype as
+  `civic-data-tool`, publication as cleared, the tier as `B+C`, and fourteen of the
+  fifteen standards as applying with AI Evaluation N/A. The table now transcribes that,
+  with the date it was read, and says plainly that the registry lives in another
+  repository so nothing in CI can check the transcription against its source.
+- **The test guarding that sentence could only ever pass.** It read
+  `assert "applicability manifest has no entry" in section` and carried the instruction
+  "Remove this test on the day the manifest entry exists, not before". It was green for
+  twelve days over a claim that had become false, because the only thing reading the
+  sentence was a test asserting the sentence was still there. It is replaced by tests
+  that refuse the false claim, hold the transcription's shape and date, and check the
+  one part that is mechanically checkable from inside this repository: that the table
+  marks exactly the one standard the registry marks N/A.
+- **Observability moves from Tier C to Tier B+C**, which is what the registry records and
+  what OBS section 0 asks a repository with two surfaces to state. The B half is a real
+  gap and is recorded as one: section 8 wants a Core Web Vitals RUM beacon, which means
+  shipping a script that reports readers of a civic-data page back to somebody, and
+  these pages ship no script and this project takes no telemetry. That refusal is a
+  position rather than an oversight and the standard has no N/A for it. The
+  Lighthouse-CI lab gate, which needs no beacon, is also not met and is the half that
+  could be built.
+
 ### Fixed, the three pages could not say which of them a search result was for
 
 - **One meta description was shared by all three pages, and none of them had a canonical.**
