@@ -160,6 +160,21 @@ A build from fixtures stamps `is_fixture: true` and publishes `null` for every a
 fact: version, retrieval date, record count, byte count and hash. Fixture output cannot
 present itself as a measurement of CAL FIRE's real files.
 
+## Data cards
+
+`docs/data/frap-perimeters.md` and `docs/data/dins.md` are the per-source data cards
+DATA-GOVERNANCE-STANDARD section 1 requires. They restate this document in the shape that
+standard asks for, and they add the two rows it had never carried: the tier, which is L1
+for both, and the refresh cadence with its staleness SLA. 400 days for the FRAP layer,
+which is a versioned annual product, and 180 days for DINS, which carries no version and
+is appended to as inspections complete.
+
+The SLA is this project's declaration and not a commitment by either publisher. It is
+enforced in `tests/test_data_cards.py`, which fails the build once a retrieval is older
+than the number its card states. It is deliberately not on the pages: computing staleness
+needs a wall clock and the artifacts have none, so what they publish is the retrieval
+date and `staleness_sla_days`, and any consumer can do the subtraction itself.
+
 ## Exclusions
 
 Nothing acquired has been excluded from the counts. Every record in both layers is

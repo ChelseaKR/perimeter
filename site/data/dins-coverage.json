@@ -93412,6 +93412,8 @@
         "topic": "Scope"
       }
     ],
+    "data_card": "docs/data/dins.md",
+    "data_tier": "L1",
     "endpoint": "https://services1.arcgis.com/jUJYIo9tSA7EHvfZ/arcgis/rest/services/POSTFIRE_MASTER_DATA_SHARE/FeatureServer/0/query",
     "key": "dins_postfire",
     "landing_page": "https://data.ca.gov/dataset/cal-fire-damage-inspection-dins-data",
@@ -93419,7 +93421,9 @@
     "licence": "Creative Commons Attribution",
     "licence_url": "http://www.opendefinition.org/licenses/cc-by",
     "publisher": "California Department of Forestry and Fire Protection",
+    "refresh_cadence": "After each fire season. The layer carries no version string and is appended to as inspections complete, so there is no release to wait for.",
     "retrieved": "2026-08-07",
+    "staleness_sla_days": 180,
     "title": "CAL FIRE Damage Inspection (DINS) Data",
     "version": "POSTFIRE_MASTER_DATA_SHARE"
   }

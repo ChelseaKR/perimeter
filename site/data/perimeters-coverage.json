@@ -514,6 +514,8 @@
         "topic": "Null to Unknown"
       }
     ],
+    "data_card": "docs/data/frap-perimeters.md",
+    "data_tier": "L1",
     "endpoint": "https://services1.arcgis.com/jUJYIo9tSA7EHvfZ/arcgis/rest/services/California_Historic_Fire_Perimeters/FeatureServer/0/query",
     "key": "frap_perimeters",
     "landing_page": "https://data.cnra.ca.gov/dataset/california-historical-fire-perimeters",
@@ -521,7 +523,9 @@
     "licence": "Creative Commons Attribution",
     "licence_url": "http://www.opendefinition.org/licenses/cc-by",
     "publisher": "California Department of Forestry and Fire Protection, Fire and Resource Assessment Program",
+    "refresh_cadence": "On each published FRAP version. The layer is released as a versioned annual product and the acquired file is firep25_1.",
     "retrieved": "2026-08-07",
+    "staleness_sla_days": 400,
     "title": "California Historical Fire Perimeters",
     "version": "firep25_1"
   },

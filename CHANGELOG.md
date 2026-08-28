@@ -6,6 +6,29 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project a
 
 ## [Unreleased]
 
+### Added, a retrieval that goes stale now fails the build
+
+- **A data card per source, under `docs/data/`.** DG-01 asks for one per ingest source
+  with seven named rows. `PROVENANCE.md` carried five of them; the two it had never
+  carried are the tier, L1 for both, and the refresh cadence with its staleness SLA.
+  `tests/test_data_cards.py` enumerates the cards against the declared source list
+  rather than against what is on disk, so adding a source without a card fails.
+- **The staleness alarm DG-04 makes an AUTO-GATE.** Every figure on these pages is a
+  count of a file downloaded on one day. The pages say the date, which is honest and is
+  not the same as noticing. `tests/test_data_cards.py` now fails when a retrieval is
+  older than the SLA its card states: 400 days for FRAP, one annual release cycle plus
+  about five weeks, and 180 days for DINS, about one fire season, since that layer
+  carries no version and is appended to as inspections complete. On the retrieval on
+  record it fires 2027-02-03 for DINS and 2027-09-11 for FRAP. Firing is it working.
+- **The clock is in the gate and not in the artifacts.** A page computing its own
+  staleness would read the wall clock at build time and two builds a day apart would
+  differ, which is in direct conflict with the byte-identical output `make determinism`
+  exists to protect. The artifacts publish `retrieved` and `staleness_sla_days` and
+  compute nothing; a consumer can do the subtraction against its own clock and get the
+  same answer. See ADR-0009.
+- **The SLA is this project's declaration, and every card says so.** Neither CAL FIRE
+  nor FRAP promises a publication schedule and neither is asked to.
+
 ### Fixed, a caveat that was true when written, false a week later, and pinned by a test
 
 - **The Standards Conformance table said the applicability manifest had no entry for

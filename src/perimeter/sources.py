@@ -46,6 +46,26 @@ class Source:
     sha256: str
     raw_file: str
     caveats: tuple[Caveat, ...]
+    card: str
+    """The data card for this source, under docs/data/."""
+
+    tier: str
+    """Data-governance tier. Both sources are L1: openly licensed public reference data."""
+
+    refresh_cadence: str
+    """When this project re-pulls the source, in words."""
+
+    staleness_sla_days: int
+    """How long a retrieval describes the published file, in days.
+
+    This is this project's declaration, not a commitment by CAL FIRE or FRAP. Neither
+    publisher promises a schedule, and neither is asked to: the number exists so that a
+    retrieval going stale is a build failure here rather than a page quietly describing a
+    file that has moved on. `tests/test_data_cards.py` is where it fires. It is not in
+    the pages, because a page computing staleness would need a clock and the artifacts
+    have none; what the artifacts publish is the retrieval date and this number, so any
+    consumer can do the subtraction with their own clock and get the same answer.
+    """
 
 
 FRAP = Source(
@@ -66,6 +86,13 @@ FRAP = Source(
     raw_bytes=7964688,
     sha256="9be7bcb9c08f6813ba13263eabebc96256f0ea8fb0e809ad8a4171046466a16a",
     raw_file="frap_perimeters.json",
+    card="docs/data/frap-perimeters.md",
+    tier="L1",
+    refresh_cadence="On each published FRAP version. The layer is released as a "
+    "versioned annual product and the acquired file is firep25_1.",
+    # One annual cycle plus about five weeks, so a retrieval does not go stale on the eve
+    # of the version that would replace it.
+    staleness_sla_days=400,
     caveats=(
         Caveat(
             topic="Completeness",
@@ -154,6 +181,13 @@ DINS = Source(
     raw_bytes=163728068,
     sha256="7683850bec00c201ad05ae55ab3c70baf53acd298a1da2fe8fd3c5432a624761",
     raw_file="dins_postfire.json",
+    card="docs/data/dins.md",
+    tier="L1",
+    refresh_cadence="After each fire season. The layer carries no version string and is "
+    "appended to as inspections complete, so there is no release to wait for.",
+    # About one fire season. After that the file has grown by incidents this measurement
+    # does not describe, and the record count on the page is a count of an older file.
+    staleness_sla_days=180,
     caveats=(
         Caveat(
             topic="Nulls",

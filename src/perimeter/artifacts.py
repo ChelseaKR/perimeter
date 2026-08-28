@@ -54,6 +54,14 @@ def _source_json(source: Source, *, is_fixture: bool) -> dict[str, Any]:
         "licence_url": source.licence_url,
         "version": None if is_fixture else source.version,
         "retrieved": None if is_fixture else source.retrieved,
+        # Policy rather than acquisition, so a fixture build publishes it too. A consumer
+        # holding the retrieval date and the SLA can decide for itself whether what it is
+        # reading is current; nothing here computes that, because computing it needs a
+        # clock and these artifacts have none.
+        "data_tier": source.tier,
+        "refresh_cadence": source.refresh_cadence,
+        "staleness_sla_days": source.staleness_sla_days,
+        "data_card": source.card,
         "acquired_record_count": None if is_fixture else source.record_count,
         "acquired_bytes": None if is_fixture else source.raw_bytes,
         "acquired_sha256": None if is_fixture else source.sha256,
