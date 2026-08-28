@@ -201,13 +201,13 @@ not be reached and a structure inspected and found undamaged kept visible throug
 <h2>How absence is handled</h2>
 <p>Every measured cell is counted in one of three states, and the three are never
 collapsed into each other:</p>
-<div class="scroll"><table>
-<caption class="visually-hidden">The three states every measured cell is counted in</caption>
+<section class="scroll" tabindex="0" aria-labelledby="cap-states"><table>
+<caption class="visually-hidden" id="cap-states">The three states every measured cell is counted in</caption>
 <thead><tr>
 <th scope="col">State</th><th scope="col">What it means</th>
 </tr></thead><tbody>
 <tr><th scope="row" class="name">Recorded value</th><td>A value the agency wrote down, including a recorded zero and including findings of absence such as No Damage or No Eaves.</td></tr><tr><th scope="row" class="name">Recorded as unknown</th><td>A published code or marker meaning the value could not be determined. Somebody recorded that determination failed.</td></tr><tr><th scope="row" class="name">Empty cell</th><td>Nothing was written in the cell. For DINS, CAL FIRE states that attributes with null values could not be determined.</td></tr>
-</tbody></table></div>
+</tbody></table></section>
 <p>A null is not a zero. A structure not inspected is not a structure without damage. A
 field a dataset never collected is not a field full of zeroes. Where a share would have no
 denominator, these pages print words saying so rather than a number. Where a value that

@@ -114,10 +114,12 @@ make site-offline    # build from committed fixtures; runs anywhere, no network
 ```
 
 `make verify` includes `make pages`, which builds the pages from the committed fixtures and
-checks them two ways: `html-validate` for HTML conformance and the markup-level
-accessibility rules, and `axe-core` in a headless DOM for the WCAG 2.0, 2.1 and 2.2 A and
-AA rule sets. Nothing is served and nothing is deployed; both read the files off disk. The
-same gate runs in CI.
+checks them four ways: `html-validate` for HTML conformance and the markup-level
+accessibility rules, `axe-core` in a headless DOM for the WCAG 2.0, 2.1 and 2.2 A and AA
+rule sets, the same axe rule sets again in Chromium where no rule is undecidable, and
+WCAG 2.2 SC 1.4.10 Reflow at a 320 by 256 viewport. Nothing is served and nothing is
+deployed; every checker reads the files off disk, the browser included, as `file://`
+URLs. The same gate runs in CI, which fetches a browser binary and nothing else.
 
 ### What the page checks cover, and what still needs a person
 
@@ -134,6 +136,18 @@ Gated, in CI:
   three pages (`color-contrast`, `landmark-one-main`, `page-has-heading-one`); the latter
   two are decided from the markup in `tests/test_pages_html.py` instead.
   `tests/test_a11y_gate.py` runs the gate against pages that should fail it.
+- The same rule sets again, in Chromium, where nothing is undecidable. That run declares
+  no exceptions at all: a violation fails it and so does an undecided rule. It is not a
+  formality over the headless one. It found the scroll containers holding the wide tables
+  were not keyboard reachable, a serious WCAG 2.1.1 failure invisible to a DOM-only
+  engine, because whether a container scrolls depends on layout. Each is now a named
+  `<section>` with `tabindex="0"`.
+- WCAG 2.2 SC 1.4.10 Reflow, at 320 by 256, which is 1280 by 1024 at 400% zoom. The
+  document must not scroll horizontally and no element may spill past the viewport,
+  counting both a box that is too wide and a box that fits around content that does not.
+  Content inside a scroll container is exempt, because that is the conforming pattern
+  rather than the failure. `tests/test_a11y_browser_gate.py` runs both browser specs
+  against pages that should fail them, including an empty directory and a missing one.
 - Contrast. Both palettes are data in `render.py`, so every foreground and background the
   stylesheet puts together is measured against the WCAG thresholds, in both themes,
   arithmetically. This is the one criterion axe cannot check headlessly, because jsdom
@@ -144,18 +158,19 @@ Gated, in CI:
 
 **Not checked, and needing human eyes:**
 
-- **Visual layout.** Nothing here renders the pages. Column widths, the wide tables inside
-  their scroll containers, the tile grid at its wrapping points, and whether the sticky
-  table headers behave are all unverified.
-- **Small screens and reflow.** WCAG 2.2 SC 1.4.10 needs a viewport. The pages are built
-  to reflow, and that has not been observed.
+- **Visual layout.** A browser now lays the pages out, and asserts things about the
+  result, but nobody looks at it. Column widths, the tile grid at its wrapping points and
+  whether the sticky table headers behave are all unverified. What is no longer on this
+  list is horizontal overflow, which is measured rather than eyeballed.
 - **Print.** No print stylesheet is defined and no print output has been looked at.
 - **Focus appearance in practice.** A focus ring is defined and the skip link is present
   and points at the main landmark, but SC 2.4.11 is about how the indicator looks against
-  what is behind it, which needs a renderer.
-- **Target size.** SC 2.5.8 needs box geometry, which jsdom does not compute.
+  what is behind it, which needs a person looking. There are now more focusable things on
+  these pages than there were, since every scroll container is one, so this matters more
+  than it did.
 - **A screen reader.** Conformant markup is not the same as a good listening experience.
-  Nothing here substitutes for reading a page with one.
+  Nothing here substitutes for reading a page with one. The scroll containers are named
+  from their table captions, and how that sounds in practice is unverified.
 
 To build from CAL FIRE's real files, acquire them first (see `PROVENANCE.md`):
 
@@ -220,7 +235,7 @@ this table's reading rather than the registry's. A manifest entry supersedes it.
 | Security & Supply-Chain | Applies: semgrep, gitleaks, pip-audit, `npm audit`, CodeQL over actions/python/javascript, every action SHA-pinned, `permissions: contents: read` at the top of every workflow, `persist-credentials: false` on every checkout. Not met: no SBOM, no OpenSSF Scorecard workflow, no `osv-scanner` alongside pip-audit (SEC-11, SEC-13), no scheduled trufflehog run (SEC-19), and Dependabot alerts are disabled on the repository, so SEC-15 has nothing to read |
 | CI/CD | Applies (not met). `main` has no ruleset and no branch protection, so the gates report and block nothing. The `protect-main` profile is committed at `.github/rulesets/main.json` and deliberately not applied; applying it is a live repository setting |
 | Observability | Applies (Tier C). A library and a CLI writing to stdout, plus static pages with no script. No hosted service, no telemetry, no SLO surface. Not met: no operations runbook |
-| Accessibility | Applies: html-validate and axe-core over the built pages in CI, contrast measured arithmetically over both palettes, and the same structural floor asserted from Python. An axe rule that comes back undecided fails the gate unless it is declared with a reason and with where it is checked instead, and every undecided rule is printed on every run. Not met: no ACR; three rules are undecided in jsdom on all three pages (`color-contrast`, `landmark-one-main`, `page-has-heading-one`), of which only the first is not decided elsewhere; and the manual checks README names under "What still needs a person" are unverified. This row previously read "two axe rules suppressed for want of a renderer", which was wrong in both halves: measured 2026-08-18, three rules are undecided rather than two, and `target-size`, named as one of the two, is reported by axe on none of these pages in either bucket, so it was never suppressed; it never fires |
+| Accessibility | Applies: html-validate and axe-core over the built pages in CI, in jsdom and again in Chromium, plus SC 1.4.10 Reflow at 320 by 256, contrast measured arithmetically over both palettes, and the same structural floor asserted from Python. An axe rule that comes back undecided fails the jsdom gate unless it is declared with a reason and with where it is checked instead; the browser run declares nothing and fails on any undecided rule. Nothing is suppressed anywhere, so there is no `waivers.yml` and A11Y-06 and A11Y-09 are met rather than waived. Not met: no ACR, and the manual checks README names under "What still needs a person" are unverified. Measured 2026-08-27: the browser run found `scrollable-region-focusable`, serious, on both measurement pages, which the jsdom run cannot see; the scroll containers are now named sections with `tabindex="0"` |
 | Internationalization | Applies (not met). Civic data presented to the public is in scope per I18N section 1, and these pages are English only with no catalog and no `docs/I18N.md` declaration |
 | AI Evaluation | N/A (no model, no LLM, no generated text anywhere in the pipeline or the pages) |
 | Quality & Metrics | Applies: fail-closed gates throughout, covering schema drift, sentinel drift, the coverage floor, and page checks that fail on a number no pipeline produced. Not met: no Definition of Done and no metrics ledger |
