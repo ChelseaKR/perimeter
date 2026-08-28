@@ -93,11 +93,17 @@ crashing on it would hide it.
 
 ## Which judgment calls rest on what
 
-Twenty-seven of the fifty-four measured fields declare a marker, a code or a finding of
+Twenty-eight of the fifty-four measured fields declare a marker, a code or a finding of
 absence. Twelve of those are **published**: the value is in the layer's own coded-value
 domain, or in FRAP's metadata document, or in CAL FIRE's DINS database dictionary. The
-other fifteen are **inferred**: the field is free text, or the value is one the published
+other sixteen are **inferred**: the field is free text, or the value is one the published
 domain does not carry, and this project read it off the acquired file.
+
+A zero is a judgment call of the same kind, and it is now audited as one. Six numeric
+fields hold recorded zeros. In five of them a zero is a measurement: no outbuildings
+damaged, no cars on the property. In `YEARBUILT` it is not, because no structure was
+built in year 0, and the 12,148 records holding one are counted as recorded-as-unknown
+rather than as a construction year. That moves the field from 77.0% recorded to 67.9%.
 
 Both are counted the same way, and neither is a defect in either dataset. Both publishers
 document the domains they constrain and say which fields are free text. What differs is

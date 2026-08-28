@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -236,7 +238,7 @@ def test_the_count_of_inferred_fields_is_the_one_the_pages_state() -> None:
     """The pages and the module docstring print these two numbers. Keep them true."""
     inferred = [s for s in ALL_FIELDS if s.basis is Basis.INFERRED]
     published = [s for s in ALL_FIELDS if s.basis is Basis.PUBLISHED]
-    assert (len(inferred), len(published)) == (15, 12)
+    assert (len(inferred), len(published)) == (16, 12)
 
 
 @pytest.mark.parametrize("spec", ALL_FIELDS, ids=lambda s: s.name)
@@ -273,8 +275,8 @@ def test_every_judgment_call_is_written_up_in_the_audit(spec: FieldSpec) -> None
 def test_the_audit_states_the_split_it_actually_found() -> None:
     inferred = sum(1 for spec in ALL_FIELDS if spec.basis is Basis.INFERRED)
     published = sum(1 for spec in ALL_FIELDS if spec.basis is Basis.PUBLISHED)
-    assert "**Twelve are published. Fifteen rest on inference.**" in MARKERS_DOC
-    assert (published, inferred) == (12, 15)
+    assert "**Twelve are published. Sixteen rest on inference.**" in MARKERS_DOC
+    assert (published, inferred) == (12, 16)
     assert "fifty-four measured fields" in MARKERS_DOC
     assert len(ALL_FIELDS) == 54
 
@@ -292,3 +294,71 @@ def test_the_audit_names_the_documents_it_was_checked_against() -> None:
         "a31aa1efe1d6466f8530b501c30ab00a",
     ):
         assert url in MARKERS_DOC, url
+
+
+# --------------------------------------------------------------------------------------
+# A zero in a numeric field is a judgment call too, and the audit is where those live.
+# --------------------------------------------------------------------------------------
+
+SITE_DATA = Path(__file__).resolve().parents[1] / "site" / "data"
+NUMERIC_ARTIFACTS = ("perimeters-coverage.json", "dins-coverage.json")
+
+
+def _published(name: str) -> dict[str, Any]:
+    payload: dict[str, Any] = json.loads((SITE_DATA / name).read_text(encoding="utf-8"))
+    return payload
+
+
+def numeric_zeros_missing_from_the_audit(
+    payload: dict[str, Any], doc: str
+) -> list[tuple[str, int]]:
+    """Numeric fields publishing recorded zeros that ``docs/MARKERS.md`` never covers.
+
+    ``recorded_zero_values`` is published for every numeric field precisely because
+    whether a zero is a measurement or a placeholder is a decision somebody made. For
+    ``NOOFCARSONPROPERTY`` a zero is an inspector counting no cars. For ``YEARBUILT`` no
+    reading makes a zero a construction year, and 12,148 of them were counted toward
+    that field's recorded share until this was written.
+
+    The existing audit gate only reaches a field that declares a vocabulary, so a
+    numeric field deciding its zeros are values decided that silently. This is the
+    reader for the other half.
+    """
+    missing: list[tuple[str, int]] = []
+    for field in payload["fields"]:
+        zeros = field.get("recorded_zero_values")
+        if not zeros:
+            continue
+        if f"`{field['name']}`" not in doc:
+            missing.append((field["name"], zeros))
+    return missing
+
+
+@pytest.mark.parametrize("name", NUMERIC_ARTIFACTS)
+def test_every_published_zero_in_a_numeric_field_is_written_up(name: str) -> None:
+    unreviewed = numeric_zeros_missing_from_the_audit(_published(name), MARKERS_DOC)
+    assert unreviewed == [], (
+        f"{name}: these numeric fields publish recorded zeros that docs/MARKERS.md "
+        f"does not cover, so nothing says whether a zero there is a measurement or a "
+        f"placeholder: {unreviewed}"
+    )
+
+
+def test_the_zero_gate_rejects_a_numeric_field_nobody_reviewed() -> None:
+    """The shape issue #24 found, run back through the gate."""
+    payload = {
+        "fields": [
+            {"name": "YEARBUILT", "recorded_zero_values": 12148},
+            {"name": "NOOFCARSONPROPERTY", "recorded_zero_values": 55831},
+        ]
+    }
+    assert numeric_zeros_missing_from_the_audit(payload, "audit covering nothing") == [
+        ("YEARBUILT", 12148),
+        ("NOOFCARSONPROPERTY", 55831),
+    ]
+
+
+def test_the_zero_gate_says_nothing_about_a_field_with_no_zeros_to_explain() -> None:
+    """A numeric field publishing no zeros has made no call, so there is nothing to write up."""
+    payload = {"fields": [{"name": "LATITUDE", "recorded_zero_values": 0}]}
+    assert numeric_zeros_missing_from_the_audit(payload, "audit covering nothing") == []
