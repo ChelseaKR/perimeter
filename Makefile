@@ -1,14 +1,17 @@
 .PHONY: verify lock-check sync lint format typecheck test audit site site-offline \
-        acquire pages node-sync htmlvalidate a11y node-audit determinism
+        acquire pages node-sync htmlvalidate a11y node-audit determinism \
+        browser-sync a11y-browser browser-audit
 
 # CI / `make verify` body: the two MUST stay byte-for-byte identical.
 # See CONTRIBUTING.md and .github/workflows/ci.yml.
 #
-# node-sync runs before test, not only as part of pages. tests/test_a11y_gate.py runs
-# tools/a11y.mjs against pages that should fail it, which needs node_modules present;
-# without this it would skip, and a skipped gate test reads as a passing one. Make builds
-# each target once per invocation, so pages naming node-sync too costs nothing.
-verify: lock-check sync node-sync lint format typecheck test audit pages determinism
+# node-sync and browser-sync run before test, not only as part of pages.
+# tests/test_a11y_gate.py runs tools/a11y.mjs and tests/test_a11y_browser_gate.py runs
+# the Playwright specs, both against pages that should fail them, which needs both
+# toolchains present; without this they would skip, and a skipped gate test reads as a
+# passing one. Make builds each target once per invocation, so pages naming them too
+# costs nothing.
+verify: lock-check sync node-sync browser-sync lint format typecheck test audit pages determinism
 
 # The lockfile-drift gate. `uv sync --frozen` is NOT one: measured 2026-08-15 against a
 # pyproject.toml this lockfile does not satisfy, `uv lock --check` exits 1,
@@ -55,13 +58,16 @@ site-offline:
 		--dins fixtures/dins_postfire.sample.json \
 		--out build/site-offline
 
-# The WCAG gate. Builds the pages from fixtures, then checks the markup two ways:
-# html-validate for HTML conformance and the markup-level accessibility rules, and
-# axe-core in a headless DOM for the WCAG 2.0/2.1/2.2 A and AA rule sets. Structure and
-# colour contrast are additionally checked in `test`, so `make verify` still has a floor
-# if the node toolchain is unavailable. What none of this can do is look at the pages;
-# README.md names what still needs a person.
-pages: site-offline node-sync htmlvalidate a11y node-audit
+# The WCAG gate. Builds the pages from fixtures, then checks the markup four ways:
+# html-validate for HTML conformance and the markup-level accessibility rules, axe-core
+# in a headless DOM for the WCAG 2.0/2.1/2.2 A and AA rule sets, the same axe rule sets
+# again in Chromium where nothing is undecidable, and WCAG 2.2 SC 1.4.10 Reflow at a
+# 320x256 viewport, which no engine decides from a DOM alone. Structure and colour
+# contrast are additionally checked in `test`, so `make verify` still has a floor if a
+# toolchain is unavailable. What none of this can do is look at the pages; README.md
+# names what still needs a person.
+pages: site-offline node-sync htmlvalidate a11y node-audit browser-sync a11y-browser \
+       browser-audit
 
 node-sync:
 	npm ci
@@ -74,6 +80,30 @@ a11y:
 
 node-audit:
 	npm audit --audit-level=high
+
+# The browser half of the WCAG gate. Chromium reads the built pages off disk as
+# file:// URLs: nothing is served, no port is opened, and CI reaches the network only to
+# fetch the browser. `--with-deps` is a no-op on macOS and installs the shared libraries
+# the browser needs on a Linux runner, so the same line works in both places.
+#
+# This exists because jsdom cannot decide four of the rules it runs. tools/a11y.mjs
+# declares them rather than passing them, which is honest and is still a gap; a real
+# engine decides all four, so this run declares nothing undecidable and fails on any
+# undecided rule. It found one thing the jsdom run could not: the scroll containers
+# holding the wide tables were not keyboard reachable, which is a serious WCAG 2.1.1
+# failure that no amount of DOM inspection reveals, because it depends on the container
+# actually scrolling.
+browser-sync:
+	cd tools/a11y_browser && npm ci
+	cd tools/a11y_browser && npx playwright install --with-deps chromium
+
+a11y-browser:
+	cd tools/a11y_browser && npx playwright test
+
+# The browser harness is a second dependency tree, so it gets the same SCA the first one
+# gets. A gate's own toolchain is not exempt from the check the gate exists to apply.
+browser-audit:
+	cd tools/a11y_browser && npm audit --audit-level=high
 
 # The determinism gate behind the "byte-identical output" claim in README.md. Two builds
 # into two directories, compared by tools/determinism.sh, which refuses an empty or

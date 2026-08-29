@@ -6,6 +6,39 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project a
 
 ## [Unreleased]
 
+### Added, the WCAG gate now runs in an engine that does layout, and it found something
+
+- **The scroll containers holding the wide tables were not keyboard reachable.** Every
+  wide table sits in a container with `overflow-x: auto`, which is the conforming answer
+  to SC 1.4.10 Reflow, and a container that scrolls and cannot be focused is a SC 2.1.1
+  Keyboard failure: it scrolls for a pointer and not for a keyboard, so a sighted
+  keyboard user cannot read the columns past the right edge. axe rates it serious. Each
+  is now a `<section>` with `tabindex="0"`, named from the table's own caption. This was
+  invisible to the existing gate and to any amount of care in the markup, because
+  whether a container scrolls is a fact about layout and jsdom does none.
+- **`tools/a11y_browser` runs the same axe rule sets in Chromium, and declares nothing
+  undecidable.** In jsdom four rules land in `incomplete` and are declared in
+  `tools/a11y.mjs` with a reason. A real engine decides all four, so the browser run has
+  no exceptions list: a violation fails it and so does an undecided rule.
+- **WCAG 2.2 SC 1.4.10 Reflow is measured rather than eyeballed.** 320 by 256, which is
+  1280 by 1024 at 400% zoom. The document must not scroll horizontally and no element may
+  spill past the viewport, counting both a box that is too wide and a box that fits
+  around content that does not. Content inside a scroll container is exempt, because that
+  is the conforming pattern rather than the failure. Ported from `ledger`, which runs the
+  same spec over a served app; here the pages are static files and are read as `file://`
+  URLs, so nothing is served and no port is opened.
+- **SC 2.5.8 Target size is decided too**, which closes the one rule `tools/a11y.mjs`
+  declared undecidable and covered nowhere.
+- **`tests/test_a11y_browser_gate.py` is the failure evidence.** Eleven cases: a page
+  that scrolls sideways at 320px, text spilling out of a correctly sized block, an
+  unfocusable scroll container, text below the contrast threshold, an 8px pointer target,
+  an empty directory, a missing directory, and a conformant page that must pass both
+  specs.
+- **Nothing is suppressed anywhere after this, so there is no `waivers.yml`.** Reported
+  as #14, which asked for one covering whatever remained; nothing does. `README.md`'s
+  "what still needs a person" list loses reflow and target size and keeps print, focus
+  appearance, a screen reader, and looking at the layout. See ADR-0008.
+
 ### Fixed, the WCAG gate called a rule it could not decide a rule that passed
 
 - **`tools/a11y.mjs` read only axe's `violations` bucket.** axe returns four: `passes`,

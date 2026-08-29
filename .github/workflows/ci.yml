@@ -1,7 +1,8 @@
 # Least-privilege GITHUB_TOKEN, SHA-pinned actions, and the gates that run on every pull
 # request: SAST, secret scan, workflow SAST, and `make verify` (lockfile drift, lint,
-# format, types, tests, SCA, the HTML-conformance and WCAG checks over the built pages,
-# and the determinism check). CodeQL runs from codeql.yml.
+# format, types, tests, SCA, the HTML-conformance and WCAG checks over the built pages in
+# two engines, WCAG 2.2 Reflow at a 320px viewport, and the determinism check). CodeQL
+# runs from codeql.yml.
 #
 # These gates report. As of 2026-08-15 they block nothing. `main` carries no ruleset and
 # no branch protection: `gh api repos/ChelseaKR/perimeter/rulesets` returns `[]`,
@@ -49,8 +50,11 @@ jobs:
           python-version: "3.12"
 
       # `make verify` includes `make pages`, which runs html-validate and axe-core over
-      # the pages built from committed fixtures. Nothing is served and nothing is
-      # deployed: both checkers read files off disk.
+      # the pages built from committed fixtures, then the same axe rule sets and the
+      # WCAG 2.2 Reflow spec again in Chromium. Nothing is served and nothing is
+      # deployed: every checker reads files off disk, the browser included, as file://
+      # URLs. `make browser-sync` fetches the browser binary, which is the only thing
+      # this job takes off the network beyond its packages.
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: "22"

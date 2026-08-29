@@ -17,3 +17,6 @@ build/
 # Page-check toolchain. package.json and package-lock.json are in git; the tree is not.
 node_modules/
 
+# Playwright run output. The specs and their lockfile are in git; the results are not.
+tools/a11y_browser/test-results/
+tools/a11y_browser/playwright-report/

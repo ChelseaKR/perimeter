@@ -21,6 +21,13 @@
 // that has not been declared below, with a reason and with where it is covered instead,
 // fails the gate.
 //
+// Since 2026-08-27 this is the floor rather than the whole gate. `make a11y-browser`
+// runs the same rule sets in Chromium, where nothing is undecidable, so every rule
+// declared below is now also decided by something. This run is kept because it needs no
+// browser binary and because the two engines disagree in a useful direction: the
+// browser run immediately found a serious 2.1.1 failure this one cannot see, since
+// whether a container scrolls depends on layout and jsdom does none.
+//
 // Exit codes:
 //   0  every page decided, no violations; the declared-undecidable rules are listed
 //   1  a violation, or a rule axe could not decide that is not declared below
@@ -55,7 +62,7 @@ const UNDECIDABLE_HERE = new Map([
     {
       why: "jsdom does no layout and exposes no canvas, so axe cannot sample painted pixels",
       coveredBy:
-        "tests/test_pages_html.py measures every foreground/background pair in both palettes against the WCAG thresholds, arithmetically",
+        "tests/test_pages_html.py measures every foreground/background pair in both palettes against the WCAG thresholds, arithmetically, and tools/a11y_browser/axe.spec.ts decides the rule itself in Chromium",
     },
   ],
   [
@@ -63,7 +70,7 @@ const UNDECIDABLE_HERE = new Map([
     {
       why: "SC 2.5.8 needs box geometry, which jsdom does not compute",
       coveredBy:
-        "nothing here; README.md lists target size under 'What still needs a person'",
+        "tools/a11y_browser/axe.spec.ts, where Chromium computes the geometry and axe decides SC 2.5.8; tests/test_a11y_browser_gate.py runs that spec against a page with 8px targets",
     },
   ],
   [
@@ -71,7 +78,7 @@ const UNDECIDABLE_HERE = new Map([
     {
       why: "axe cannot confirm the main landmark is visible without layout, so it reports the page undecided rather than as having one",
       coveredBy:
-        "tests/test_pages_html.py asserts exactly one main landmark per page, from the parsed markup",
+        "tests/test_pages_html.py asserts exactly one main landmark per page, from the parsed markup, and tools/a11y_browser/axe.spec.ts decides the rule itself in Chromium",
     },
   ],
   [
@@ -79,7 +86,7 @@ const UNDECIDABLE_HERE = new Map([
     {
       why: "axe cannot confirm the h1 is visible without layout, so it reports the page undecided rather than as having one",
       coveredBy:
-        "tests/test_pages_html.py asserts exactly one h1 per page, from the parsed markup",
+        "tests/test_pages_html.py asserts exactly one h1 per page, from the parsed markup, and tools/a11y_browser/axe.spec.ts decides the rule itself in Chromium",
     },
   ],
 ]);

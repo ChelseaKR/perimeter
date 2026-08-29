@@ -1,0 +1,14 @@
+{
+  "name": "perimeter-a11y-browser",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Browser-real accessibility gate over the pages make site-offline builds. Read off disk with file:// URLs; nothing is served and nothing touches the network.",
+  "license": "Apache-2.0",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.11.2",
+    "@playwright/test": "1.61.1"
+  }
+}

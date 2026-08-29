@@ -354,6 +354,30 @@ def provenance_block(source: Source, *, is_fixture: bool) -> str:
     )
 
 
+def scroll_region(caption_id: str, *, tall: bool = False) -> str:
+    """Open a horizontally scrollable table container a keyboard can actually reach.
+
+    These pages carry tables wider than a narrow viewport, and each sits inside a
+    container with ``overflow-x: auto``. That is the conforming answer to WCAG 2.2 SC
+    1.4.10 Reflow, because the page itself does not scroll. On its own it is also a WCAG
+    2.1.1 Keyboard failure: a container that scrolls and cannot be focused scrolls for a
+    mouse and a trackpad and not for a keyboard, so a sighted keyboard user cannot reach
+    the columns past the right edge at all. axe reports it as
+    ``scrollable-region-focusable`` and rates it serious. jsdom does no layout, so
+    nothing in the jsdom run ever knew the container scrolls; running the same rule set
+    in a browser is what found it.
+
+    ``tabindex="0"`` is the fix. The element is a named ``<section>`` rather than a
+    ``div``, which is what keeps the fix from costing something else: a bare focusable
+    ``div`` is a tab stop a screen reader announces as nothing at all, while a named
+    section is a region landmark natively, with no ARIA attribute to go stale. The name
+    comes from the table's own caption, which every table here already carries.
+    html-validate refuses the ARIA spelling of this in favour of the element.
+    """
+    classes = "scroll tall" if tall else "scroll"
+    return f'<section class="{classes}" tabindex="0" aria-labelledby="{caption_id}">'
+
+
 def field_table(
     fields: Sequence[FieldCoverage], *, caption_id: str, caption: str
 ) -> str:
@@ -394,16 +418,19 @@ def field_table(
             f"{state_bar(field.present, field.explicit_unknown, field.not_recorded)}</td>"
             "</tr>"
         )
+    caption_ref = f"{caption_id}-caption"
     return (
-        f'{legend()}<div class="scroll tall"><table id="{caption_id}">'
-        f'<caption class="visually-hidden">{esc(caption)}</caption><thead><tr>'
+        f"{legend()}{scroll_region(caption_ref, tall=True)}"
+        f'<table id="{caption_id}">'
+        f'<caption class="visually-hidden" id="{caption_id}-caption">'
+        f"{esc(caption)}</caption><thead><tr>"
         '<th scope="col">Field</th>'
         '<th scope="col" class="num">Recorded value</th>'
         '<th scope="col" class="num">Recorded as unknown</th>'
         '<th scope="col" class="num">Empty cell</th>'
         '<th scope="col" class="num">Value present</th>'
         '<th scope="col">Split</th>'
-        f"</tr></thead><tbody>{''.join(rows)}</tbody></table></div>"
+        f"</tr></thead><tbody>{''.join(rows)}</tbody></table></section>"
     )
 
 
@@ -585,8 +612,8 @@ surprising. What the dataset does not publish alongside itself is where the iden
 starts appearing and how much of each recent year carries one. Years no record names are absent from this table
 rather than shown as years with zero fires, because the data cannot tell the difference
 between a year with no fires and a year whose fires are missing.</p>
-<div class="scroll tall"><table>
-<caption class="visually-hidden">Perimeter records per fire year, with IRWIN ID coverage inside each year</caption>
+<section class="scroll tall" tabindex="0" aria-labelledby="cap-years"><table>
+<caption class="visually-hidden" id="cap-years">Perimeter records per fire year, with IRWIN ID coverage inside each year</caption>
 <thead><tr>
 <th scope="col">Fire year</th>
 <th scope="col" class="num">Records</th>
@@ -594,7 +621,7 @@ between a year with no fires and a year whose fires are missing.</p>
 <th scope="col" class="num">IRWIN ID absent</th>
 <th scope="col" class="num">Present</th>
 <th scope="col">Split</th>
-</tr></thead><tbody>{"".join(year_rows)}</tbody></table></div>
+</tr></thead><tbody>{"".join(year_rows)}</tbody></table></section>
 
 <h2>Surviving records against the published collection criteria</h2>
 <p>FRAP names the acreages agencies submit against, and separately records that some fires
@@ -604,14 +631,14 @@ not an error and is not evidence of one: the criteria quoted are the current one
 eras used different cutoffs that this project has not established, and a fire may be
 submitted for reasons other than size. The counts are here so that a reader can see how
 much of each decade sits near the numbers FRAP names.</p>
-<div class="scroll"><table>
-<caption class="visually-hidden">Surviving perimeter records per decade against each published collection acreage</caption>
+<section class="scroll" tabindex="0" aria-labelledby="cap-thresholds"><table>
+<caption class="visually-hidden" id="cap-thresholds">Surviving perimeter records per decade against each published collection acreage</caption>
 <thead><tr>
 <th scope="col">Decade</th>
 <th scope="col" class="num">Records</th>
 <th scope="col" class="num">Acreage recorded</th>
 {threshold_headers}
-</tr></thead><tbody>{"".join(decade_rows)}</tbody></table></div>
+</tr></thead><tbody>{"".join(decade_rows)}</tbody></table></section>
 
 <h2>Records sharing an identifier</h2>
 <p>FRAP states that known errors "include duplicate fires". These are counts of records
@@ -631,15 +658,15 @@ it is in the JSON artifact beside this page under
 <code>marker_counterfactuals</code>. Nothing FRAP publishes documents the all-zeros
 value, so the call is an inference from the file, and <code>docs/MARKERS.md</code> sets
 out the evidence behind it.</p>
-<div class="scroll"><table>
-<caption class="visually-hidden">Perimeter records sharing an identifier or an identifying combination</caption>
+<section class="scroll" tabindex="0" aria-labelledby="cap-duplicates"><table>
+<caption class="visually-hidden" id="cap-duplicates">Perimeter records sharing an identifier or an identifying combination</caption>
 <thead><tr>
 <th scope="col">Key</th>
 <th scope="col" class="num">Records carrying the whole key</th>
 <th scope="col" class="num">Distinct keys</th>
 <th scope="col" class="num">Keys used more than once</th>
 <th scope="col" class="num">Records sharing a key</th>
-</tr></thead><tbody>{duplicate_rows}</tbody></table></div>
+</tr></thead><tbody>{duplicate_rows}</tbody></table></section>
 
 <h2>Methodology and the caveats this page operationalizes</h2>
 {caveat_block(FRAP)}
@@ -774,13 +801,13 @@ FIRE publishes for it draws two lines that matter more than any other for readin
 here. <em>No Damage</em> is a finding: an inspector looked at the structure and recorded
 that it was undamaged. <em>Inaccessible</em> is a different finding: the structure was
 identified but could not be reached. Neither is an empty cell, and neither is a zero.</p>
-<div class="scroll"><table>
-<caption class="visually-hidden">Structure records per recorded damage value</caption>
+<section class="scroll" tabindex="0" aria-labelledby="cap-damage"><table>
+<caption class="visually-hidden" id="cap-damage">Structure records per recorded damage value</caption>
 <thead><tr>
 <th scope="col">Recorded value</th>
 <th scope="col" class="num">Records</th>
 <th scope="col" class="num">Share</th>
-</tr></thead><tbody>{"".join(damage_rows)}</tbody></table></div>
+</tr></thead><tbody>{"".join(damage_rows)}</tbody></table></section>
 
 <h2>Three states, field by field</h2>
 <p>Each measured field counted across every record. A recorded value includes findings of
@@ -815,15 +842,15 @@ the schema records the outcome directly in the damage field. A construction attr
 missing on a structure recorded as Inaccessible is a different fact from the same
 attribute missing on a structure that was assessed, and reporting one completeness number
 across both would hide that.</p>
-<div class="scroll tall"><table>
-<caption class="visually-hidden">Field completeness on assessed records against records recorded as Inaccessible</caption>
+<section class="scroll tall" tabindex="0" aria-labelledby="cap-access"><table>
+<caption class="visually-hidden" id="cap-access">Field completeness on assessed records against records recorded as Inaccessible</caption>
 <thead><tr>
 <th scope="col">Field</th>
 <th scope="col" class="num">Present, assessed</th>
 <th scope="col" class="num">Share of assessed</th>
 <th scope="col" class="num">Present, inaccessible</th>
 <th scope="col" class="num">Share of inaccessible</th>
-</tr></thead><tbody>{access_rows}</tbody></table></div>
+</tr></thead><tbody>{access_rows}</tbody></table></section>
 
 <h2>Coverage per incident</h2>
 <p>Completeness is not evenly distributed across incidents, and an average across the
@@ -832,8 +859,8 @@ name it, by incident name, incident number and start year. Records that differ i
 an incident number was recorded are kept apart rather than merged, because merging them
 would mean assuming they are the same incident. The full per-field counts for every
 incident are in the JSON artifact beside this page.</p>
-<div class="scroll tall"><table>
-<caption class="visually-hidden">Records, access split and field completeness for every incident these records name</caption>
+<section class="scroll tall" tabindex="0" aria-labelledby="cap-incidents"><table>
+<caption class="visually-hidden" id="cap-incidents">Records, access split and field completeness for every incident these records name</caption>
 <thead><tr>
 <th scope="col">Incident</th>
 <th scope="col">Start year</th>
@@ -841,7 +868,7 @@ incident are in the JSON artifact beside this page.</p>
 <th scope="col" class="num">Assessed</th>
 <th scope="col" class="num">Inaccessible</th>
 {incident_headers}
-</tr></thead><tbody>{"".join(incident_rows)}</tbody></table></div>
+</tr></thead><tbody>{"".join(incident_rows)}</tbody></table></section>
 <p class="measured">The five columns after the record counts are the share of that
 incident's records carrying a recorded value in that field. Structure type, roof, eaves
 and vent screen are recorded by the inspector on site. APN is added afterwards by a
@@ -904,8 +931,8 @@ not be reached and a structure inspected and found undamaged kept visible throug
 <h2>How absence is handled</h2>
 <p>Every measured cell is counted in one of three states, and the three are never
 collapsed into each other:</p>
-<div class="scroll"><table>
-<caption class="visually-hidden">The three states every measured cell is counted in</caption>
+<section class="scroll" tabindex="0" aria-labelledby="cap-states"><table>
+<caption class="visually-hidden" id="cap-states">The three states every measured cell is counted in</caption>
 <thead><tr>
 <th scope="col">State</th><th scope="col">What it means</th>
 </tr></thead><tbody>
@@ -916,7 +943,7 @@ collapsed into each other:</p>
             for _key, label, meaning in STATE_LABELS
         )
     }
-</tbody></table></div>
+</tbody></table></section>
 <p>A null is not a zero. A structure not inspected is not a structure without damage. A
 field a dataset never collected is not a field full of zeroes. Where a share would have no
 denominator, these pages print words saying so rather than a number. Where a value that
