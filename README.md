@@ -2,6 +2,12 @@
 
 Two coverage measurements over California's public wildfire datasets, published as counts.
 
+The pages are served: [the index](https://chelseakr.github.io/perimeter/),
+[historical fire perimeter completeness](https://chelseakr.github.io/perimeter/perimeters.html),
+and [damage inspection coverage](https://chelseakr.github.io/perimeter/dins.html).
+`.github/workflows/pages.yml` publishes `site/` from `main`, running `html-validate` and
+axe-core over the exact bytes it is about to serve rather than over a rebuild of them.
+
 CAL FIRE and FRAP document the limits of these datasets carefully, in their own metadata.
 What is not published alongside them is the arithmetic behind those sentences: how many records per year,
 how many carry a federal identifier, how many cells in each field hold a value, how many
@@ -213,7 +219,7 @@ here is how much of each published field is actually filled in, and what the bla
 | `src/perimeter/acquire.py` | The only code that touches the network. Run by hand, never in CI |
 | `tools/a11y.mjs` | axe-core over the built pages in a headless DOM; an undecided rule is not a pass |
 | `tools/determinism.sh` | Compare two build trees; refuse an empty or missing one |
-| `site/` | The built pages and their JSON artifacts |
+| `site/` | The built pages and their JSON artifacts. Tracked in git, and published by `.github/workflows/pages.yml` |
 | `PROVENANCE.md` | Per-source detail, quoted caveats, and what is excluded |
 | `docs/MARKERS.md` | The marker audit: every judgment call, its evidence, and what it costs |
 

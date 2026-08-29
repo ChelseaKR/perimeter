@@ -6,6 +6,20 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project a
 
 ## [Unreleased]
 
+### Documented, the pages have been served since 2026-08-08 and the README never said so
+
+- **The README named the two measurement pages only as build outputs.** `site/perimeters.html`
+  and `site/dins.html` appear in the prose as paths, and nowhere in the file was there a URL
+  of any kind. `.github/workflows/pages.yml` landed in #7 on 2026-08-08 and has deployed
+  `site/` from `main` 16 times since; `https://chelseakr.github.io/perimeter/` answers 200.
+  The very next merge, #8, added the `**Status:**` line at the top of the README and still
+  described the pages as files. So a reader was told the project is Beta and told where the
+  HTML is written on their own disk, and was not told the measurements were already readable
+  without cloning anything or acquiring CAL FIRE's files.
+- **No figure is added.** The counts on those pages belong to CAL FIRE and FRAP and move when
+  the retrieval is refreshed, and CONTRIBUTING's rule is that a number is counted or it is not
+  published. This entry adds three links and one clause about what publishes them.
+
 ### Added, the WCAG gate now runs in an engine that does layout, and it found something
 
 - **The scroll containers holding the wide tables were not keyboard reachable.** Every
