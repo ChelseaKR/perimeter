@@ -24,6 +24,18 @@ from perimeter.coverage import DinsReport, FieldCoverage, PerimeterReport
 from perimeter.schema import Basis
 from perimeter.sources import DINS, FRAP, Source
 
+# Where these pages are served. The path segment is load-bearing: this is one of six project
+# sites on the shared `chelseakr.github.io` origin, published on PATHS rather than on domains
+# of their own. `https://chelseakr.github.io/` is not a shorter spelling of this site's root;
+# it is a different address, it 404s, and all six sites would claim it. A canonical naming it
+# would invite a crawler to fold six unrelated projects into one document.
+SITE_URL = "https://chelseakr.github.io/perimeter/"
+
+# Keyed by `active`, the value each page already uses to mark its own nav entry, so a
+# canonical and the highlighted tab cannot disagree about which page this is. The index
+# canonicalises to the directory form, which is the URL Pages serves it at.
+CANONICAL_PATH = {"index": "", "perimeters": "perimeters.html", "dins": "dins.html"}
+
 DISCLAIMER = (
     "Unofficial. Not affiliated with or endorsed by CAL FIRE, FRAP, or any California "
     "state agency."
@@ -437,6 +449,7 @@ def field_table(
 def page(
     *,
     title: str,
+    description: str,
     body: str,
     active: str,
     is_fixture: bool,
@@ -457,13 +470,22 @@ def page(
         for href, label, key in nav_items
         for current in [' aria-current="page"' if key == active else ""]
     )
+    canonical = SITE_URL + CANONICAL_PATH[active]
     return f"""<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{esc(title)}</title>
-<meta name="description" content="Coverage and completeness counts over California's public wildfire datasets. Unofficial.">
+<meta name="description" content="{esc(description)}">
+<link rel="canonical" href="{esc(canonical)}">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Perimeter">
+<meta property="og:title" content="{esc(title)}">
+<meta property="og:description" content="{esc(description)}">
+<meta property="og:url" content="{esc(canonical)}">
+<meta property="og:locale" content="en_US">
+<meta name="twitter:card" content="summary">
 <style>{STYLESHEET}</style>
 </head>
 <body>
@@ -680,6 +702,10 @@ this page measures.</p>
 """
     return page(
         title="Historical fire perimeter completeness | Perimeter",
+        description=(
+            "How complete California's historical fire perimeter record is, counted "
+            "per fire year and per field. Unofficial."
+        ),
         body=body,
         active="perimeters",
         is_fixture=is_fixture,
@@ -913,6 +939,10 @@ address is republished. Every number on this page is a count of records in a sta
 """
     return page(
         title="DINS damage inspection coverage | Perimeter",
+        description=(
+            "What California's post-fire damage inspection records contain, counted "
+            "per field and per incident. Unofficial."
+        ),
         body=body,
         active="dins",
         is_fixture=is_fixture,
@@ -1005,6 +1035,10 @@ file hashes, is in <code>PROVENANCE.md</code> and repeated on each page.</p>
 """
     return page(
         title="Perimeter | Coverage measures for California wildfire datasets",
+        description=(
+            "Two coverage measurements over California's public wildfire datasets, "
+            "published as counts. Unofficial."
+        ),
         body=body,
         active="index",
         is_fixture=is_fixture,
