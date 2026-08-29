@@ -34,7 +34,7 @@ import pytest
 
 from perimeter.cells import present_tenths_of_percent
 from perimeter.cli import build_site
-from perimeter.render import DARK, LIGHT
+from perimeter.render import DARK, LIGHT, SITE_URL
 from perimeter.sources import SOURCES
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -75,6 +75,11 @@ class Document(HTMLParser):
         self.lang: str | None = None
         self.title: str = ""
         self.metas: dict[str, str] = {}
+        # Open Graph uses `property=`, not `name=`, so the meta collector above cannot see
+        # it, and `<link rel="canonical">` is not a meta tag at all. Both are head facts a
+        # structural check should be able to reach.
+        self.properties: dict[str, str] = {}
+        self.links: dict[str, str] = {}
         self.prose: list[str] = []
         self.cells: list[str] = []
         self._heading: str | None = None
@@ -106,6 +111,10 @@ class Document(HTMLParser):
             key = attr.get("name") or ("charset" if "charset" in attr else "")
             if key:
                 self.metas[key] = attr.get("content", attr.get("charset", ""))
+            if "property" in attr:
+                self.properties[attr["property"]] = attr.get("content", "")
+        elif tag == "link" and "rel" in attr:
+            self.links[attr["rel"]] = attr.get("href", "")
 
     def _note_table(self, tag: str, attr: dict[str, str]) -> None:
         if tag == "table":
@@ -171,6 +180,81 @@ def test_the_page_has_a_title_and_a_description(built: Path, name: str) -> None:
     doc = parse(built / name)
     assert doc.title.strip()
     assert doc.metas.get("description", "").strip()
+
+
+def test_each_page_describes_itself_rather_than_the_other_two(built: Path) -> None:
+    """One description shared by three pages describes none of them.
+
+    All three pages carried the same sentence, so a search result for the DINS page and a
+    search result for the perimeters page were indistinguishable, and neither said what
+    its own page counts. The renderer now takes the description per page.
+
+    The descriptions state no count on purpose. The committed ``site/`` is built from
+    ``data/raw/`` and this test builds from the fixtures, so a figure hardcoded in
+    ``render.py`` would be true of one build and false of the other, and CONTRIBUTING's
+    rule is that a number is counted or it is not published. The counts also belong to
+    CAL FIRE's files, which change underneath us.
+    """
+    descriptions = {
+        name: parse(built / name).metas.get("description", "").strip() for name in PAGES
+    }
+    assert all(descriptions.values()), descriptions
+    assert len(set(descriptions.values())) == len(PAGES), descriptions
+
+
+@pytest.mark.parametrize("name", PAGES)
+def test_the_page_names_itself_and_not_the_shared_origin(
+    built: Path, name: str
+) -> None:
+    """The canonical carries this project's path segment, not the bare origin.
+
+    These pages are one of six project sites on ``chelseakr.github.io``, served from
+    PATHS rather than from domains of their own. That makes the single-domain habit
+    actively wrong here rather than merely untidy: a canonical of "/" resolves to
+    ``https://chelseakr.github.io/``, which is not this site's root but a different
+    address that 404s, and all six sites would claim the identical canonical. A crawler
+    that believes them folds six unrelated projects into one document.
+
+    So this asserts the path segment is PRESENT, not merely that a canonical exists: an
+    empty or origin-rooted canonical satisfies "is there a canonical" and is the bug.
+    """
+    doc = parse(built / name)
+
+    canonical = doc.links.get("canonical", "")
+    assert canonical, f"{name} has no canonical URL"
+    assert canonical.startswith(SITE_URL), f"{name} canonicalises to {canonical!r}"
+    assert canonical.rstrip("/") != "https://chelseakr.github.io", (
+        f"{name} points at the shared origin, which is a different site"
+    )
+    assert "/perimeter/" in canonical, f"{name}: {canonical!r} omits the project path"
+
+    # The social card repeats the page rather than describing it a second time, so the two
+    # cannot drift into disagreeing about what this page is.
+    assert doc.properties.get("og:url") == canonical, f"{name} og:url disagrees"
+    assert doc.properties.get("og:title") == doc.title.strip(), (
+        f"{name} og:title disagrees"
+    )
+    assert doc.properties.get("og:description") == doc.metas.get("description"), name
+    assert doc.properties.get("og:type") == "website", name
+
+    # No image is published in this repository, so the card must not promise one. If a
+    # social image is ever committed, this fails until og:image is added with it.
+    card = doc.metas.get("twitter:card")
+    assert card in ("summary", "summary_large_image"), (
+        f"{name} twitter:card is {card!r}"
+    )
+    if card == "summary_large_image":
+        assert doc.properties.get("og:image"), (
+            f"{name} promises an image it has none of"
+        )
+
+
+def test_the_three_pages_do_not_share_one_canonical(built: Path) -> None:
+    """Three pages, three canonicals. A shared one asks a crawler to drop two of them."""
+    canonicals = {
+        name: parse(built / name).links.get("canonical", "") for name in PAGES
+    }
+    assert len(set(canonicals.values())) == len(PAGES), canonicals
 
 
 @pytest.mark.parametrize("name", PAGES)

@@ -6,6 +6,44 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project a
 
 ## [Unreleased]
 
+### Fixed, the three pages could not say which of them a search result was for
+
+- **One meta description was shared by all three pages, and none of them had a canonical.**
+  `render.py` hardcoded a single sentence, "Coverage and completeness counts over
+  California's public wildfire datasets. Unofficial.", into the head of the index, the
+  perimeters page and the DINS page alike, so a search result for one was
+  indistinguishable from a search result for another and none said what its own page
+  counts. `page()` now takes a `description` per page, and each restates what that page
+  already says of itself in its own standfirst.
+
+  The descriptions state **no count**. The committed `site/` is built from `data/raw/`
+  and the test build is built from the fixtures, so a figure hardcoded in `render.py`
+  would be true of one and false of the other; CONTRIBUTING's rule is that a number is
+  counted or it is not published, and these counts belong to CAL FIRE's files, which
+  change underneath us.
+
+- **A canonical URL and Open Graph tags on every page.** There were none. These pages are
+  one of six project sites on the shared `chelseakr.github.io` origin, served from paths
+  rather than domains of their own, so the canonical a single-domain habit produces (`/`)
+  is not this site's root but a different address that 404s, and all six would claim it.
+  `SITE_URL` and `CANONICAL_PATH` are keyed by `active`, the value each page already uses
+  to mark its own nav entry, so a canonical and the highlighted tab cannot disagree about
+  which page this is. No `og:image`: this repository ships no image, and `twitter:card` is
+  `summary`, which promises none.
+
+- **The page parser in `tests/test_pages_html.py` could not see any of this.** It recorded
+  `name=` metas only, so every `property="og:..."` tag was invisible to it, and
+  `<link rel="canonical">` is not a meta tag at all. It now records both, and the existing
+  title-and-description checks were extended rather than joined by a parallel SEO suite.
+  `tests/test_published_site.py` gains the same assertion over the committed bytes, beside
+  the rooted-link check that holds the same subpath property for `href`.
+
+  Observed failing four ways: the canonical line deleted; `SITE_URL` set to the bare
+  origin; `CANONICAL_PATH` collapsed so all three pages share one canonical; and the
+  original defect restored, one description for all three pages. A fifth, hand-editing the
+  committed `site/index.html` canonical to the shared origin, fails the published-bytes
+  check. `make site` reproduces `site/` from `data/raw/` with no change outside the head.
+
 ### Documented, the pages have been served since 2026-08-08 and the README never said so
 
 - **The README named the two measurement pages only as build outputs.** `site/perimeters.html`
