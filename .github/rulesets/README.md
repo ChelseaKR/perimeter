@@ -38,19 +38,28 @@ Two of the five contexts in `main.json` do not exist on `main` yet.
    requires a branch to be up to date with `main` before it merges, so each one
    needs a rebase after the one before it lands. Doing this first is cheaper
    than doing it under the ruleset.
-3. Then apply the ruleset, owner-only:
+3. Check `bypass_actors` in `main.json` before you post it. It must hold
+   `{ "actor_id": 5, "actor_type": "RepositoryRole", "bypass_mode": "always" }`.
+   This file said `"bypass_actors": []` until 2026-08-28, and posting that
+   version is how the owner gets locked out of the repository; see
+   "`bypass_actors`: the repository owner, and nobody else" below. Note that
+   POST adds a ruleset rather than replacing one, and rules from every
+   applicable ruleset combine while bypass actors are per-ruleset, so posting
+   a second time without deleting the first leaves an empty-bypass ruleset
+   over `main` that blocks the owner whatever the first one allows.
+4. Then apply the ruleset, owner-only:
 
 ```sh
 gh api -X POST repos/ChelseaKR/perimeter/rulesets \
   --input .github/rulesets/main.json
 ```
 
-4. Confirm the owner's bypass came through:
+5. Confirm the owner's bypass came through:
    `gh api repos/ChelseaKR/perimeter/rulesets/<id> --jq .current_user_can_bypass`
    must read `"always"`, and `--jq .bypass_actors` must hold exactly the one
    actor `main.json` names. An apply that lands every rule and loses that
    actor returns 201 like any other, and it is the lockout described below.
-5. Re-export after any UI edit, so this file stays the source of truth:
+6. Re-export after any UI edit, so this file stays the source of truth:
    `gh api repos/ChelseaKR/perimeter/rulesets/<id>`.
 
 ## Why each rule is here
