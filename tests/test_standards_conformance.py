@@ -139,11 +139,77 @@ def test_the_table_carries_no_standard_this_portfolio_does_not_have() -> None:
     assert not unknown, f"unrecognised standards in the table: {sorted(unknown)}"
 
 
-def test_the_table_says_the_applicability_manifest_has_no_entry_for_this_repo() -> None:
-    """FIX-02. Remove this test on the day the manifest entry exists, not before.
+# --- FIX-02: the manifest entry, and what happened to the test that pinned its absence -
 
-    The scoping above was derived from each standard's own applicability section rather
-    than read from the registry, and a reader is owed that caveat while it is true.
+
+def conformance_section() -> str:
+    return README.split("## Standards conformance", 1)[1].split("\n## ", 1)[0]
+
+
+def test_the_table_does_not_claim_the_manifest_has_no_entry() -> None:
+    """The entry exists. This asserted the opposite for twelve days.
+
+    The test that stood here read ``assert "applicability manifest has no entry" in
+    section`` and carried the instruction "Remove this test on the day the manifest
+    entry exists, not before". The entry was added to the registry on 2026-08-15, the
+    same week the sentence was written. Nothing here noticed, because the only thing
+    reading the sentence was a test asserting it was still present: green, permanently,
+    over a claim that had become false. A test that can only fail when somebody edits
+    the sentence it is pinning is not a check on the sentence.
+
+    This is the direction that can be checked from inside this repository. The registry
+    lives in another one, so the table's transcription of it is dated prose and no test
+    can compare it to the source. What a test can do is refuse the specific false claim
+    that was made, and hold the transcription's shape.
     """
-    section = README.split("## Standards conformance", 1)[1].split("\n## ", 1)[0]
-    assert "applicability manifest has no entry" in section
+    section = conformance_section()
+    assert "applicability manifest has no entry" not in section, (
+        "the manifest carries an entry for this repository; the table must not say "
+        "otherwise (FIX-02)"
+    )
+    assert "manifest carries an entry" in section
+
+
+@pytest.mark.parametrize(
+    "fact",
+    [
+        "civic-data-tool",
+        "`B+C`",
+        "cleared",
+        "added 2026-08-15",
+        "Read 2026-08-27",
+    ],
+)
+def test_the_table_transcribes_the_manifest_entry(fact: str) -> None:
+    """What the registry records, in the table, with the date it was read.
+
+    Same discipline as ``docs/MARKERS.md``: a document this project cannot re-read at
+    build time is transcribed with a date, and the date is part of the claim. Matched
+    against the section with its line breaks flattened, so rewrapping the paragraph
+    cannot break a check about its content.
+    """
+    assert fact in " ".join(conformance_section().split())
+
+
+def test_the_transcription_says_it_cannot_be_checked_from_here() -> None:
+    """A transcription that reads like a live check is worse than no transcription."""
+    assert "Nothing in CI can check it against the source." in conformance_section()
+
+
+def test_the_table_marks_exactly_the_one_standard_the_manifest_marks_not_applicable() -> (
+    None
+):
+    """The registry marks one N/A and fourteen applying. A second N/A here is a divergence.
+
+    This is the one part of the transcription that is mechanically checkable from inside
+    the repository, because the verdicts are in this table. It does not prove the table
+    agrees with the registry; it fails when the table stops agreeing with what it says
+    the registry said.
+    """
+    not_applicable = sorted(
+        name for name, state in conformance_rows().items() if state.startswith("N/A")
+    )
+    assert not_applicable == ["AI Evaluation"], (
+        "the manifest marks AI Evaluation N/A and fourteen standards as applying; "
+        f"this table marks {not_applicable}"
+    )
