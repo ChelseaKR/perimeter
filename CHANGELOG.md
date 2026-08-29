@@ -53,6 +53,35 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project a
   "what still needs a person" list loses reflow and target size and keeps print, focus
   appearance, a screen reader, and looking at the layout. See ADR-0008.
 
+### Fixed, 12,148 structures recorded as built in year 0
+
+- **`YEARBUILT` counted the literal `0` as a recorded construction year.** 12,148 of the
+  132,522 DINS records hold it, 9.2% of the file, and every one was inside the field's
+  77.0% recorded share. No structure standing in a California wildfire was built in year
+  0. `0` is now a declared unknown marker on `Basis.INFERRED`, and the field publishes
+  89,943 recorded values (67.9%) with 12,148 recorded-as-unknown. The 30,431 empty cells
+  are unchanged. Reported as #24.
+- **The evidence is in `docs/MARKERS.md` section 7, not in the commit message.** The
+  zeros are in 186 incidents, 45 counties and eight fire years; 55 incident groups hold
+  nothing else; 11,779 of the 12,148 carry an APN, so the parcel join found a parcel and
+  the parcel had no year; and 45.5% of them also carry an assessed improved value of `0`
+  against 0.4% of the records holding a real year.
+- **The other five numeric fields with recorded zeros are written up too, including the
+  two that were considered and left alone.** `NOOUTBUILDINGSDAMAGED`,
+  `NOOUTBUILDINGSNOTDAMAGED` and `NOOFCARSONPROPERTY` are inspector counts where a zero
+  is the measurement. `NUMBEROFUNITPERSTRUCTURE` (58,411 zeros) and
+  `ASSESSEDIMPROVEDVALUE` (6,613) each have a reading in which the zero is real, so
+  neither is declared and both carry the numbers a later reader would need to decide
+  otherwise.
+- **The audit gate was green over a set that excluded the field that needed reviewing.**
+  `docs/MARKERS.md` covers fields that declare a vocabulary, and a numeric field
+  deciding its zeros are values declares nothing, so it was outside the audit by
+  construction. `tests/test_schema.py` now fails when a numeric field publishes recorded
+  zeros the audit does not cover. See ADR-0006.
+- **Twenty-eight of the fifty-four measured fields now declare a vocabulary**, twelve
+  published and sixteen inferred. `README.md`, `docs/MARKERS.md`, `schema.py` and the
+  published pages all say so.
+
 ### Fixed, a field note that described a measurement nobody made
 
 - **`WHEREFIRESTARTEDONSTRUCTURE` told a reader its blank rate was "read against the

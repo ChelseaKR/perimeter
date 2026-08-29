@@ -12,7 +12,7 @@ different ground and a reader cannot tell which from the value alone.
   ``INC_NUM`` is free text with no domain at all, so treating its all-zeros value as a
   placeholder is an inference, however well the counts support it.
 
-Fifteen of the twenty-seven fields that declare any vocabulary are inferred. That is not
+Sixteen of the twenty-eight fields that declare any vocabulary are inferred. That is not
 a defect in either dataset: both publishers document their domains for the fields they
 constrain and say plainly which fields are free text. It is a fact about this project's
 judgment calls, and it is published rather than hidden, on the pages and in
@@ -730,7 +730,20 @@ DINS_FIELDS: tuple[FieldSpec, ...] = (
         "reading the field's value distribution. Counting them as recorded addresses "
         "would publish a join that failed as a join that succeeded.",
     ),
-    FieldSpec("YEARBUILT", "Year built (parcel)", numeric=True),
+    FieldSpec(
+        "YEARBUILT",
+        "Year built (parcel)",
+        unknown_markers=frozenset({"0"}),
+        basis=Basis.INFERRED,
+        numeric=True,
+        note="Added by the same post-collection spatial join as APN and SITEADDRESS. "
+        "12,148 records hold the literal 0. No structure standing in a California "
+        "wildfire was built in year 0, so a 0 here is the parcel record carrying no "
+        "year rather than a recorded construction year, and counting it as one "
+        "published an absence as a value. No domain is published for the field, so "
+        "the reading is inferred from the acquired file; section 7 of "
+        "docs/MARKERS.md holds the distribution it rests on.",
+    ),
     FieldSpec(
         "ASSESSEDIMPROVEDVALUE", "Assessed improved value (parcel)", numeric=True
     ),

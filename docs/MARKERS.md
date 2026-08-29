@@ -37,8 +37,8 @@ artifacts as `marker_basis`, and on the pages beside each field's marker list:
 - **inferred**: at least one declared value appears in none of those, and was read off
   the distribution of the acquired file.
 
-Twenty-seven of the fifty-four measured fields declare a marker, a code or a finding of
-absence. **Twelve are published. Fifteen rest on inference.**
+Twenty-eight of the fifty-four measured fields declare a marker, a code or a finding of
+absence. **Twelve are published. Sixteen rest on inference.**
 
 ## 1. The all-zeros local incident number
 
@@ -186,6 +186,7 @@ the declaration moves out of the recorded-value count.
 | `STREETTYPE` | `None` published as a finding; `-`, `unk`, `n/a` not | markers, finding | *inferred* | D3 lists `None` among eighteen domain values. The three markers are in neither document | 9 records | high on `None` being a finding, moderate on three markers covering nine records |
 | `APN` | `none`, `unknown` | markers | *inferred* | No domain (D3, D4). D4: "Assessor Parcel Number assigned by the local assessor. Source: County parcels" | 43 | high |
 | `SITEADDRESS` | `none`, `-`, `no address available`, `null null unknown ca 00000` | markers | *inferred* | No domain (D3, D4). D4: "The site address is usually comprised of the street number, name, type and address suffix, city, state and zip Code. Source: County parcels" | 732, up from 59 before this audit | high; see below |
+| `YEARBUILT` | `0` | marker | *inferred* | No domain published for it. Section 7 | 12,148 records; the field reads 67.9% recorded rather than 77.0% | high that a 0 is not a construction year; moderate on what kind of absence it stands for |
 
 ## 4. What this audit changed
 
@@ -249,3 +250,125 @@ outside the published domain at all. Recorded here because a later file might.
 D4 writes two damage bands as "Major (26-50%)" and "Affected (1-9%)" where D3 and the
 acquired file both use "Major (25-50%)" and "Affected (>0-10%)". This project follows D3
 and the file.
+
+## 7. Zeros in numeric fields
+
+A zero is a judgment call of exactly the same kind as a marker word, and until this
+section existed nothing here made it. `docs/MARKERS.md` audited every field that
+*declares* a vocabulary, and a numeric field deciding that its zeros are measurements
+declares nothing at all, so it was audited by nobody. Six fields publish a
+`recorded_zero_values` count above zero. This is what each one's zeros are.
+
+`tests/test_schema.py` now fails when a numeric field publishes recorded zeros and this
+document does not cover it.
+
+| Field | Recorded zeros | Reading | Declared? |
+|---|---|---|---|
+| `NOOUTBUILDINGSDAMAGED` | 59,628 | a count of no outbuildings damaged | no, a zero is the measurement |
+| `NOOUTBUILDINGSNOTDAMAGED` | 58,888 | a count of no undamaged outbuildings | no, a zero is the measurement |
+| `NOOFCARSONPROPERTY` | 55,831 | a count of no cars | no, a zero is the measurement |
+| `NUMBEROFUNITPERSTRUCTURE` | 58,411 | contested; see below | no, and the reason is recorded |
+| `ASSESSEDIMPROVEDVALUE` | 6,613 | contested; see below | no, and the reason is recorded |
+| `YEARBUILT` | 12,148 | a parcel record with no year on it | **yes**, marker `0`, inferred |
+
+`GIS_ACRES` on the FRAP side, and `LATITUDE` and `LONGITUDE` on the DINS side, hold no
+recorded zeros at all in the acquired files, so they make no call to audit. A `0` turning
+up in any of them later would need this section extended before the build goes green.
+
+### `YEARBUILT`: 12,148 records built in year 0
+
+**Declared.** `0` is read as a marker, on an inference, and the field moves from 102,091
+recorded values (77.0%) to 89,943 (67.9%), with 12,148 counted as recorded-as-unknown.
+30,431 empty cells are unaffected.
+
+What the documentation says. CAL FIRE describes the parcel fields as added after
+collection: "The Address (parcel) and APN (parcel) fields are added through a spatial
+join after data collection is complete", quoted in `src/perimeter/sources.py`. No
+coded-value domain is published for `YEARBUILT`, so nothing documents a placeholder
+convention, and this reading is an inference like `INC_NUM` in section 1.
+
+What settles it is that no reading makes the value a year. A structure standing in a
+California wildfire between 2013 and 2025 was not built in year 0. The remaining question
+is only whether `0` is a placeholder or noise, and the file answers that:
+
+| Observation | Value |
+|---|---|
+| Records holding `0` | 12,148 (9.2% of the file) |
+| Distinct incidents holding it | 186 |
+| Distinct counties holding it | 45 |
+| Distinct fire years holding it | 8, from 2017 to 2025 |
+| Incident groups holding it at all | 199 of 436 |
+| Incident groups where *every* record holds it | 55 |
+| Largest such group | 446 of 446 records, Valley, 2020 |
+| Records holding it that also carry an APN | 11,779 of 12,148 |
+| Records holding it whose assessed improved value is also `0` | 5,527 (45.5%) |
+| Records holding a real year whose assessed improved value is `0` | 391 of 89,943 (0.4%) |
+
+Two things follow. The zero is not one bad load: it is in 186 incidents, 45 counties and
+eight fire years, and it is scattered inside incidents as often as it takes one whole.
+And it travels with the *other* parcel number being zero at a hundred times the rate a
+real year does, which is what a parcel record with nothing on file looks like and is not
+what a construction year looks like. The APN is present on 97% of them, so the join found
+a parcel and the parcel had no year, rather than the join failing.
+
+**Confidence: high** that a `0` is not a construction year. **Moderate** on the further
+reading that it means the parcel record carried no year: no domain history is published
+to check that against, and `Not Applicable` and `not on file` are indistinguishable here.
+Either way it is not a value, and counting it as one was the error.
+
+Eight other records carry years that are also not plausible: four hold `1`, three hold
+`89`, one holds `1543`. They are left as recorded values, on the same reasoning as
+`FIRE_NUM`'s bare `0` in section 5: eight cells across a file of 132,522 is a scatter of
+typos, not a convention, and a reader can see the difference here.
+
+### `NUMBEROFUNITPERSTRUCTURE`: considered, and not declared
+
+58,411 records hold `0`, 3,518 hold a positive number and 70,593 are blank. The zeros are
+not distributed like the positives:
+
+| Structure category | Holding `0` | Holding a positive number |
+|---|---|---|
+| Single Residence | 39,438 | 1,453 |
+| Other Minor Structure | 15,946 | 337 |
+| Nonresidential Commercial | 2,008 | 242 |
+| Multiple Residence | 254 | 1,443 |
+
+Positive values concentrate where a unit count is the point: 1,443 of the 2,007 Multiple
+Residence records carry one. A zero on a utility or miscellaneous structure is a coherent
+observation, and 15,946 of the zeros are exactly that. A zero on 39,438 single residences
+is harder, since a single residence has one unit, and 1,668 records do write `1`.
+
+Not declared, and the reason is that unlike `YEARBUILT` this field has a reading in which
+the zero is real. "No separately counted units" is a possible finding for a structure that
+is not multi-unit, and the file cannot separate that from "not counted". Declaring it a
+marker would move 58,411 records on a reading the file does not settle, which is the
+opposite of the discipline in `CONTRIBUTING.md`. The count is published as
+`recorded_zero_values` so a reader can apply either reading.
+
+### `ASSESSEDIMPROVEDVALUE`: considered, and not declared
+
+6,613 records hold `0`, from the same post-collection parcel join as `YEARBUILT`. 5,527 of
+them sit on records whose year built is also `0`, against 391 of the 89,943 records that
+carry a real year, so the two zeros travel together and the co-occurrence is a hundredfold.
+
+It is still left as a recorded value. A parcel assessed at zero improved value is a thing
+that exists: an unimproved parcel, an exempt one, or a structure not separately assessed.
+The zeros also spread across 126 incidents and across the damage bands, 3,718 on
+undamaged structures and 2,499 on destroyed ones, which is not the shape of a field that
+stopped being collected. Unlike a year of 0, a dollar value of 0 is inside the field's own
+range.
+
+**This is the entry to revisit first.** If a later retrieval shows the two zeros still
+locked together, or CAL FIRE publishes a domain for the parcel fields, the reading here
+changes. It is recorded now so that the next reader starts from the number rather than
+from scratch.
+
+### The three count fields
+
+`NOOUTBUILDINGSDAMAGED` (59,628 zeros against 2,311 positive), `NOOUTBUILDINGSNOTDAMAGED`
+(58,888 against 3,070) and `NOOFCARSONPROPERTY` (55,831 against 357) are inspector counts,
+and a count of zero is what an inspector writes when there were none. Their positive
+values run from 1 upward in the shape a real count has. Nothing is declared and nothing
+moves; they are listed here because "we looked and a zero is a measurement" is a finding a
+reader is entitled to, and because the gate that reads this file has no way to tell a
+reviewed decision from an unexamined one.
