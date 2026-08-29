@@ -6,6 +6,22 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project a
 
 ## [Unreleased]
 
+### Fixed, the committed ruleset would have locked the owner out on first apply
+
+- **`.github/rulesets/main.json` carried `"bypass_actors": []`.** No ruleset has ever
+  been applied to this repository (`gh api repos/ChelseaKR/perimeter/rulesets` returned
+  `[]` on 2026-08-15 and again on 2026-08-28), so nothing was broken yet; what was
+  committed was a first application that would have broken it. The file now carries
+  exactly the repository owner's standing bypass, `RepositoryRole` 5 with
+  `bypass_mode: always`, deliberately and permanently: an agent once applied a ruleset
+  with no bypass and locked the owner out of their own repository, and restoring access
+  took a sweep across eighteen repositories. An empty list there is not a stricter gate,
+  it is the lockout. `.github/rulesets/README.md` argued the other way, calling the empty
+  list "the stricter reading" of CICD-15; that bullet is replaced with the reversal and
+  the reason, the apply procedure gains a step that checks the bypass actually came
+  through, and the "what is true today" section now says plainly that no ruleset is
+  applied and that this file has therefore never been corrected by a live one.
+
 ### Added, a retrieval that goes stale now fails the build
 
 - **A data card per source, under `docs/data/`.** DG-01 asks for one per ingest source

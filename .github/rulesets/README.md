@@ -7,7 +7,8 @@ setting, which is the owner's call, not a pull request's.
 
 ## What is true today
 
-Measured 2026-08-15:
+**No ruleset is applied on this repository.** Measured 2026-08-15 and re-read
+2026-08-28, both times with the same answer:
 
 | Question | Answer |
 |---|---|
@@ -19,6 +20,10 @@ So `main` can be force-pushed, deleted, or pushed to directly with every check
 red. `verify`, `secret-scan`, `sast`, `zizmor` and `codeql` run and report;
 nothing blocks on them. The header of `.github/workflows/ci.yml` used to call
 them merge-blocking, which was the opposite of what the server enforces.
+
+The other half of that, worth knowing before running the command below:
+`main.json` has never been applied to anything, so no live ruleset has ever
+corrected it. Whatever it gets wrong, it has been getting wrong unopposed.
 
 ## Apply it in this order, or every pull request deadlocks
 
@@ -40,7 +45,12 @@ gh api -X POST repos/ChelseaKR/perimeter/rulesets \
   --input .github/rulesets/main.json
 ```
 
-4. Re-export after any UI edit, so this file stays the source of truth:
+4. Confirm the owner's bypass came through:
+   `gh api repos/ChelseaKR/perimeter/rulesets/<id> --jq .current_user_can_bypass`
+   must read `"always"`, and `--jq .bypass_actors` must hold exactly the one
+   actor `main.json` names. An apply that lands every rule and loses that
+   actor returns 201 like any other, and it is the lockout described below.
+5. Re-export after any UI edit, so this file stays the source of truth:
    `gh api repos/ChelseaKR/perimeter/rulesets/<id>`.
 
 ## Why each rule is here
@@ -91,7 +101,28 @@ not enforceable by one person and is not enforced by this profile either. The
 PR requirement, the strict up-to-date policy, thread resolution and stale-review
 dismissal are what remain of it.
 
-**`bypass_actors: []`.** No break-glass path. CICD-15 permits one designated
-maintainer with `bypass_mode: pull_request`; the empty list is the stricter
-reading and can be relaxed deliberately if a required check ever proves
-unrunnable.
+**`bypass_actors`: the repository owner, and nobody else.** This file carries
+exactly one bypass actor, `RepositoryRole` 5 with `bypass_mode: always`,
+deliberately and permanently: an agent once applied a ruleset with no bypass
+and locked the owner out of their own repository, and restoring access took a
+sweep across eighteen repositories. An empty list here is not a stricter gate,
+it is the lockout.
+
+This bullet used to say the opposite. It read "`bypass_actors: []`. No
+break-glass path. CICD-15 permits one designated maintainer with
+`bypass_mode: pull_request`; the empty list is the stricter reading", and that
+is the reasoning being reversed, not an oversight being tidied. It was not
+wrong about the risk an admin bypass carries; it was wrong about which risk is
+larger, and the larger one has already happened elsewhere in this portfolio.
+Note also what this repository is asking the profile to enforce:
+`required_signatures`, `required_linear_history`, a strict up-to-date policy
+and five required contexts, two of which do not exist on `main` yet. That is a
+lot of ways for a first application to wedge, on a repository that has never
+had a ruleset at all, and the empty list would have removed the only way back
+in that does not go through GitHub support.
+
+`bypass_mode: always` rather than CICD-15's `pull_request`, because a bypass
+that only works inside a pull request is no use when the thing that is wedged
+is the pull request. One actor, and a repository role rather than a team or a
+GitHub App: a second entry in this list would be a real finding, and this one
+is not.
