@@ -7,8 +7,8 @@ setting, which is the owner's call, not a pull request's.
 
 ## What is true today
 
-**No ruleset is applied on this repository.** Measured 2026-08-15 and re-read
-2026-08-28, both times with the same answer:
+**No ruleset is applied on this repository.** Measured 2026-08-15, re-read
+2026-08-28 and again 2026-08-29, every time with the same answer:
 
 | Question | Answer |
 |---|---|
@@ -28,17 +28,24 @@ corrected it. Whatever it gets wrong, it has been getting wrong unopposed.
 ## Apply it in this order, or every pull request deadlocks
 
 A required status check that never reports is a check that never turns green.
-Two of the five contexts in `main.json` do not exist on `main` yet.
+This section used to open by saying that two of the five contexts in
+`main.json` did not exist on `main` yet, and listed landing them as step 1.
+That was true when it was written on 2026-08-15 and stopped being true the same
+day: `zizmor` arrived on `main` with #16 (`839557e`), and `sast` had been there
+since `ea06580`. Measured 2026-08-29, all five contexts exist and report.
+`verify`, `secret-scan`, `sast` and `zizmor` are jobs in
+`.github/workflows/ci.yml`; `codeql (actions · python · javascript)` is the
+`name:` of the `analyze` job in `.github/workflows/codeql.yml`, which triggers
+on `pull_request: branches: [main]` and so reports on any pull request
+targeting `main`. Read off the two most recent pull request head commits,
+`62c406e` (#30) and `ae0e2d6` (#31), each reported all five.
 
-1. Land the workflow-SAST change, so `zizmor` and
-   `codeql (actions · python · javascript)` exist on `main` and run on pull
-   requests. `codeql.yml` triggers on `pull_request: branches: [main]`, so it
-   reports on any PR targeting `main`.
-2. Drain the five open dependabot pull requests. `strict_required_status_checks_policy`
-   requires a branch to be up to date with `main` before it merges, so each one
-   needs a rebase after the one before it lands. Doing this first is cheaper
-   than doing it under the ruleset.
-3. Check `bypass_actors` in `main.json` before you post it. It must hold
+The first two steps this list used to carry are done, and are kept here as
+numbered history rather than deleted, so the order is still legible: landing
+the workflow-SAST change, and draining the dependabot queue, which was empty
+when measured on 2026-08-29. What remains before an apply:
+
+1. Check `bypass_actors` in `main.json` before you post it. It must hold
    `{ "actor_id": 5, "actor_type": "RepositoryRole", "bypass_mode": "always" }`.
    This file said `"bypass_actors": []` until 2026-08-28, and posting that
    version is how the owner gets locked out of the repository; see
@@ -47,19 +54,19 @@ Two of the five contexts in `main.json` do not exist on `main` yet.
    applicable ruleset combine while bypass actors are per-ruleset, so posting
    a second time without deleting the first leaves an empty-bypass ruleset
    over `main` that blocks the owner whatever the first one allows.
-4. Then apply the ruleset, owner-only:
+2. Then apply the ruleset, owner-only:
 
 ```sh
 gh api -X POST repos/ChelseaKR/perimeter/rulesets \
   --input .github/rulesets/main.json
 ```
 
-5. Confirm the owner's bypass came through:
+3. Confirm the owner's bypass came through:
    `gh api repos/ChelseaKR/perimeter/rulesets/<id> --jq .current_user_can_bypass`
    must read `"always"`, and `--jq .bypass_actors` must hold exactly the one
    actor `main.json` names. An apply that lands every rule and loses that
    actor returns 201 like any other, and it is the lockout described below.
-6. Re-export after any UI edit, so this file stays the source of truth:
+4. Re-export after any UI edit, so this file stays the source of truth:
    `gh api repos/ChelseaKR/perimeter/rulesets/<id>`.
 
 ## Why each rule is here
@@ -125,10 +132,13 @@ wrong about the risk an admin bypass carries; it was wrong about which risk is
 larger, and the larger one has already happened elsewhere in this portfolio.
 Note also what this repository is asking the profile to enforce:
 `required_signatures`, `required_linear_history`, a strict up-to-date policy
-and five required contexts, two of which do not exist on `main` yet. That is a
-lot of ways for a first application to wedge, on a repository that has never
-had a ruleset at all, and the empty list would have removed the only way back
-in that does not go through GitHub support.
+and five required contexts. That is a lot of ways for a first application to
+wedge, on a repository that has never had a ruleset at all, and the empty list
+would have removed the only way back in that does not go through GitHub
+support. When this bullet was first written two of those contexts did not yet
+exist on `main`, which made the wedge likelier still; all five report as of
+2026-08-29, and `required_signatures` is now the rule most likely to surprise a
+first apply.
 
 `bypass_mode: always` rather than CICD-15's `pull_request`, because a bypass
 that only works inside a pull request is no use when the thing that is wedged
