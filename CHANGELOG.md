@@ -21,6 +21,27 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project a
   the reason, the apply procedure gains a step that checks the bypass actually came
   through, and the "what is true today" section now says plainly that no ruleset is
   applied and that this file has therefore never been corrected by a live one.
+  Re-measured 2026-08-29: still `[]`, still `"protected": false`, and the branch
+  protection endpoint still 404s.
+- **Nothing read that file, so correcting it once would not have held.** Measured before
+  writing the check: no test and no module in this repository referenced `ruleset` or
+  `bypass_actors` anywhere, so the value could regress to the empty list in a single edit
+  with every gate still green. `tests/test_ruleset.py` makes the empty list a test
+  failure. `lockout_risk` is a pure function of a parsed document, exercised against the
+  five shapes that lose the bypass (empty list, absent key, wrong type, a different
+  actor, and the owner downgraded to `bypass_mode: pull_request`) with a positive control
+  so it is not passing by refusing everything, and `load_ruleset` fails on a missing or
+  unparseable file rather than returning an empty document that the assertions would read
+  as nothing wrong.
+- **The apply order named two required contexts that did not exist. They exist.**
+  `.github/rulesets/README.md` said "Two of the five contexts in `main.json` do not exist
+  on `main` yet" and made landing them step 1. That was written 2026-08-15 and was false
+  within the day: `zizmor` arrived with #16 (`839557e`) and `sast` had been in `ci.yml`
+  since `ea06580`. Re-measured 2026-08-29 off the two most recent pull request head
+  commits, `62c406e` (#30) and `ae0e2d6` (#31), all five contexts report. The completed
+  steps are kept as numbered history rather than deleted and the rest are renumbered.
+- **Still not applied.** Landing the corrected file changes nothing on the server.
+  Applying the ruleset is a live repository setting and remains the owner's call.
 
 ### Added, a retrieval that goes stale now fails the build
 
