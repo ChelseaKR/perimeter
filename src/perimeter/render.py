@@ -879,8 +879,6 @@ across both would hide that.</p>
 <th scope="col" class="num">Present, inaccessible</th>
 <th scope="col" class="num">Share of inaccessible</th>
 </tr></thead><tbody>{access_rows}</tbody></table></section>
-
-</tr></thead><tbody>{access_rows}</tbody></table></div>
 {access_note}
 
 <h2>Coverage per incident</h2>
