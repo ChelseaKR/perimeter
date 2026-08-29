@@ -15,7 +15,10 @@
       "inaccessible_tenths_pct": 1000,
       "inaccessible_total": 591,
       "label": "Damage",
-      "name": "DAMAGE"
+      "name": "DAMAGE",
+      "undetermined_present": 0,
+      "undetermined_tenths_pct": null,
+      "undetermined_total": 0
     },
     {
       "assessed_present": 131931,
@@ -25,7 +28,10 @@
       "inaccessible_tenths_pct": 1000,
       "inaccessible_total": 591,
       "label": "Structure type",
-      "name": "STRUCTURETYPE"
+      "name": "STRUCTURETYPE",
+      "undetermined_present": 0,
+      "undetermined_tenths_pct": null,
+      "undetermined_total": 0
     },
     {
       "assessed_present": 131931,
@@ -35,7 +41,10 @@
       "inaccessible_tenths_pct": 1000,
       "inaccessible_total": 591,
       "label": "Structure category",
-      "name": "STRUCTURECATEGORY"
+      "name": "STRUCTURECATEGORY",
+      "undetermined_present": 0,
+      "undetermined_tenths_pct": null,
+      "undetermined_total": 0
     },
     {
       "assessed_present": 131931,
@@ -45,7 +54,10 @@
       "inaccessible_tenths_pct": 1000,
       "inaccessible_total": 591,
       "label": "Incident name",
-      "name": "INCIDENTNAME"
+      "name": "INCIDENTNAME",
+      "undetermined_present": 0,
+      "undetermined_tenths_pct": null,
+      "undetermined_total": 0
     },
     {
       "assessed_present": 131931,
@@ -55,7 +67,10 @@
       "inaccessible_tenths_pct": 1000,
       "inaccessible_total": 591,
       "label": "Incident number",
-      "name": "INCIDENTNUM"
+      "name": "INCIDENTNUM",
+      "undetermined_present": 0,
+      "undetermined_tenths_pct": null,
+      "undetermined_total": 0
     },
     {
       "assessed_present": 131931,
@@ -65,7 +80,10 @@
       "inaccessible_tenths_pct": 1000,
       "inaccessible_total": 591,
       "label": "Incident start date",
-      "name": "INCIDENTSTARTDATE"
+      "name": "INCIDENTSTARTDATE",
+      "undetermined_present": 0,
+      "undetermined_tenths_pct": null,
+      "undetermined_total": 0
     },
     {
       "assessed_present": 131931,
@@ -75,7 +93,10 @@
       "inaccessible_tenths_pct": 1000,
       "inaccessible_total": 591,
       "label": "Hazard type",
-      "name": "HAZARDTYPE"
+      "name": "HAZARDTYPE",
+      "undetermined_present": 0,
+      "undetermined_tenths_pct": null,
+      "undetermined_total": 0
     },
     {
       "assessed_present": 131901,
@@ -85,7 +106,10 @@
       "inaccessible_tenths_pct": 1000,
       "inaccessible_total": 591,
       "label": "County",
-      "name": "COUNTY"
+      "name": "COUNTY",
+      "undetermined_present": 0,
+      "undetermined_tenths_pct": null,
+      "undetermined_total": 0
     },
     {
       "assessed_present": 131931,
@@ -95,7 +119,10 @@
       "inaccessible_tenths_pct": 1000,
       "inaccessible_total": 591,
       "label": "CAL FIRE unit",
-      "name": "CALFIREUNIT"
+      "name": "CALFIREUNIT",
+      "undetermined_present": 0,
+      "undetermined_tenths_pct": null,
+      "undetermined_total": 0
     },
     {
       "assessed_present": 54441,
@@ -105,7 +132,10 @@
       "inaccessible_tenths_pct": 103,
       "inaccessible_total": 591,
       "label": "Community",
-      "name": "COMMUNITY"
+      "name": "COMMUNITY",
+      "undetermined_present": 0,
+      "undetermined_tenths_pct": null,
+      "undetermined_total": 0
     },
     {
       "assessed_present": 99677,
@@ -115,7 +145,10 @@
       "inaccessible_tenths_pct": 602,
       "inaccessible_total": 591,
       "label": "City",
-      "name": "CITY"
+      "name": "CITY",
+      "undetermined_present": 0,
+      "undetermined_tenths_pct": null,
+      "undetermined_total": 0
     },
     {
       "assessed_present": 109156,
@@ -125,7 +158,10 @@
       "inaccessible_tenths_pct": 171,
       "inaccessible_total": 591,
       "label": "Roof construction",
-      "name": "ROOFCONSTRUCTION"
+      "name": "ROOFCONSTRUCTION",
+      "undetermined_present": 0,
+      "undetermined_tenths_pct": null,
+      "undetermined_total": 0
     },
     {
       "assessed_present": 74841,
@@ -135,7 +171,10 @@
       "inaccessible_tenths_pct": 174,
       "inaccessible_total": 591,
       "label": "Eaves",
-      "name": "EAVES"
+      "name": "EAVES",
+      "undetermined_present": 0,
+      "undetermined_tenths_pct": null,
+      "undetermined_total": 0
     },
     {
       "assessed_present": 87035,
@@ -145,7 +184,10 @@
       "inaccessible_tenths_pct": 78,
       "inaccessible_total": 591,
       "label": "Vent screen",
-      "name": "VENTSCREEN"
+      "name": "VENTSCREEN",
+      "undetermined_present": 0,
+      "undetermined_tenths_pct": null,
+      "undetermined_total": 0
     },
     {
       "assessed_present": 109870,
@@ -155,7 +197,10 @@
       "inaccessible_tenths_pct": 169,
       "inaccessible_total": 591,
       "label": "Exterior siding",
-      "name": "EXTERIORSIDING"
+      "name": "EXTERIORSIDING",
+      "undetermined_present": 0,
+      "undetermined_tenths_pct": null,
+      "undetermined_total": 0
     },
     {
       "assessed_present": 93891,
@@ -165,7 +210,10 @@
       "inaccessible_tenths_pct": 139,
       "inaccessible_total": 591,
       "label": "Window pane",
-      "name": "WINDOWPANE"
+      "name": "WINDOWPANE",
+      "undetermined_present": 0,
+      "undetermined_tenths_pct": null,
+      "undetermined_total": 0
     },
     {
       "assessed_present": 95085,
@@ -175,7 +223,10 @@
       "inaccessible_tenths_pct": 115,
       "inaccessible_total": 591,
       "label": "Deck or porch on grade",
-      "name": "DECKPORCHONGRADE"
+      "name": "DECKPORCHONGRADE",
+      "undetermined_present": 0,
+      "undetermined_tenths_pct": null,
+      "undetermined_total": 0
     },
     {
       "assessed_present": 92124,
@@ -185,7 +236,10 @@
       "inaccessible_tenths_pct": 93,
       "inaccessible_total": 591,
       "label": "Deck or porch elevated",
-      "name": "DECKPORCHELEVATED"
+      "name": "DECKPORCHELEVATED",
+      "undetermined_present": 0,
+      "undetermined_tenths_pct": null,
+      "undetermined_total": 0
     },
     {
       "assessed_present": 90633,
@@ -195,7 +249,10 @@
       "inaccessible_tenths_pct": 95,
       "inaccessible_total": 591,
       "label": "Patio cover or carport",
-      "name": "PATIOCOVERCARPORT"
+      "name": "PATIOCOVERCARPORT",
+      "undetermined_present": 0,
+      "undetermined_tenths_pct": null,
+      "undetermined_total": 0
     },
     {
       "assessed_present": 95706,
@@ -205,7 +262,10 @@
       "inaccessible_tenths_pct": 151,
       "inaccessible_total": 591,
       "label": "Fence attached to structure",
-      "name": "FENCEATTACHEDTOSTRUCTURE"
+      "name": "FENCEATTACHEDTOSTRUCTURE",
+      "undetermined_present": 0,
+      "undetermined_tenths_pct": null,
+      "undetermined_total": 0
     },
     {
       "assessed_present": 48494,
@@ -215,7 +275,10 @@
       "inaccessible_tenths_pct": 90,
       "inaccessible_total": 591,
       "label": "Propane tank distance",
-      "name": "PROPANETANKDISTANCE"
+      "name": "PROPANETANKDISTANCE",
+      "undetermined_present": 0,
+      "undetermined_tenths_pct": null,
+      "undetermined_total": 0
     },
     {
       "assessed_present": 37740,
@@ -225,7 +288,10 @@
       "inaccessible_tenths_pct": 73,
       "inaccessible_total": 591,
       "label": "Utility or misc structure distance",
-      "name": "UTILITYMISCSTRUCTUREDISTANCE"
+      "name": "UTILITYMISCSTRUCTUREDISTANCE",
+      "undetermined_present": 0,
+      "undetermined_tenths_pct": null,
+      "undetermined_total": 0
     },
     {
       "assessed_present": 3661,
@@ -235,7 +301,10 @@
       "inaccessible_tenths_pct": 0,
       "inaccessible_total": 591,
       "label": "Where fire started on structure",
-      "name": "WHEREFIRESTARTEDONSTRUCTURE"
+      "name": "WHEREFIRESTARTEDONSTRUCTURE",
+      "undetermined_present": 0,
+      "undetermined_tenths_pct": null,
+      "undetermined_total": 0
     },
     {
       "assessed_present": 4848,
@@ -245,7 +314,10 @@
       "inaccessible_tenths_pct": 0,
       "inaccessible_total": 591,
       "label": "What the fire started from",
-      "name": "WHATDIDFIRESTARTFROM"
+      "name": "WHATDIDFIRESTARTFROM",
+      "undetermined_present": 0,
+      "undetermined_tenths_pct": null,
+      "undetermined_total": 0
     },
     {
       "assessed_present": 8461,
@@ -255,7 +327,10 @@
       "inaccessible_tenths_pct": 2,
       "inaccessible_total": 591,
       "label": "Defensive actions taken",
-      "name": "DEFENSIVEACTIONS"
+      "name": "DEFENSIVEACTIONS",
+      "undetermined_present": 0,
+      "undetermined_tenths_pct": null,
+      "undetermined_total": 0
     },
     {
       "assessed_present": 61709,
@@ -265,7 +340,10 @@
       "inaccessible_tenths_pct": 372,
       "inaccessible_total": 591,
       "label": "Units in structure",
-      "name": "NUMBEROFUNITPERSTRUCTURE"
+      "name": "NUMBEROFUNITPERSTRUCTURE",
+      "undetermined_present": 0,
+      "undetermined_tenths_pct": null,
+      "undetermined_total": 0
     },
     {
       "assessed_present": 61717,
@@ -275,7 +353,10 @@
       "inaccessible_tenths_pct": 376,
       "inaccessible_total": 591,
       "label": "Damaged outbuildings",
-      "name": "NOOUTBUILDINGSDAMAGED"
+      "name": "NOOUTBUILDINGSDAMAGED",
+      "undetermined_present": 0,
+      "undetermined_tenths_pct": null,
+      "undetermined_total": 0
     },
     {
       "assessed_present": 61735,
@@ -285,7 +366,10 @@
       "inaccessible_tenths_pct": 377,
       "inaccessible_total": 591,
       "label": "Undamaged outbuildings",
-      "name": "NOOUTBUILDINGSNOTDAMAGED"
+      "name": "NOOUTBUILDINGSNOTDAMAGED",
+      "undetermined_present": 0,
+      "undetermined_tenths_pct": null,
+      "undetermined_total": 0
     },
     {
       "assessed_present": 55986,
@@ -295,7 +379,10 @@
       "inaccessible_tenths_pct": 342,
       "inaccessible_total": 591,
       "label": "Damaged or destroyed cars",
-      "name": "NOOFCARSONPROPERTY"
+      "name": "NOOFCARSONPROPERTY",
+      "undetermined_present": 0,
+      "undetermined_tenths_pct": null,
+      "undetermined_total": 0
     },
     {
       "assessed_present": 131034,
@@ -305,7 +392,10 @@
       "inaccessible_tenths_pct": 983,
       "inaccessible_total": 591,
       "label": "APN (parcel)",
-      "name": "APN"
+      "name": "APN",
+      "undetermined_present": 0,
+      "undetermined_tenths_pct": null,
+      "undetermined_total": 0
     },
     {
       "assessed_present": 123711,
@@ -315,7 +405,10 @@
       "inaccessible_tenths_pct": 723,
       "inaccessible_total": 591,
       "label": "Site address (parcel)",
-      "name": "SITEADDRESS"
+      "name": "SITEADDRESS",
+      "undetermined_present": 0,
+      "undetermined_tenths_pct": null,
+      "undetermined_total": 0
     },
     {
       "assessed_present": 89638,
@@ -325,7 +418,10 @@
       "inaccessible_tenths_pct": 516,
       "inaccessible_total": 591,
       "label": "Year built (parcel)",
-      "name": "YEARBUILT"
+      "name": "YEARBUILT",
+      "undetermined_present": 0,
+      "undetermined_tenths_pct": null,
+      "undetermined_total": 0
     },
     {
       "assessed_present": 126035,
@@ -335,7 +431,10 @@
       "inaccessible_tenths_pct": 756,
       "inaccessible_total": 591,
       "label": "Assessed improved value (parcel)",
-      "name": "ASSESSEDIMPROVEDVALUE"
+      "name": "ASSESSEDIMPROVEDVALUE",
+      "undetermined_present": 0,
+      "undetermined_tenths_pct": null,
+      "undetermined_total": 0
     },
     {
       "assessed_present": 126108,
@@ -345,7 +444,10 @@
       "inaccessible_tenths_pct": 934,
       "inaccessible_total": 591,
       "label": "Street name (field determined)",
-      "name": "STREETNAME"
+      "name": "STREETNAME",
+      "undetermined_present": 0,
+      "undetermined_tenths_pct": null,
+      "undetermined_total": 0
     },
     {
       "assessed_present": 125217,
@@ -355,7 +457,10 @@
       "inaccessible_tenths_pct": 1000,
       "inaccessible_total": 591,
       "label": "Street type (field determined)",
-      "name": "STREETTYPE"
+      "name": "STREETTYPE",
+      "undetermined_present": 0,
+      "undetermined_tenths_pct": null,
+      "undetermined_total": 0
     },
     {
       "assessed_present": 131931,
@@ -365,7 +470,10 @@
       "inaccessible_tenths_pct": 1000,
       "inaccessible_total": 591,
       "label": "Latitude",
-      "name": "LATITUDE"
+      "name": "LATITUDE",
+      "undetermined_present": 0,
+      "undetermined_tenths_pct": null,
+      "undetermined_total": 0
     },
     {
       "assessed_present": 131931,
@@ -375,7 +483,10 @@
       "inaccessible_tenths_pct": 1000,
       "inaccessible_total": 591,
       "label": "Longitude",
-      "name": "LONGITUDE"
+      "name": "LONGITUDE",
+      "undetermined_present": 0,
+      "undetermined_tenths_pct": null,
+      "undetermined_total": 0
     }
   ],
   "damage_values": {

@@ -53,6 +53,25 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project a
   "what still needs a person" list loses reflow and target size and keeps print, focus
   appearance, a screen reader, and looking at the layout. See ADR-0008.
 
+### Fixed, an access table whose denominators could quietly hold fewer records than the file
+
+- **The two populations in the assessed-against-inaccessible table are counted from the
+  damage field, and a record whose damage field says nothing was in neither.** Both
+  denominators were built from the records that answer, so a record that answers neither
+  question left the table without appearing anywhere in it. Measured against the
+  pre-change code over four records, one assessed, one inaccessible, one with a blank
+  damage field and one holding a marker: the denominators summed to 2. Nothing published
+  said which two records were missing or that any were.
+- **No record in the acquired file is in that state, which is why this was invisible.**
+  `access_split` has always counted `damage_not_recorded` and `damage_explicit_unknown`,
+  and both are 0 in the 2026-08-07 retrieval, so every denominator happened to be
+  complete. The table could not have said so, and would not have said otherwise.
+- **`AccessFieldCoverage` now counts three populations that partition the records by
+  construction**, and publishes `undetermined_present`, `undetermined_total` and
+  `undetermined_tenths_pct` per field. The page states what the two columns are counted
+  over and what is in neither, in both cases, with the counts coming from the pipeline.
+  See ADR-0007.
+
 ### Fixed, 12,148 structures recorded as built in year 0
 
 - **`YEARBUILT` counted the literal `0` as a recorded construction year.** 12,148 of the

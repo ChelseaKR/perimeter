@@ -162,11 +162,20 @@ def perimeter_report(records: Sequence[Record]) -> PerimeterReport:
 
 @dataclass(frozen=True)
 class AccessFieldCoverage:
-    """One field counted twice: on assessed records, and on inaccessible ones.
+    """One field counted three ways, so that every record is counted one of them.
 
-    This is the measurement that separates "not inspected" from "inspected, field blank".
-    A construction attribute missing on a structure the inspection could not reach is a
-    different fact from the same attribute missing on a structure that was assessed.
+    Two of the three are the measurement: a construction attribute missing on a
+    structure the inspection could not reach is a different fact from the same attribute
+    missing on a structure that was assessed, and that is the split this exists for.
+
+    The third is the population neither of those describes. ``DAMAGE`` is what says
+    whether a structure was reached, and a record whose ``DAMAGE`` is blank or holds a
+    marker answers neither question. There is no such record in the acquired file today,
+    and there was no such count either: the two denominators were built from the two
+    populations that answer, so a record that answered nothing left the table without
+    appearing anywhere in it, and a reader adding the columns up would have found fewer
+    records than the file holds with nothing saying why. ``AccessSplit`` has always
+    counted these records; this is the same discipline applied one level down, per field.
     """
 
     name: str
@@ -175,6 +184,8 @@ class AccessFieldCoverage:
     assessed_total: int
     inaccessible_present: int
     inaccessible_total: int
+    undetermined_present: int
+    undetermined_total: int
 
     @property
     def assessed_tenths_pct(self) -> int | None:
@@ -185,6 +196,17 @@ class AccessFieldCoverage:
         return present_tenths_of_percent(
             self.inaccessible_present, self.inaccessible_total
         )
+
+    @property
+    def undetermined_tenths_pct(self) -> int | None:
+        return present_tenths_of_percent(
+            self.undetermined_present, self.undetermined_total
+        )
+
+    @property
+    def counted_records(self) -> int:
+        """Every record the three populations account for between them."""
+        return self.assessed_total + self.inaccessible_total + self.undetermined_total
 
 
 @dataclass(frozen=True)
@@ -215,6 +237,15 @@ def access_field_coverages(
 ) -> list[AccessFieldCoverage]:
     assessed = [record for record in records if is_assessed(record)]
     blocked = [record for record in records if is_inaccessible(record)]
+    # Everything the damage field does not place in either population. Derived by
+    # subtraction from the records handed in rather than by a third predicate, so the
+    # three populations partition the input by construction and a future damage state
+    # cannot fall between them.
+    undetermined = [
+        record
+        for record in records
+        if not is_assessed(record) and not is_inaccessible(record)
+    ]
     rows: list[AccessFieldCoverage] = []
     for spec in specs:
         rows.append(
@@ -229,6 +260,10 @@ def access_field_coverages(
                     1 for record in blocked if record.cell(spec.name).is_present
                 ),
                 inaccessible_total=len(blocked),
+                undetermined_present=sum(
+                    1 for record in undetermined if record.cell(spec.name).is_present
+                ),
+                undetermined_total=len(undetermined),
             )
         )
     return rows

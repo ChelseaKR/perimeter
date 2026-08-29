@@ -10,6 +10,7 @@ from perimeter.cells import Cell, CellState
 from perimeter.coverage import (
     DinsReport,
     PerimeterReport,
+    access_field_coverages,
     dins_report,
     field_coverage,
     perimeter_report,
@@ -33,6 +34,7 @@ from perimeter.records import Record
 from perimeter.schema import (
     DINS_FIELDS,
     DINS_FIELDS_BY_NAME,
+    DINS_INACCESSIBLE,
     FRAP_FIELDS_BY_NAME,
     FieldSpec,
     SchemaDriftError,
@@ -318,3 +320,57 @@ def test_a_field_whose_marker_was_lost_still_counts_in_its_state() -> None:
     damage = field_coverage([record], DINS_FIELDS_BY_NAME["DAMAGE"])
     assert damage.explicit_unknown == 1
     assert damage.markers == {}
+
+
+def test_the_access_table_accounts_for_every_record_it_was_handed() -> None:
+    """Three populations, and every record is in exactly one of them.
+
+    ``DAMAGE`` is what says whether a structure was reached, so a record whose damage
+    field is blank or holds a marker answers neither of the two questions the access
+    table asks. Before this counted, such a record left the table entirely: the two
+    denominators were built from the two populations that answer, and a reader adding
+    the columns would have found fewer records than the file holds with nothing saying
+    why. Measured against the pre-change code on these same four records, the
+    denominators summed to 2.
+    """
+    records = [
+        _damage_record(Cell.present("No Damage")),
+        _damage_record(Cell.present(DINS_INACCESSIBLE)),
+        _damage_record(Cell.not_recorded()),
+        _damage_record(Cell.explicit_unknown("unknown")),
+    ]
+    rows = access_field_coverages(records, DINS_FIELDS)
+    assert rows
+    for row in rows:
+        assert row.assessed_total == 1, row.name
+        assert row.inaccessible_total == 1, row.name
+        assert row.undetermined_total == 2, row.name
+        assert row.counted_records == len(records), row.name
+
+
+def test_the_third_population_is_counted_field_by_field_and_not_only_totalled() -> None:
+    """A blank on a record nobody could place is still a blank somebody may want."""
+    spec = FieldSpec("X", "X")
+    unplaceable = _damage_record(Cell.not_recorded())
+    with_roof = Record(
+        identifier="2",
+        cells={
+            **unplaceable.cells,
+            "ROOFCONSTRUCTION": spec.classify("Tile", where="r"),
+        },
+    )
+    rows = {
+        row.name: row
+        for row in access_field_coverages([unplaceable, with_roof], DINS_FIELDS)
+    }
+    assert rows["ROOFCONSTRUCTION"].undetermined_total == 2
+    assert rows["ROOFCONSTRUCTION"].undetermined_present == 1
+    assert rows["ROOFCONSTRUCTION"].undetermined_tenths_pct == 500
+    assert rows["EAVES"].undetermined_present == 0
+
+
+def test_an_access_share_over_an_empty_population_is_absent_not_zero() -> None:
+    records = [_damage_record(Cell.present("No Damage"))]
+    row = access_field_coverages(records, DINS_FIELDS)[0]
+    assert row.undetermined_total == 0
+    assert row.undetermined_tenths_pct is None

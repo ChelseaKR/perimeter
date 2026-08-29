@@ -188,6 +188,9 @@ def dins_payload(report: DinsReport, *, is_fixture: bool) -> dict[str, Any]:
                 "inaccessible_present": row.inaccessible_present,
                 "inaccessible_total": row.inaccessible_total,
                 "inaccessible_tenths_pct": row.inaccessible_tenths_pct,
+                "undetermined_present": row.undetermined_present,
+                "undetermined_total": row.undetermined_total,
+                "undetermined_tenths_pct": row.undetermined_tenths_pct,
             }
             for row in report.by_access
         ],

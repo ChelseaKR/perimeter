@@ -127,3 +127,24 @@ def test_every_published_page_says_it_is_not_affiliated_with_cal_fire(
 ) -> None:
     text = (SITE / name).read_text(encoding="utf-8")
     assert "Not affiliated with or endorsed by CAL FIRE" in text
+
+
+def test_the_published_access_table_accounts_for_every_record() -> None:
+    """The two shown populations plus the one that is not shown are the whole file.
+
+    A record whose damage field says nothing about access is in neither column of the
+    access table. Until that third population was counted it was in no denominator
+    either, so the table could describe fewer records than the file holds and say
+    nothing about it.
+    """
+    payload = artifact("dins-coverage.json")
+    for row in payload["completeness_by_access"]:
+        counted = (
+            row["assessed_total"]
+            + row["inaccessible_total"]
+            + row["undetermined_total"]
+        )
+        assert counted == payload["records"], (
+            f"{row['name']}: the published access table accounts for {counted} of "
+            f"{payload['records']} records"
+        )
