@@ -59,8 +59,10 @@ is about one fire season.
 
 ## Consequences
 
-This gate is built to fire, and firing is it working. On the retrieval on record
-it fires for DINS on 2027-02-03 and for FRAP on 2027-09-11. When it does, the fix
+This gate is built to fire, and firing is it working. The comparison is `age >
+sla`, so the SLA day itself still passes and the first red day is the one after:
+on the retrieval on record it fires for DINS on 2027-02-04 and for FRAP on
+2027-09-12. When it does, the fix
 is to re-acquire, rebuild `site/` and update `sources.py`, or to move the SLA in
 the card with a reason. What it must not become is a number quietly raised to get
 a green build, which is the move `CONTRIBUTING.md` already forbids for a marker
