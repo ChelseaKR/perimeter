@@ -34,7 +34,8 @@ import pytest
 
 from perimeter.cells import present_tenths_of_percent
 from perimeter.cli import build_site
-from perimeter.render import DARK, LIGHT, SITE_URL
+from perimeter.render import DARK, DOMAIN_NOTE, LIGHT, SITE_URL
+from perimeter.schema import DINS_FIELDS, FRAP_FIELDS, FieldSpec
 from perimeter.sources import SOURCES
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -577,3 +578,46 @@ def test_no_share_is_printed_without_the_counts_it_came_from(
         return
     counts = [chunk for chunk in doc.cells if NUMBER.fullmatch(chunk.strip() or "x")]
     assert len(counts) >= len(shares), name
+
+
+# --------------------------------------------------------------------------------------
+# The published domain: counted, absent, or nothing to count against
+# --------------------------------------------------------------------------------------
+
+NO_DOMAIN_NOTE = (
+    "The layer publishes no coded-value domain for this field, so no value here is "
+    "counted as outside one"
+)
+
+
+@pytest.mark.parametrize(
+    ("name", "specs"),
+    (("perimeters.html", FRAP_FIELDS), ("dins.html", DINS_FIELDS)),
+)
+def test_a_field_with_no_published_domain_says_so_rather_than_counting_zero(
+    built: Path, name: str, specs: tuple[FieldSpec, ...]
+) -> None:
+    """A free-text field has no domain, and the row says that instead of staying silent.
+
+    Silence on such a row reads exactly like silence on a field whose domain is published
+    and holds every value it carries. Those are different facts, and the artifact beside
+    this page publishes null for one and zero for the other.
+    """
+    expected = sum(1 for spec in specs if spec.domain_values is None)
+    assert expected, f"{name} must carry at least one free-text field"
+    text = (built / name).read_text(encoding="utf-8")
+    assert text.count(NO_DOMAIN_NOTE) == expected
+
+
+@pytest.mark.parametrize("name", ("perimeters.html", "dins.html"))
+def test_the_field_table_says_what_a_row_with_no_domain_note_means(
+    built: Path, name: str
+) -> None:
+    assert DOMAIN_NOTE in (built / name).read_text(encoding="utf-8")
+
+
+def test_the_overview_carries_no_field_table_and_so_no_domain_note(built: Path) -> None:
+    """The other direction, so the two tests above are not passing over every page."""
+    text = (built / "index.html").read_text(encoding="utf-8")
+    assert NO_DOMAIN_NOTE not in text
+    assert DOMAIN_NOTE not in text

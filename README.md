@@ -94,6 +94,13 @@ An ordinary value outside a published domain is deliberately *not* an error. It 
 and published as `outside_published_domain`, because it is a real thing about the file and
 crashing on it would hide it.
 
+A field the layer publishes **no** domain for reports that bucket as absent rather than as
+zero. Thirty of the fifty-four measured fields are free text, so nothing there was
+compared against anything; a zero would have said the file and the domain agree about a
+domain that does not exist, and it read identically to `CAUSE`, which has a published
+domain and holds every value in it. The artifacts publish `null` for those fields and the
+pages say so in words. See ADR-0010.
+
 ## Which judgment calls rest on what
 
 Twenty-eight of the fifty-four measured fields declare a marker, a code or a finding of

@@ -18,6 +18,7 @@ from perimeter.coverage import (
 from perimeter.dins import load_inspections
 from perimeter.perimeters import load_perimeters
 from perimeter.render import dins_page, index_page, perimeters_page
+from perimeter.schema import DINS_FIELDS, FRAP_FIELDS
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURES = ROOT / "fixtures"
@@ -110,6 +111,62 @@ def test_every_field_publishes_all_three_counts(built: Path) -> None:
         assert (
             field["present"] + field["explicit_unknown"] + field["not_recorded"]
             == field["total"]
+        )
+
+
+@pytest.mark.parametrize("name", ["perimeters-coverage.json", "dins-coverage.json"])
+def test_a_field_with_no_published_domain_publishes_null_not_zero(
+    built: Path, name: str
+) -> None:
+    """The layer publishes no domain for it, so nothing was counted against one.
+
+    Thirty of the fifty-four measured fields are free text. Publishing ``0`` for them
+    says the file holds nothing the domain does not describe, which is a comparison that
+    never happened, and it is indistinguishable in the artifact from a field whose domain
+    is published and genuinely holds every value.
+    """
+    payload = json.loads((built / "data" / name).read_text("utf-8"))
+    spec_by_name = {spec.name: spec for spec in (*FRAP_FIELDS, *DINS_FIELDS)}
+    without = [
+        field
+        for field in payload["fields"]
+        if spec_by_name[field["name"]].domain_values is None
+    ]
+    assert without, f"{name} must exercise at least one free-text field"
+    for field in without:
+        for key in (
+            "outside_published_domain",
+            "outside_published_domain_distinct",
+            "outside_published_domain_values",
+            "outside_published_domain_values_listed",
+        ):
+            assert field[key] is None, f"{name}.{field['name']}.{key} is {field[key]!r}"
+
+
+@pytest.mark.parametrize("name", ["perimeters-coverage.json", "dins-coverage.json"])
+def test_a_field_with_a_published_domain_publishes_a_counted_number(
+    built: Path, name: str
+) -> None:
+    """The other side of the same line: a domain that was read reports integers."""
+    payload = json.loads((built / "data" / name).read_text("utf-8"))
+    spec_by_name = {spec.name: spec for spec in (*FRAP_FIELDS, *DINS_FIELDS)}
+    with_domain = [
+        field
+        for field in payload["fields"]
+        if spec_by_name[field["name"]].domain_values is not None
+    ]
+    assert with_domain, f"{name} must exercise at least one field with a domain"
+    for field in with_domain:
+        assert isinstance(field["outside_published_domain"], int)
+        assert isinstance(field["outside_published_domain_distinct"], int)
+        # How many of the distinct values the object names. Equal here because no field
+        # reaches the cap; published so that a capped list cannot read as the whole set.
+        assert field["outside_published_domain_values_listed"] == len(
+            field["outside_published_domain_values"]
+        )
+        assert (
+            field["outside_published_domain_values_listed"]
+            <= field["outside_published_domain_distinct"]
         )
 
 

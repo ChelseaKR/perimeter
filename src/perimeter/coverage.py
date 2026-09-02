@@ -34,12 +34,26 @@ from perimeter.records import Record
 from perimeter.schema import DINS_FIELDS, FRAP_FIELDS, Basis, FieldSpec
 
 OUTSIDE_DOMAIN_VALUE_CAP = 12
-"""How many out-of-domain values to name per field. The full count is always published."""
+"""How many out-of-domain values to name per field.
+
+The full count is always published, and so is how many of them this list holds:
+``outside_domain_distinct`` is the number found and ``outside_domain_values_listed`` is
+the number named. A reader comparing the two can see that the list stops short, rather
+than reading a truncated list as the whole set.
+"""
 
 
 @dataclass(frozen=True)
 class FieldCoverage:
-    """One field's three states, plus what the values themselves look like."""
+    """One field's three states, plus what the values themselves look like.
+
+    The four out-of-domain measures are ``None`` together, for one reason: the layer
+    publishes no coded-value domain for that field, so there is nothing for a value to be
+    outside of and nothing was counted. That is not the same fact as a field whose domain
+    is published and whose every value is inside it, which counts zero. Thirty of the
+    fifty-four fields measured here are free text, and reporting them as ``0`` said the
+    file and the domain agree about a domain that does not exist.
+    """
 
     name: str
     label: str
@@ -49,9 +63,10 @@ class FieldCoverage:
     explicit_unknown: int
     not_recorded: int
     markers: dict[str, int]
-    outside_domain: int
-    outside_domain_distinct: int
-    outside_domain_values: dict[str, int]
+    outside_domain: int | None
+    outside_domain_distinct: int | None
+    outside_domain_values: dict[str, int] | None
+    outside_domain_values_listed: int | None
     zero_values: int | None
 
     @property
@@ -89,6 +104,12 @@ def field_coverage(records: Sequence[Record], spec: FieldSpec) -> FieldCoverage:
             except ValueError:  # pragma: no cover - numeric drift raises at read time
                 pass
     named = sorted(outside.items(), key=lambda item: (-item[1], item[0]))
+    listed = dict(named[:OUTSIDE_DOMAIN_VALUE_CAP])
+    # A field the layer publishes no domain for was never compared against one. Its
+    # out-of-domain measures are absent rather than zero: `spec.outside_domain` answers
+    # False for every cell of such a field, so summing that answer produces a zero that
+    # reads as a finding and is not one.
+    has_domain = spec.domain_values is not None
     return FieldCoverage(
         name=spec.name,
         label=spec.label,
@@ -98,9 +119,10 @@ def field_coverage(records: Sequence[Record], spec: FieldSpec) -> FieldCoverage:
         explicit_unknown=states.get("explicit_unknown", 0),
         not_recorded=states.get("not_recorded", 0),
         markers=dict(sorted(markers.items())),
-        outside_domain=sum(outside.values()),
-        outside_domain_distinct=len(outside),
-        outside_domain_values=dict(named[:OUTSIDE_DOMAIN_VALUE_CAP]),
+        outside_domain=sum(outside.values()) if has_domain else None,
+        outside_domain_distinct=len(outside) if has_domain else None,
+        outside_domain_values=listed if has_domain else None,
+        outside_domain_values_listed=len(listed) if has_domain else None,
         zero_values=zeros if spec.numeric else None,
     )
 

@@ -1,5 +1,5 @@
 .PHONY: verify lock-check sync lint format typecheck test audit site site-offline \
-        acquire pages node-sync htmlvalidate a11y node-audit determinism \
+        site-check acquire pages node-sync htmlvalidate a11y node-audit determinism \
         browser-sync a11y-browser browser-audit
 
 # CI / `make verify` body: the two MUST stay byte-for-byte identical.
@@ -50,6 +50,34 @@ site:
 		--perimeters data/raw/frap_perimeters.json \
 		--dins data/raw/dins_postfire.json \
 		--out site
+
+# Is the committed site/ what the current pipeline produces from CAL FIRE's files?
+#
+# tests/test_published_site_is_current.py decides everything about site/ that can be
+# decided without those files: the chrome, the provenance tables, the quoted caveats, the
+# three-state key, and the shape of both JSON artifacts. What it cannot decide is every
+# count, because the fixtures hold ten records each. This target is the rest of it, and it
+# needs data/raw/, so it does not run in CI and is not part of `make verify`. Run it after
+# any change to render.py, artifacts.py, coverage.py or the field registry, before
+# committing.
+#
+# It builds into build/site-current and never into site/. A gate that regenerates the
+# artifact where the committed copy lives repairs the drift it exists to report and then
+# has nothing to report. It refuses outright when the acquired files are absent, rather
+# than comparing site/ against a build that could not happen: a check that could not run
+# is not a check that passed.
+site-check:
+	@test -f data/raw/frap_perimeters.json || { \
+	  echo "site-check: data/raw/frap_perimeters.json is missing. Acquire it (see PROVENANCE.md) and re-run; not checked is not checked." >&2; exit 2; }
+	@test -f data/raw/dins_postfire.json || { \
+	  echo "site-check: data/raw/dins_postfire.json is missing. Acquire it (see PROVENANCE.md) and re-run; not checked is not checked." >&2; exit 2; }
+	rm -rf build/site-current
+	uv run python -m perimeter.cli \
+		--perimeters data/raw/frap_perimeters.json \
+		--dins data/raw/dins_postfire.json \
+		--out build/site-current
+	diff -r site build/site-current
+	@echo "site-check: site/ is byte-identical to a fresh build from data/raw/"
 
 # The same pipeline over committed fixtures: runs anywhere, output flagged is_fixture.
 site-offline:

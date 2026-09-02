@@ -58,6 +58,23 @@ cannot tell a documented code from an inference by looking at the value. So the 
 which it is, per field, rather than leaving the distinction in the source.
 """
 
+DOMAIN_NOTE = (
+    '<p class="measured">There are three things a field can say about a published '
+    "coded-value domain, and every row above says exactly one of them. It carries values "
+    "the domain does not describe, which are counted and named under the field. It has a "
+    "published domain and holds nothing outside it, and carries no note. Or the layer "
+    "publishes no domain for that field at all, which the row says in words, because "
+    "nothing there was compared against anything and a zero would have read as a finding "
+    "that the file and the domain agree.</p>"
+)
+"""Printed under every three-state field table. What a row's silence means.
+
+Thirty of the fifty-four measured fields are free text with no published domain. Until
+this note existed they were reported as zero values outside the domain, which is a
+measurement nobody took: there is no domain for a value to be outside of, and the counter
+that produced the zero had nothing to count.
+"""
+
 STATE_LABELS: tuple[tuple[str, str, str], ...] = (
     (
         "present",
@@ -410,13 +427,23 @@ def field_table(
             marker_note = (
                 f'<div class="absent-note">Basis: {esc(BASIS_NOTE[field.basis])}</div>'
             )
+        count, distinct = field.outside_domain, field.outside_domain_distinct
         outside = ""
-        if field.outside_domain:
+        if count is None or distinct is None:
+            # Not "0 values outside the published domain". No domain is published for
+            # this field, so nothing was compared against one and nothing was counted.
+            # Leaving the row silent would read exactly like a field whose domain is
+            # published and holds every value it carries, and those are different facts.
             outside = (
-                f'<div class="absent-note">{num(field.outside_domain)} value'
-                f"{'' if field.outside_domain == 1 else 's'} outside the published "
-                f"domain across {num(field.outside_domain_distinct)} distinct "
-                f"spelling{'' if field.outside_domain_distinct == 1 else 's'}</div>"
+                '<div class="absent-note">The layer publishes no coded-value domain for '
+                "this field, so no value here is counted as outside one</div>"
+            )
+        elif count:
+            outside = (
+                f'<div class="absent-note">{num(count)} value'
+                f"{'' if count == 1 else 's'} outside the published "
+                f"domain across {num(distinct)} distinct "
+                f"spelling{'' if distinct == 1 else 's'}</div>"
             )
         rows.append(
             "<tr>"
@@ -443,6 +470,7 @@ def field_table(
         '<th scope="col" class="num">Value present</th>'
         '<th scope="col">Split</th>'
         f"</tr></thead><tbody>{''.join(rows)}</tbody></table></section>"
+        f"{DOMAIN_NOTE}"
     )
 
 
