@@ -86,9 +86,15 @@ def _field_json(field: FieldCoverage) -> dict[str, Any]:
         "total": field.total,
         "present_tenths_pct": field.present_tenths_pct,
         "markers": field.markers,
+        # Null, not zero, for a field the layer publishes no coded-value domain for.
+        # Nothing was counted against a domain that does not exist, and a zero here would
+        # say the file and the domain agree. `outside_published_domain_values_listed` is
+        # how many of `_distinct` the values object actually names, so a list capped at
+        # OUTSIDE_DOMAIN_VALUE_CAP cannot be read as the whole set.
         "outside_published_domain": field.outside_domain,
         "outside_published_domain_distinct": field.outside_domain_distinct,
         "outside_published_domain_values": field.outside_domain_values,
+        "outside_published_domain_values_listed": field.outside_domain_values_listed,
         "marker_basis": field.basis.value,
     }
     if field.zero_values is not None:

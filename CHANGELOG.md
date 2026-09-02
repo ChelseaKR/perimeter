@@ -6,6 +6,46 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project a
 
 ## [Unreleased]
 
+### Fixed, thirty fields published a zero for a comparison that never happened
+
+- **A field with no published coded-value domain reported `outside_published_domain: 0`.**
+  `FieldSpec.outside_domain` answers False for every cell of a field the layer publishes no
+  domain for, and `field_coverage` summed that answer for every field alike, so thirty of
+  the fifty-four measured fields published a zero meaning "nothing was counted" in the same
+  key where `CAUSE` publishes a zero meaning "counted, none found". `FIRE_NAME`, `UNIT_ID`,
+  `COUNTY` and twenty-seven others are free text; both publishers say which of their fields
+  they constrain. The zero said the file and the domain agree, about a domain that does not
+  exist. The four out-of-domain measures are now `null` together for such a field, the way
+  `present_tenths_pct` is already `null` where there is no denominator, and zero keeps the
+  narrow meaning it should always have had. See ADR-0010.
+- **The fact was known one layer down and lost one layer up.**
+  `tests/test_schema.py::test_free_text_fields_have_no_domain_to_be_outside_of` has always
+  asserted that a free-text field has nothing to be outside of. Nothing carried that into
+  the counting, and nothing tested what the count published, so the artifact contradicted
+  the test in the same suite. `tests/test_measurements.py` now separates the two zeros at
+  the count, `tests/test_artifacts_and_pages.py` checks both sides of the line in both
+  published artifacts, and both new tests fail against the previous code.
+- **Both pages say it in words rather than leaving the row silent.** A row with no note
+  about the published domain read the same whether the domain held every value or did not
+  exist. Every free-text row now carries "The layer publishes no coded-value domain for this
+  field, so no value here is counted as outside one", and the paragraph under each field
+  table names all three states a row can be in, so silence means exactly one of them.
+- **The capped list of named out-of-domain values now says how many it names.**
+  `outside_published_domain_values` stops at twelve so a field with a thousand spellings
+  does not publish a thousand keys. Nothing said it stops. No field reaches the cap today,
+  which is why nothing has been misread yet; a truncated list that does not declare itself
+  reads as the whole set. `outside_published_domain_values_listed` is published beside
+  `outside_published_domain_distinct`, and where they differ the list stopped.
+- **`site/` was rebuilt from the acquired files, and `make site-check` is what keeps it
+  honest.** `tests/test_published_site_is_current.py` compares the shape of the published
+  artifacts, so the new key would have failed the build until `site/` was rebuilt; it
+  compares pages only outside `<main>`, so the thirty new page notes would have passed
+  unnoticed. `make site-check` builds from `data/raw/` into `build/site-current` and diffs
+  it against `site/`, never writing into `site/`, and refuses outright when the acquired
+  files are absent, because a check that could not run is not a check that passed. It
+  cannot run in CI: those files are not in git and never will be. Verified to fail on both
+  inputs it exists to catch, a drifted page and a missing source file.
+
 ### Fixed, the committed ruleset would have locked the owner out on first apply
 
 - **`.github/rulesets/main.json` carried `"bypass_actors": []`.** No ruleset has ever

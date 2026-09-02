@@ -522,6 +522,7 @@
       "outside_published_domain": 0,
       "outside_published_domain_distinct": 0,
       "outside_published_domain_values": {},
+      "outside_published_domain_values_listed": 0,
       "present": 132522,
       "present_tenths_pct": 1000,
       "total": 132522
@@ -541,6 +542,7 @@
         "Single Famliy Residence Single Story": 4,
         "Utility or Miscellaneous Structure > 120 sqft": 51
       },
+      "outside_published_domain_values_listed": 4,
       "present": 132522,
       "present_tenths_pct": 1000,
       "total": 132522
@@ -557,6 +559,7 @@
       "outside_published_domain_values": {
         "Agriculture": 7
       },
+      "outside_published_domain_values_listed": 1,
       "present": 132522,
       "present_tenths_pct": 1000,
       "total": 132522
@@ -568,9 +571,10 @@
       "markers": {},
       "name": "INCIDENTNAME",
       "not_recorded": 0,
-      "outside_published_domain": 0,
-      "outside_published_domain_distinct": 0,
-      "outside_published_domain_values": {},
+      "outside_published_domain": null,
+      "outside_published_domain_distinct": null,
+      "outside_published_domain_values": null,
+      "outside_published_domain_values_listed": null,
       "present": 132522,
       "present_tenths_pct": 1000,
       "total": 132522
@@ -582,9 +586,10 @@
       "markers": {},
       "name": "INCIDENTNUM",
       "not_recorded": 0,
-      "outside_published_domain": 0,
-      "outside_published_domain_distinct": 0,
-      "outside_published_domain_values": {},
+      "outside_published_domain": null,
+      "outside_published_domain_distinct": null,
+      "outside_published_domain_values": null,
+      "outside_published_domain_values_listed": null,
       "present": 132522,
       "present_tenths_pct": 1000,
       "total": 132522
@@ -596,9 +601,10 @@
       "markers": {},
       "name": "INCIDENTSTARTDATE",
       "not_recorded": 0,
-      "outside_published_domain": 0,
-      "outside_published_domain_distinct": 0,
-      "outside_published_domain_values": {},
+      "outside_published_domain": null,
+      "outside_published_domain_distinct": null,
+      "outside_published_domain_values": null,
+      "outside_published_domain_values_listed": null,
       "present": 132522,
       "present_tenths_pct": 1000,
       "total": 132522
@@ -613,6 +619,7 @@
       "outside_published_domain": 0,
       "outside_published_domain_distinct": 0,
       "outside_published_domain_values": {},
+      "outside_published_domain_values_listed": 0,
       "present": 132522,
       "present_tenths_pct": 1000,
       "total": 132522
@@ -624,9 +631,10 @@
       "markers": {},
       "name": "COUNTY",
       "not_recorded": 30,
-      "outside_published_domain": 0,
-      "outside_published_domain_distinct": 0,
-      "outside_published_domain_values": {},
+      "outside_published_domain": null,
+      "outside_published_domain_distinct": null,
+      "outside_published_domain_values": null,
+      "outside_published_domain_values_listed": null,
       "present": 132492,
       "present_tenths_pct": 1000,
       "total": 132522
@@ -638,9 +646,10 @@
       "markers": {},
       "name": "CALFIREUNIT",
       "not_recorded": 0,
-      "outside_published_domain": 0,
-      "outside_published_domain_distinct": 0,
-      "outside_published_domain_values": {},
+      "outside_published_domain": null,
+      "outside_published_domain_distinct": null,
+      "outside_published_domain_values": null,
+      "outside_published_domain_values_listed": null,
       "present": 132522,
       "present_tenths_pct": 1000,
       "total": 132522
@@ -659,9 +668,10 @@
       "name": "COMMUNITY",
       "not_recorded": 77248,
       "note": "Free text with no published domain, so every marker here is read off the file. The field also carries the same place under several spellings, which this project does not merge; it counts whether a cell holds a community, not how many communities there are.",
-      "outside_published_domain": 0,
-      "outside_published_domain_distinct": 0,
-      "outside_published_domain_values": {},
+      "outside_published_domain": null,
+      "outside_published_domain_distinct": null,
+      "outside_published_domain_values": null,
+      "outside_published_domain_values_listed": null,
       "present": 54502,
       "present_tenths_pct": 411,
       "total": 132522
@@ -679,9 +689,10 @@
       "name": "CITY",
       "not_recorded": 4924,
       "note": "A large share of records carry a marker word in this field rather than a city. Read as text it would become a place name, so it is counted apart from both a recorded city and an empty cell. CITY has no published domain, so this is inferred. One thing the file shows is worth a reader's attention: every record holding NA belongs to an incident that started in 2020, and no record in that cohort holds the value Unincorporated that neighbouring years use. That pattern reads as a value applied to a load rather than determined per structure, which is why NA is not counted as a recorded city. Whether those cells are better read as a recorded marker or as an empty cell cannot be told from the file, and the distinction does not move any published present count, because neither state counts as a value.",
-      "outside_published_domain": 0,
-      "outside_published_domain_distinct": 0,
-      "outside_published_domain_values": {},
+      "outside_published_domain": null,
+      "outside_published_domain_distinct": null,
+      "outside_published_domain_values": null,
+      "outside_published_domain_values_listed": null,
       "present": 100033,
       "present_tenths_pct": 755,
       "total": 132522
@@ -704,6 +715,7 @@
         "No Deck/Porch": 1,
         "Non Combustible": 1
       },
+      "outside_published_domain_values_listed": 5,
       "present": 109257,
       "present_tenths_pct": 824,
       "total": 132522
@@ -724,6 +736,7 @@
       "outside_published_domain_values": {
         "Combustible": 2
       },
+      "outside_published_domain_values_listed": 1,
       "present": 74944,
       "present_tenths_pct": 566,
       "total": 132522
@@ -746,6 +759,7 @@
         "Deck Elevated": 1,
         "Screened": 5736
       },
+      "outside_published_domain_values_listed": 5,
       "present": 87081,
       "present_tenths_pct": 657,
       "total": 132522
@@ -767,6 +781,7 @@
         "Ignition Resistant": 9695,
         "Stucco/Brick/Cement": 462
       },
+      "outside_published_domain_values_listed": 4,
       "present": 109970,
       "present_tenths_pct": 830,
       "total": 132522
@@ -787,6 +802,7 @@
         "No Deck/Porch": 1,
         "Radiant Heat": 1
       },
+      "outside_published_domain_values_listed": 3,
       "present": 93973,
       "present_tenths_pct": 709,
       "total": 132522
@@ -805,6 +821,7 @@
       "outside_published_domain_values": {
         "Metal": 7
       },
+      "outside_published_domain_values_listed": 1,
       "present": 95153,
       "present_tenths_pct": 718,
       "total": 132522
@@ -823,6 +840,7 @@
       "outside_published_domain_values": {
         "Metal": 17
       },
+      "outside_published_domain_values_listed": 1,
       "present": 92179,
       "present_tenths_pct": 696,
       "total": 132522
@@ -839,6 +857,7 @@
       "outside_published_domain": 0,
       "outside_published_domain_distinct": 0,
       "outside_published_domain_values": {},
+      "outside_published_domain_values_listed": 0,
       "present": 90689,
       "present_tenths_pct": 684,
       "total": 132522
@@ -855,6 +874,7 @@
       "outside_published_domain": 0,
       "outside_published_domain_distinct": 0,
       "outside_published_domain_values": {},
+      "outside_published_domain_values_listed": 0,
       "present": 95795,
       "present_tenths_pct": 723,
       "total": 132522
@@ -872,6 +892,7 @@
       "outside_published_domain": 0,
       "outside_published_domain_distinct": 0,
       "outside_published_domain_values": {},
+      "outside_published_domain_values_listed": 0,
       "present": 48547,
       "present_tenths_pct": 366,
       "total": 132522
@@ -891,6 +912,7 @@
         "50": 103,
         "N/A": 6544
       },
+      "outside_published_domain_values_listed": 3,
       "present": 37783,
       "present_tenths_pct": 285,
       "total": 132522
@@ -917,6 +939,7 @@
         "South End, Charlie side.": 1,
         "Swamp Cooler Machinery Filter": 1
       },
+      "outside_published_domain_values_listed": 7,
       "present": 3661,
       "present_tenths_pct": 28,
       "total": 132522
@@ -940,6 +963,7 @@
         "Embers or overheated electrical motor": 1,
         "Post on structure": 1
       },
+      "outside_published_domain_values_listed": 4,
       "present": 4848,
       "present_tenths_pct": 37,
       "total": 132522
@@ -961,6 +985,7 @@
         "Civilian Intervention": 3,
         "Fire Department": 461
       },
+      "outside_published_domain_values_listed": 4,
       "present": 8462,
       "present_tenths_pct": 64,
       "total": 132522
@@ -972,9 +997,10 @@
       "markers": {},
       "name": "NUMBEROFUNITPERSTRUCTURE",
       "not_recorded": 70593,
-      "outside_published_domain": 0,
-      "outside_published_domain_distinct": 0,
-      "outside_published_domain_values": {},
+      "outside_published_domain": null,
+      "outside_published_domain_distinct": null,
+      "outside_published_domain_values": null,
+      "outside_published_domain_values_listed": null,
       "present": 61929,
       "present_tenths_pct": 467,
       "recorded_zero_values": 58411,
@@ -987,9 +1013,10 @@
       "markers": {},
       "name": "NOOUTBUILDINGSDAMAGED",
       "not_recorded": 70583,
-      "outside_published_domain": 0,
-      "outside_published_domain_distinct": 0,
-      "outside_published_domain_values": {},
+      "outside_published_domain": null,
+      "outside_published_domain_distinct": null,
+      "outside_published_domain_values": null,
+      "outside_published_domain_values_listed": null,
       "present": 61939,
       "present_tenths_pct": 467,
       "recorded_zero_values": 59628,
@@ -1002,9 +1029,10 @@
       "markers": {},
       "name": "NOOUTBUILDINGSNOTDAMAGED",
       "not_recorded": 70564,
-      "outside_published_domain": 0,
-      "outside_published_domain_distinct": 0,
-      "outside_published_domain_values": {},
+      "outside_published_domain": null,
+      "outside_published_domain_distinct": null,
+      "outside_published_domain_values": null,
+      "outside_published_domain_values_listed": null,
       "present": 61958,
       "present_tenths_pct": 468,
       "recorded_zero_values": 58888,
@@ -1017,9 +1045,10 @@
       "markers": {},
       "name": "NOOFCARSONPROPERTY",
       "not_recorded": 76334,
-      "outside_published_domain": 0,
-      "outside_published_domain_distinct": 0,
-      "outside_published_domain_values": {},
+      "outside_published_domain": null,
+      "outside_published_domain_distinct": null,
+      "outside_published_domain_values": null,
+      "outside_published_domain_values_listed": null,
       "present": 56188,
       "present_tenths_pct": 424,
       "recorded_zero_values": 55831,
@@ -1036,9 +1065,10 @@
       "name": "APN",
       "not_recorded": 864,
       "note": "Added by a spatial join after collection, per CAL FIRE's description, so its coverage measures the join rather than the field inspection. No domain is published for it, so both markers are read off the file.",
-      "outside_published_domain": 0,
-      "outside_published_domain_distinct": 0,
-      "outside_published_domain_values": {},
+      "outside_published_domain": null,
+      "outside_published_domain_distinct": null,
+      "outside_published_domain_values": null,
+      "outside_published_domain_values_listed": null,
       "present": 131615,
       "present_tenths_pct": 993,
       "total": 132522
@@ -1056,9 +1086,10 @@
       "name": "SITEADDRESS",
       "not_recorded": 7652,
       "note": "Added by the same post-collection spatial join as APN, and free text with no published domain, so every marker here is inferred. Two of them are whole placeholder addresses rather than single words: the literal text 'No Address Available', and a composed placeholder reading 'NULL NULL UNKNOWN CA 00000'. Neither trips the single-token marker net, and this audit found them by reading the field's value distribution. Counting them as recorded addresses would publish a join that failed as a join that succeeded.",
-      "outside_published_domain": 0,
-      "outside_published_domain_distinct": 0,
-      "outside_published_domain_values": {},
+      "outside_published_domain": null,
+      "outside_published_domain_distinct": null,
+      "outside_published_domain_values": null,
+      "outside_published_domain_values_listed": null,
       "present": 124138,
       "present_tenths_pct": 937,
       "total": 132522
@@ -1073,9 +1104,10 @@
       "name": "YEARBUILT",
       "not_recorded": 30431,
       "note": "Added by the same post-collection spatial join as APN and SITEADDRESS. 12,148 records hold the literal 0. No structure standing in a California wildfire was built in year 0, so a 0 here is the parcel record carrying no year rather than a recorded construction year, and counting it as one published an absence as a value. No domain is published for the field, so the reading is inferred from the acquired file; section 7 of docs/MARKERS.md holds the distribution it rests on.",
-      "outside_published_domain": 0,
-      "outside_published_domain_distinct": 0,
-      "outside_published_domain_values": {},
+      "outside_published_domain": null,
+      "outside_published_domain_distinct": null,
+      "outside_published_domain_values": null,
+      "outside_published_domain_values_listed": null,
       "present": 89943,
       "present_tenths_pct": 679,
       "recorded_zero_values": 0,
@@ -1088,9 +1120,10 @@
       "markers": {},
       "name": "ASSESSEDIMPROVEDVALUE",
       "not_recorded": 6040,
-      "outside_published_domain": 0,
-      "outside_published_domain_distinct": 0,
-      "outside_published_domain_values": {},
+      "outside_published_domain": null,
+      "outside_published_domain_distinct": null,
+      "outside_published_domain_values": null,
+      "outside_published_domain_values_listed": null,
       "present": 126482,
       "present_tenths_pct": 954,
       "recorded_zero_values": 6613,
@@ -1109,9 +1142,10 @@
       "name": "STREETNAME",
       "not_recorded": 4333,
       "note": "Free text with no published domain, so every marker is read off the file.",
-      "outside_published_domain": 0,
-      "outside_published_domain_distinct": 0,
-      "outside_published_domain_values": {},
+      "outside_published_domain": null,
+      "outside_published_domain_distinct": null,
+      "outside_published_domain_values": null,
+      "outside_published_domain_values_listed": null,
       "present": 126660,
       "present_tenths_pct": 956,
       "total": 132522
@@ -1140,6 +1174,7 @@
         "not given": 2,
         "not noted": 1
       },
+      "outside_published_domain_values_listed": 8,
       "present": 125808,
       "present_tenths_pct": 949,
       "total": 132522
@@ -1151,9 +1186,10 @@
       "markers": {},
       "name": "LATITUDE",
       "not_recorded": 0,
-      "outside_published_domain": 0,
-      "outside_published_domain_distinct": 0,
-      "outside_published_domain_values": {},
+      "outside_published_domain": null,
+      "outside_published_domain_distinct": null,
+      "outside_published_domain_values": null,
+      "outside_published_domain_values_listed": null,
       "present": 132522,
       "present_tenths_pct": 1000,
       "recorded_zero_values": 0,
@@ -1166,9 +1202,10 @@
       "markers": {},
       "name": "LONGITUDE",
       "not_recorded": 0,
-      "outside_published_domain": 0,
-      "outside_published_domain_distinct": 0,
-      "outside_published_domain_values": {},
+      "outside_published_domain": null,
+      "outside_published_domain_distinct": null,
+      "outside_published_domain_values": null,
+      "outside_published_domain_values_listed": null,
       "present": 132522,
       "present_tenths_pct": 1000,
       "recorded_zero_values": 0,

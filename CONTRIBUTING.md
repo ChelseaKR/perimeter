@@ -21,6 +21,26 @@ so it exits 0 on drift, while `uv lock --check` and `uv sync --locked` both exit
 structural floor and the contrast measurement still run if node is unavailable, but a
 change to `render.py` is not finished until `make pages` is green.
 
+## After a change to what the pages publish
+
+`site/` is committed, is what the Pages workflow uploads, and is built from CAL FIRE's
+acquired files, which are not in git and never in CI. So a change to `render.py`,
+`artifacts.py`, `coverage.py` or the field registry leaves the published pages saying the
+old thing until somebody rebuilds them.
+`tests/test_published_site_is_current.py` catches everything about that which can be
+decided without the acquired files: the chrome, the provenance tables, the quoted caveats,
+the three-state key, and the shape of both JSON artifacts. It cannot decide a count.
+
+On a machine holding `data/raw/`, run:
+
+```sh
+make site        # rebuild the committed site/ from the acquired files
+make site-check  # or, to check without rewriting: build elsewhere and diff
+```
+
+`make site-check` refuses rather than passing when `data/raw/` is absent. A check that
+could not run is not a check that passed.
+
 ## The rule that governs changes here
 
 This project publishes counts about other people's data. Two things follow.

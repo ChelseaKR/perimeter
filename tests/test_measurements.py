@@ -8,6 +8,7 @@ import pytest
 
 from perimeter.cells import Cell, CellState
 from perimeter.coverage import (
+    OUTSIDE_DOMAIN_VALUE_CAP,
     DinsReport,
     PerimeterReport,
     access_field_coverages,
@@ -212,6 +213,63 @@ def test_out_of_domain_values_are_named_and_counted(
     assert roof.outside_domain == 1
     assert roof.outside_domain_values == {"Fire Resistant": 1}
     assert roof.outside_domain_distinct == 1
+    assert roof.outside_domain_values_listed == 1
+
+
+def test_a_field_with_no_published_domain_counts_nothing_outside_one(
+    inspections: list[Record],
+) -> None:
+    """A free-text field has no domain, so its out-of-domain measures are absent.
+
+    ``FieldSpec.outside_domain`` answers False for every cell of a field with no
+    published domain, so summing that answer produces a zero. Published, that zero says
+    the file and the domain agree, about a domain the layer does not publish. Thirty of
+    the fifty-four measured fields are in this position.
+    """
+    spec = DINS_FIELDS_BY_NAME["COUNTY"]
+    assert spec.domain_values is None
+    county = field_coverage(inspections, spec)
+    assert county.present > 0, "the fixture must exercise a field that holds values"
+    assert county.outside_domain is None
+    assert county.outside_domain_distinct is None
+    assert county.outside_domain_values is None
+    assert county.outside_domain_values_listed is None
+
+
+def test_a_published_domain_holding_every_value_is_a_measured_zero(
+    inspections: list[Record],
+) -> None:
+    """The other side of the line above: zero means counted and none found."""
+    spec = DINS_FIELDS_BY_NAME["DAMAGE"]
+    assert spec.domain_values is not None
+    damage = field_coverage(inspections, spec)
+    assert damage.outside_domain == 0
+    assert damage.outside_domain_distinct == 0
+    assert damage.outside_domain_values == {}
+    assert damage.outside_domain_values_listed == 0
+
+
+def test_a_capped_list_of_out_of_domain_values_says_how_many_it_names() -> None:
+    """More distinct values than the cap: the list stops, and says that it stopped.
+
+    ``outside_domain_values`` is capped so a field with a thousand spellings does not
+    publish a thousand-key object. A capped list that does not say it is capped reads as
+    the whole set, so the number named is published beside the number found.
+    """
+    spec = FieldSpec("X", "X", domain_values=frozenset({"in"}))
+    records = [
+        Record(
+            identifier=str(index),
+            cells={"X": spec.classify(f"v{index:02d}", where="r")},
+        )
+        for index in range(OUTSIDE_DOMAIN_VALUE_CAP + 5)
+    ]
+    coverage = field_coverage(records, spec)
+    assert coverage.outside_domain == OUTSIDE_DOMAIN_VALUE_CAP + 5
+    assert coverage.outside_domain_distinct == OUTSIDE_DOMAIN_VALUE_CAP + 5
+    assert coverage.outside_domain_values is not None
+    assert len(coverage.outside_domain_values) == OUTSIDE_DOMAIN_VALUE_CAP
+    assert coverage.outside_domain_values_listed == OUTSIDE_DOMAIN_VALUE_CAP
 
 
 def test_incidents_differing_in_what_was_recorded_are_not_merged(
