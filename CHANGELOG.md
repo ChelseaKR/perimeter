@@ -6,6 +6,38 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project a
 
 ## [Unreleased]
 
+### Fixed, the per-incident table's header and its body were two separate lists
+
+- **A column in one and not the other shifts every later value under the wrong heading.**
+  The header of the per-incident coverage table on `dins.html` was five hard-coded labels;
+  the body was a separate tuple of five field names, filtered by `if name in by_name`. A
+  field leaving `DINS_FIELDS` would have dropped its cell from every row and left all five
+  headers standing, which does not blank a column. Every cell after the missing one moves
+  left: the vent-screen share published under Eaves, correctly counted and wrongly
+  labelled, on a page whose subject is not misreading a number. Nothing was wrong in the
+  acquired file, and nothing is wrong on the page today; all five fields are in
+  `DINS_FIELDS`, so this is a defect the code could produce rather than one it had
+  produced. The header and the body now read one paired list,
+  `render.INCIDENT_FIELD_COLUMNS`, and a column the report carries no coverage for is
+  written as `not counted` rather than dropped, so the row keeps its width either way.
+  The table this page already builds honestly, the per-decade acreage table, reads its
+  header off the body for exactly this reason; this is the same discipline applied to the
+  one table that had not had it.
+- **Nothing could have caught it, so there is now something that can.**
+  `html-validate` does not compare row widths and neither does axe, and a short row
+  renders as an ordinary table. `tests/test_pages_html.py::row_width_problems` counts
+  cells per row per table, `colspan` included, across all three pages, and reports a table
+  with no rows rather than passing over one. Per ADR-0004 it is run against markup that
+  must not pass it: a row missing a cell, a page with no table at all, and, in
+  `test_the_per_incident_table_writes_a_cell_for_a_field_it_cannot_count`, a real
+  `DinsReport` with a field removed from every incident. Against the previous renderer
+  that last one reports rows nine cells wide under a ten-cell header; against this one it
+  reports nothing.
+- **`make site-check` earned its keep on its first day.** The paragraph under the table
+  changed, `site/` went stale, and the target said so before the commit rather than after
+  the deploy. `site/dins.html` is rebuilt; every cell in the table is byte-identical,
+  which is the evidence that this change does not move a published number.
+
 ### Fixed, thirty fields published a zero for a comparison that never happened
 
 - **A field with no published coded-value domain reported `outside_published_domain: 0`.**

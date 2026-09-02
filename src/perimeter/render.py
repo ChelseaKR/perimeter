@@ -58,6 +58,30 @@ cannot tell a documented code from an inference by looking at the value. So the 
 which it is, per field, rather than leaving the distinction in the source.
 """
 
+INCIDENT_FIELD_COLUMNS: tuple[tuple[str, str], ...] = (
+    ("STRUCTURETYPE", "Structure type"),
+    ("ROOFCONSTRUCTION", "Roof"),
+    ("EAVES", "Eaves"),
+    ("VENTSCREEN", "Vent screen"),
+    ("APN", "APN"),
+)
+"""The per-incident completeness columns: the field counted, and the column head over it.
+
+Paired rather than parallel. The header and the body of that table were two separate
+lists, and a column present in one and absent from the other shifts every later cell
+under the wrong heading instead of leaving a gap a reader would notice. The labels are
+shortened from the field labels in :mod:`perimeter.schema` on purpose, because the table
+is wide and ``APN (parcel)`` over a column of percentages is a column head, not a name.
+"""
+
+NOT_COUNTED = '<span class="absent-note">not counted</span>'
+"""A cell for a column this incident carries no coverage for.
+
+The cell is still written. Dropping it would take the column count with it, and a row one
+cell short is not a row with a gap in it, it is a row whose remaining values have all
+moved one column to the left.
+"""
+
 DOMAIN_NOTE = (
     '<p class="measured">There are three things a field can say about a published '
     "coded-value domain, and every row above says exactly one of them. It carries values "
@@ -814,20 +838,26 @@ def dins_page(report: DinsReport, *, is_fixture: bool) -> str:
             "page, so a later retrieval carrying some cannot pass unremarked.</p>"
         )
 
-    incident_fields = (
-        "STRUCTURETYPE",
-        "ROOFCONSTRUCTION",
-        "EAVES",
-        "VENTSCREEN",
-        "APN",
-    )
+    # One list, read for both the header and the body, so the two cannot disagree about
+    # which column is which. They were two lists: five hard-coded labels for the header
+    # and five field names for the body, the body's filtered by `if name in by_name`. A
+    # field leaving DINS_FIELDS dropped its cell from every row and left all five headers
+    # standing, which does not blank a column, it shifts every later one left. The vent
+    # screen share would have been published under Eaves, correctly counted and wrongly
+    # labelled, and nothing on the page would have looked wrong.
+    columns = [
+        (name, label)
+        for name, label in INCIDENT_FIELD_COLUMNS
+        if any(field.name == name for field in report.fields)
+    ]
     incident_rows = []
     for incident in report.incident_rows:
         by_name = {field.name: field for field in incident.fields}
         cells = "".join(
-            f'<td class="num">{pct(by_name[name].present_tenths_pct)}</td>'
-            for name in incident_fields
-            if name in by_name
+            f'<td class="num">'
+            f"{pct(by_name[name].present_tenths_pct) if name in by_name else NOT_COUNTED}"
+            f"</td>"
+            for name, _label in columns
         )
         name = incident.key.name or "Not recorded"
         number = incident.key.number or "Not recorded"
@@ -848,8 +878,7 @@ def dins_page(report: DinsReport, *, is_fixture: bool) -> str:
             "</tr>"
         )
     incident_headers = "".join(
-        f'<th scope="col" class="num">{esc(label)}</th>'
-        for label in ("Structure type", "Roof", "Eaves", "Vent screen", "APN")
+        f'<th scope="col" class="num">{esc(label)}</th>' for _name, label in columns
     )
 
     body = f"""
@@ -952,10 +981,13 @@ incident are in the JSON artifact beside this page.</p>
 <th scope="col" class="num">Inaccessible</th>
 {incident_headers}
 </tr></thead><tbody>{"".join(incident_rows)}</tbody></table></section>
-<p class="measured">The five columns after the record counts are the share of that
+<p class="measured">The field columns after the record counts are the share of that
 incident's records carrying a recorded value in that field. Structure type, roof, eaves
 and vent screen are recorded by the inspector on site. APN is added afterwards by a
-spatial join, so its coverage measures the join rather than the inspection.</p>
+spatial join, so its coverage measures the join rather than the inspection. A column
+whose field this incident carries no coverage for reads <em>not counted</em>; the cell is
+written either way, because a row one cell short is a row whose later values have all
+moved under the wrong heading.</p>
 
 <h2>Methodology and the caveats this page operationalizes</h2>
 {caveat_block(DINS)}
