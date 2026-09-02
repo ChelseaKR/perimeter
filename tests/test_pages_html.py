@@ -27,6 +27,7 @@ from __future__ import annotations
 import json
 import re
 from collections import Counter
+from dataclasses import replace
 from html.parser import HTMLParser
 from pathlib import Path
 
@@ -34,7 +35,17 @@ import pytest
 
 from perimeter.cells import present_tenths_of_percent
 from perimeter.cli import build_site
-from perimeter.render import DARK, DOMAIN_NOTE, LIGHT, SITE_URL
+from perimeter.coverage import dins_report
+from perimeter.dins import load_inspections
+from perimeter.render import (
+    DARK,
+    DOMAIN_NOTE,
+    INCIDENT_FIELD_COLUMNS,
+    LIGHT,
+    NOT_COUNTED,
+    SITE_URL,
+    dins_page,
+)
 from perimeter.schema import DINS_FIELDS, FRAP_FIELDS, FieldSpec
 from perimeter.sources import SOURCES
 
@@ -621,3 +632,118 @@ def test_the_overview_carries_no_field_table_and_so_no_domain_note(built: Path) 
     text = (built / "index.html").read_text(encoding="utf-8")
     assert NO_DOMAIN_NOTE not in text
     assert DOMAIN_NOTE not in text
+
+
+# --------------------------------------------------------------------------------------
+# Table geometry: a row may not be narrower than the header it is read under
+# --------------------------------------------------------------------------------------
+
+
+class Rows(HTMLParser):
+    """Cells per row, per table, counting ``colspan``.
+
+    A row with fewer cells than its header does not render a gap. Every cell after the
+    missing one moves left, under the previous column's heading, so a correctly counted
+    number is published as a measurement of a different field. Nothing else here sees
+    that: ``html-validate`` does not compare row widths and neither does axe, and the page
+    looks entirely ordinary.
+    """
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.tables: list[list[int]] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag == "table":
+            self.tables.append([])
+        elif tag == "tr" and self.tables:
+            self.tables[-1].append(0)
+        elif tag in ("td", "th") and self.tables and self.tables[-1]:
+            span = dict(attrs).get("colspan") or "1"
+            self.tables[-1][-1] += int(span) if span.isdigit() else 1
+
+
+def row_width_problems(markup: str) -> list[str]:
+    """Every table row whose width is not its table's header width.
+
+    Raises nothing and returns a list, so the check can be run against markup that should
+    fail it. A table with no rows is reported rather than skipped: a geometry check that
+    found nothing to measure has not passed.
+    """
+    parser = Rows()
+    parser.feed(markup)
+    found: list[str] = []
+    if not parser.tables:
+        return [
+            "no table found; a row-width check with nothing to measure has not passed"
+        ]
+    for index, widths in enumerate(parser.tables):
+        rows = [width for width in widths if width]
+        if not rows:
+            found.append(f"table {index} has no cells in any row")
+            continue
+        header = rows[0]
+        found.extend(
+            f"table {index}: row {position} is {width} cells wide, the header is {header}"
+            for position, width in enumerate(rows)
+            if width != header
+        )
+    return found
+
+
+@pytest.mark.parametrize("name", PAGES)
+def test_no_table_row_is_narrower_than_its_header(built: Path, name: str) -> None:
+    assert row_width_problems((built / name).read_text(encoding="utf-8")) == []
+
+
+class TestTheRowWidthGateCanFail:
+    """ADR 0004: run the check against markup that must not pass it."""
+
+    def test_a_row_missing_a_cell_is_caught(self) -> None:
+        markup = (
+            "<table><tr><th>a</th><th>b</th><th>c</th></tr>"
+            "<tr><td>1</td><td>2</td></tr></table>"
+        )
+        assert row_width_problems(markup) == [
+            "table 0: row 1 is 2 cells wide, the header is 3"
+        ]
+
+    def test_a_well_formed_table_is_not_reported(self) -> None:
+        markup = (
+            "<table><tr><th>a</th><th>b</th></tr><tr><td>1</td><td>2</td></tr></table>"
+        )
+        assert row_width_problems(markup) == []
+
+    def test_markup_with_no_table_is_a_failure_not_a_pass(self) -> None:
+        assert row_width_problems("<p>nothing here</p>") != []
+
+    def test_a_colspan_is_counted_as_the_columns_it_covers(self) -> None:
+        markup = (
+            "<table><tr><th>a</th><th>b</th></tr>"
+            '<tr><td colspan="2">both</td></tr></table>'
+        )
+        assert row_width_problems(markup) == []
+
+
+def test_the_per_incident_table_writes_a_cell_for_a_field_it_cannot_count() -> None:
+    """A column the report does not carry per incident is written, not dropped.
+
+    Reachable only if a field leaves ``DINS_FIELDS`` while the column list still names
+    it. That is one edit, and the failure it produces is silent: five headers over four
+    cells publishes the vent-screen share under Eaves.
+    """
+    report = dins_report(load_inspections(FIXTURES / "dins_postfire.sample.json"))
+    dropped = INCIDENT_FIELD_COLUMNS[2][0]
+    thinned = replace(
+        report,
+        incident_rows=[
+            replace(
+                incident,
+                fields=[f for f in incident.fields if f.name != dropped],
+            )
+            for incident in report.incident_rows
+        ],
+    )
+    markup = dins_page(thinned, is_fixture=True)
+    assert row_width_problems(markup) == []
+    assert markup.count(NOT_COUNTED) == len(thinned.incident_rows)
