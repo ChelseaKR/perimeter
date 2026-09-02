@@ -7,11 +7,23 @@ committed fixtures, and writes byte-identical output for byte-identical input.
 from __future__ import annotations
 
 import argparse
+import shutil
 from pathlib import Path
 
 from perimeter.artifacts import build
-from perimeter.render import dins_page, index_page, perimeters_page
+from perimeter.render import SOCIAL_CARD, dins_page, index_page, perimeters_page
 from perimeter.sources import DINS, FRAP
+
+ASSETS = Path(__file__).resolve().parents[2] / "assets"
+"""Committed source assets copied verbatim into the built site.
+
+Only the social card so far. It is copied rather than left sitting in ``site/`` because
+``make site-check`` diffs ``site/`` against a fresh build: a file served from ``site/``
+that no build writes would report as drift every time the check ran, and a check that
+always reports the same thing stops being read. Copying is also what keeps the card in
+``build/site-offline`` and ``build/run-one``, where the page checks and the determinism
+gate actually look at the pages that reference it.
+"""
 
 
 def build_site(
@@ -42,6 +54,9 @@ def build_site(
         path = out_dir / name
         path.write_text(markup, encoding="utf-8")
         written.append(path)
+    card = out_dir / SOCIAL_CARD
+    shutil.copyfile(ASSETS / SOCIAL_CARD, card)
+    written.append(card)
     return written
 
 
