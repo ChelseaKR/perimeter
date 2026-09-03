@@ -31,6 +31,23 @@ from perimeter.sources import DINS, FRAP, Source
 # would invite a crawler to fold six unrelated projects into one document.
 SITE_URL = "https://chelseakr.github.io/perimeter/"
 
+# Where the source that produced these pages lives. Printed in the footer of every page: a
+# reader who wants to check a number should not have to guess where the build is.
+REPO_URL = "https://github.com/ChelseaKR/perimeter"
+
+# The card a link to this site unfurls as, absolute because Open Graph consumers resolve it
+# with no page context and a relative one is simply dropped. It is a committed source asset
+# copied into the output by `perimeter.cli.build_site`, not a file that only ever exists in
+# `site/`: `make site-check` diffs `site/` against a fresh build, so anything served from
+# `site/` that the build does not write would read as drift for as long as it existed.
+SOCIAL_CARD = "social-card.png"
+SOCIAL_CARD_URL = SITE_URL + SOCIAL_CARD
+SOCIAL_CARD_ALT = (
+    "Perimeter, over the line 'Two coverage measurements over California's public "
+    "wildfire datasets, published as counts', above the three-state key: recorded "
+    "value, recorded as unknown, empty cell."
+)
+
 # Keyed by `active`, the value each page already uses to mark its own nav entry, so a
 # canonical and the highlighted tab cannot disagree about which page this is. The index
 # canonicalises to the directory form, which is the URL Pages serves it at.
@@ -537,7 +554,14 @@ def page(
 <meta property="og:description" content="{esc(description)}">
 <meta property="og:url" content="{esc(canonical)}">
 <meta property="og:locale" content="en_US">
-<meta name="twitter:card" content="summary">
+<meta property="og:image" content="{esc(SOCIAL_CARD_URL)}">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="{esc(SOCIAL_CARD_ALT)}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="{esc(SOCIAL_CARD_URL)}">
+<meta name="twitter:image:alt" content="{esc(SOCIAL_CARD_ALT)}">
 <style>{STYLESHEET}</style>
 </head>
 <body>
@@ -554,6 +578,9 @@ def page(
 under a Creative Commons Attribution licence and is reproduced here only as counts.
 This project holds no view on how any agency collects or manages its data. It counts what
 the published files contain, in the terms the publishers use to describe them.</p>
+<p>Every number on these pages is produced by a build that is public. The source, the
+field registry the markers come from, and the acquisition notes are at
+<a href="{esc(REPO_URL)}">github.com/ChelseaKR/perimeter</a>.</p>
 </footer>
 </div>
 </body>

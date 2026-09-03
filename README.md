@@ -8,6 +8,21 @@ and [damage inspection coverage](https://chelseakr.github.io/perimeter/dins.html
 `.github/workflows/pages.yml` publishes `site/` from `main`, running `html-validate` and
 axe-core over the exact bytes it is about to serve rather than over a rebuild of them.
 
+Or run it yourself. This builds the same three pages from the committed fixtures, needs no
+network and no CAL FIRE download, and takes about a minute:
+
+```sh
+uv sync && npm ci
+make site-offline    # pages into build/site-offline/, flagged as a fixture build
+```
+
+Those pages are the real pipeline over ten-record fixtures, so the layout, the markers and
+the three-state key are the published ones and only the counts are small. Reproducing the
+published numbers instead means acquiring CAL FIRE's two files first (`make acquire`, then
+`make site`); [Build](#build) has the full gate and [PROVENANCE.md](PROVENANCE.md) has the
+pinned retrievals. `make site-check` is the one that answers "are the served numbers what
+this code produces today", and it refuses to run rather than guess if the files are absent.
+
 CAL FIRE and FRAP document the limits of these datasets carefully, in their own metadata.
 What is not published alongside them is the arithmetic behind those sentences: how many records per year,
 how many carry a federal identifier, how many cells in each field hold a value, how many
