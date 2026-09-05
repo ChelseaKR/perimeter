@@ -37,6 +37,7 @@ concurrency:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: read
     steps:
@@ -46,6 +47,7 @@ jobs:
 
       - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
+          enable-cache: true
           version: ">=0.11.0"
           python-version: "3.12"
 
@@ -72,6 +74,7 @@ jobs:
 
   secret-scan:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
       # The action lists the PR's commits to scope its scan to them, which needs
@@ -93,6 +96,7 @@ jobs:
 
   sast:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: read
     steps:
@@ -100,6 +104,8 @@ jobs:
         with:
           persist-credentials: false
       - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          enable-cache: true
       - run: uvx --from semgrep==1.168.0 semgrep scan --error --metrics off --config p/python --config p/javascript --config p/security-audit .
 
   # CICD-19. Nothing in this repository looked at the workflows themselves until now:
@@ -110,6 +116,7 @@ jobs:
   # read the file they changed. This job and codeql.yml are what close that.
   zizmor:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
     steps:
@@ -122,6 +129,8 @@ jobs:
       # its tag, and whether a `uses:` resolves upstream at all. A gate that quietly runs
       # a subset of itself is the failure mode this repository is trying not to have.
       # GITHUB_TOKEN's contents:read is the whole permission it needs.
+        with:
+          enable-cache: true
       - name: workflow static analysis (zizmor, online)
         run: uvx --from zizmor==1.29.0 zizmor --format=plain .github/workflows/
         env:
