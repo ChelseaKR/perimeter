@@ -40,6 +40,7 @@ jobs:
     # the required check silently stops matching anything and the gate goes away.
     name: codeql (actions · python · javascript)
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: read
       actions: read # read the repository's own workflows; no write anywhere
