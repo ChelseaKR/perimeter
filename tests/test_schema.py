@@ -65,6 +65,80 @@ def test_a_published_finding_of_absence_is_a_value() -> None:
     )
 
 
+# --------------------------------------------------------------------------------------
+# A field measured as a number, holding something that is not one. Issue #51.
+# --------------------------------------------------------------------------------------
+
+NUMERIC_FIELDS = tuple(spec for spec in ALL_FIELDS if spec.numeric)
+
+
+def test_the_project_measures_nine_fields_as_numbers() -> None:
+    """Pins the population the refusal below covers, so a tenth cannot arrive unnoticed."""
+    assert sorted(spec.name for spec in NUMERIC_FIELDS) == [
+        "ASSESSEDIMPROVEDVALUE",
+        "GIS_ACRES",
+        "LATITUDE",
+        "LONGITUDE",
+        "NOOFCARSONPROPERTY",
+        "NOOUTBUILDINGSDAMAGED",
+        "NOOUTBUILDINGSNOTDAMAGED",
+        "NUMBEROFUNITPERSTRUCTURE",
+        "YEARBUILT",
+    ]
+
+
+@pytest.mark.parametrize("spec", NUMERIC_FIELDS, ids=lambda s: s.name)
+@pytest.mark.parametrize("text", ["1,250,000", "two", "38.5N", "$4,000", "12 acres"])
+def test_a_measured_as_a_number_field_refuses_a_value_that_is_not_one(
+    spec: FieldSpec, text: str
+) -> None:
+    """All nine, not the one that happened to be parsed downstream.
+
+    Before this, ``GIS_ACRES`` raised here because ``perimeters.acres_of`` parses it and
+    the other eight did not, because nothing parses them. A reformatted column was
+    published as a full set of recorded measurements on eight fields out of nine.
+    """
+    with pytest.raises(SchemaDriftError, match="is not a number") as caught:
+        spec.classify(text, where="FRAP[OBJECTID=1]")
+    assert repr(text) in str(caught.value)
+    assert spec.name in str(caught.value)
+
+
+@pytest.mark.parametrize("spec", NUMERIC_FIELDS, ids=lambda s: s.name)
+@pytest.mark.parametrize("text", ["0", "0.0", "-1", "1250000", "38.5", "6613"])
+def test_a_number_in_a_numeric_field_is_still_an_ordinary_recorded_value(
+    spec: FieldSpec, text: str
+) -> None:
+    """The refusal must not be a refusal of the values these fields are full of."""
+    cell = spec.classify(text, where="r")
+    if cell.state is CellState.EXPLICIT_UNKNOWN:
+        assert spec.name == "YEARBUILT" and text == "0"
+        return
+    assert cell.state is CellState.PRESENT
+    assert cell.value() == text
+
+
+def test_a_field_not_measured_as_a_number_is_untouched_by_the_check() -> None:
+    """`CITY` holds text. Nothing here should start reading it as a measurement."""
+    assert DINS_FIELDS_BY_NAME["CITY"].classify("Paradise", where="r").is_present
+    assert FRAP_FIELDS_BY_NAME["FIRE_NAME"].classify("Camp", where="r").is_present
+
+
+def test_a_blank_or_marker_cell_in_a_numeric_field_is_not_asked_to_be_a_number() -> (
+    None
+):
+    """The refusal is about recorded values, and a blank is not one.
+
+    ``YEARBUILT``'s ``0`` is the case that matters: it is a declared marker, so it is
+    classified before this check and stays explicit-unknown rather than being read as
+    the number zero.
+    """
+    year = DINS_FIELDS_BY_NAME["YEARBUILT"]
+    assert year.classify(None, where="r").state is CellState.NOT_RECORDED
+    assert year.classify("   ", where="r").state is CellState.NOT_RECORDED
+    assert year.classify("0", where="r").state is CellState.EXPLICIT_UNKNOWN
+
+
 def test_the_same_word_is_read_differently_in_different_fields() -> None:
     """None is a published street-type finding, and a marker in a parcel APN."""
     assert DINS_FIELDS_BY_NAME["STREETTYPE"].classify("None", where="r").is_present

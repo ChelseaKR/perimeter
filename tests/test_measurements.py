@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -24,6 +25,7 @@ from perimeter.dins import (
     is_assessed,
     is_inaccessible,
     load_inspections,
+    parse_inspections,
 )
 from perimeter.perimeters import (
     acres_of,
@@ -204,6 +206,51 @@ def test_a_recorded_zero_is_counted_as_a_value_and_as_a_zero(
     assert outbuildings.zero_values == 2
     assert outbuildings.not_recorded == 7
     assert outbuildings.present + outbuildings.not_recorded == 10
+
+
+def test_a_reformatted_numeric_column_stops_the_read_instead_of_being_published() -> (
+    None
+):
+    """The measurement from issue #51, run back through the fixture it was measured on.
+
+    Setting these three values on all ten records used to produce no exception and no
+    changed count: every mutated cell came out ``present``, and
+    ``NOOFCARSONPROPERTY``'s ``recorded_zero_values`` fell from 1 to 0, which drops the
+    field out of the ADR-0006 zero audit at the moment its numbers stopped meaning
+    anything. The same mutation on ``GIS_ACRES`` has always stopped the build.
+    """
+    rows = json.loads((FIXTURES / "dins_postfire.sample.json").read_text("utf-8"))
+    for field, bad in (
+        ("ASSESSEDIMPROVEDVALUE", "1,250,000"),
+        ("NOOFCARSONPROPERTY", "two"),
+        ("LATITUDE", "38.5N"),
+    ):
+        mutated = [{**row, field: bad} for row in rows]
+        with pytest.raises(SchemaDriftError, match="is not a number") as caught:
+            parse_inspections(mutated)
+        assert field in str(caught.value)
+        assert repr(bad) in str(caught.value)
+
+
+def test_the_refusal_names_the_source_and_the_record_it_read() -> None:
+    """A refusal a reader cannot locate in a 132,522-record file is half a refusal."""
+    rows = json.loads((FIXTURES / "dins_postfire.sample.json").read_text("utf-8"))
+    rows[0]["YEARBUILT"] = "nineteen ninety"
+    with pytest.raises(SchemaDriftError) as caught:
+        parse_inspections(rows)
+    message = str(caught.value)
+    assert "CAL FIRE" in message
+    assert f"OBJECTID={rows[0]['OBJECTID']}" in message
+    assert "YEARBUILT" in message
+
+
+def test_the_unmutated_fixture_still_reads_and_counts_the_same(
+    inspections: list[Record],
+) -> None:
+    """The refusal must not be refusing anything the real files actually hold."""
+    cars = field_coverage(inspections, DINS_FIELDS_BY_NAME["NOOFCARSONPROPERTY"])
+    assert cars.present == 2
+    assert cars.zero_values == 1
 
 
 def test_out_of_domain_values_are_named_and_counted(

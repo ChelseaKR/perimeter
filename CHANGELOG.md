@@ -6,6 +6,35 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project a
 
 ## [Unreleased]
 
+### Fixed, eight of the nine fields measured as numbers accepted anything at all
+
+- **A reformatted numeric column would have been published as a full set of recorded
+  measurements.** `numeric=True` decided that a zero is a value and that
+  `recorded_zero_values` is published; it never decided that the cells are numbers. Only
+  `GIS_ACRES` was ever parsed, through `records.float_value`, which raises. The eight
+  DINS fields are parsed by nothing, so `1,250,000`, `two` and `38.5N` classified as
+  ordinary recorded values. Measured on the committed fixture: setting those three on all
+  ten records raised nothing and left every mutated cell `present`. The same mutation on
+  `GIS_ACRES` has always stopped the build. `FieldSpec.classify` now refuses a
+  non-numeric recorded value in any of the nine, with the message `float_value` already
+  used, so all nine behave alike. See ADR-0011.
+- **The count that would have gone quiet.** A field whose values stop parsing published
+  `recorded_zero_values: 0`, because `field_coverage` discarded every failed parse before
+  counting; the ADR-0006 zero gate skips a field publishing no recorded zeros, so the
+  audit switched itself off at the moment the field's numbers stopped meaning anything.
+  On the fixture, `NOOFCARSONPROPERTY`'s count fell from 1 to 0 under mutation and
+  nothing said so.
+- **The pragma that waived the question.** `# pragma: no cover - numeric drift raises at
+  read time` excluded the swallowing branch from the 100% branch-coverage floor, on a
+  reason that was true of one field in nine, so the one mechanism that asks "has anyone
+  shown this can happen?" was switched off. The `try` and the pragma are both gone;
+  `field_coverage` now parses without a guard because the value is refused at the edge,
+  and coverage stays at 100% with nothing waived.
+- **Refused at the edge, not at the count.** `records.py`'s stated contract is that
+  parsing happens once, at the edge, and a row that cannot be classified stops there
+  rather than reaching a page. Blanks and declared markers are still decided first, so
+  `YEARBUILT`'s `0` stays a marker rather than being read as the number zero.
+
 ### Changed, a hung CI job could hold a runner for six hours
 
 - **Every job now carries a `timeout-minutes`.** GitHub's default is 360 minutes and no
