@@ -4,6 +4,15 @@ message: "If you use this work, please cite it."
 authors:
   - family-names: Kelly-Reif
     given-names: Chelsea
+# `version` mirrors the in-development version in pyproject.toml, which is the single
+# source of truth; tests/test_release_claims.py asserts the two agree.
+#
+# `date-released` is deliberately absent. It carried 2026-08-07 with no tag, no signed
+# tag and no published artifact, which the README's Release & Versioning row said in the
+# same tree. A citation manager prints that field as the date the software was released,
+# so the file published a release date for a release that never happened; the date was
+# real, it was just the date of something else. The same test ties its presence to a tag
+# naming the declared version, in both directions, so it comes back when a release is
+# actually cut and cannot be left out of one.
 version: 0.1.0
-date-released: "2026-08-07"  # bump on every tagged release
 license: Apache-2.0

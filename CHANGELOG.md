@@ -6,6 +6,41 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project a
 
 ## [Unreleased]
 
+### Added, the declared version is now held to the tag that would make it true
+
+- **`0.1.0` named no artifact, and nothing could notice.** `pyproject.toml` declares
+  it, `git tag --list` is empty here and on `origin`, and a reader who takes the number
+  at face value can install nothing with it. The Release & Versioning row already said
+  so in prose ("no tag cut, no signed tag, no release workflow, no published artifact")
+  and prose is what every other stale claim in this repository was made of before a test
+  was pointed at it. Measured across the portfolio on 2026-09-06: twenty public
+  repositories declare a version nothing was ever tagged for.
+- **`tests/test_release_claims.py`** reads `git tag --list` and sorts the declared
+  version into one of two states. With no tags it passes only while the `**Status:**`
+  line or the Release & Versioning row says so in a sentence that names the declared
+  version, so a bump to `0.2.0` under a README still explaining `0.1.0` fails instead of
+  reading like a current disclosure. With tags present and none naming the declared
+  version it fails, reporting the declared version and the numerically newest tag.
+- **The failing branch is exercised rather than assumed.** It is unreachable from this
+  repository today, so it runs on synthetic input every time, beside a positive control
+  so the rule cannot pass by never passing, and a sabotage of the real README that
+  asserts the substitution landed before reading the result. Proven out of band too, by
+  tagging a throwaway clone `v0.0.9` and `v0.10.0` and watching the gate fail naming
+  `v0.10.0`. No tag was created in this repository: cutting one is the maintainer's call.
+- **The tag read refuses a checkout that cannot see tags.** A shallow or `--no-tags`
+  clone reports no tags whether or not any exist, and "none found" read as "none exist"
+  is the vacuous pass the file exists to prevent. `ci.yml`'s verify job now checks out
+  with `fetch-depth: 0`, because `actions/checkout` fetches none at its default depth.
+
+### Fixed, CITATION.cff published a release date for a release that never happened
+
+- `date-released: "2026-08-07"` sat in `CITATION.cff` against no tag, no signed tag and
+  no published artifact, which the README said in the same tree. A citation manager
+  prints that field as the date the software was released, so the date was real and it
+  was the date of something else. It is removed, and its absence is now bound in both
+  directions to a tag naming the declared version, so it comes back when a release is
+  cut and cannot be left out of one.
+
 ### Fixed, the README said Dependabot alerts were off and they are on
 
 - **A security row describing a posture the repository does not have.** The Security and
