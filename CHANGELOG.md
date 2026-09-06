@@ -6,6 +6,39 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project a
 
 ## [Unreleased]
 
+### Added, a refresh can now say what it moved
+
+- **`python -m perimeter.diff OLD NEW`, and `make diff`.** A refresh of the pinned
+  retrievals replaces both coverage artifacts wholesale, and until now the only account of
+  what changed was `git diff` over a large JSON document, which answers a different
+  question. It reports lines, so a reordered list reads as hundreds of changes and one
+  count that moved reads as two. This walks every leaf of both documents and reports the
+  value at its path, with both sides. Exit `0` no change, `1` changes reported, `2` a
+  refused removal or an unreadable input. `--json` writes the rows sorted by path, so the
+  output is byte-identical on repeat and a refresh can cite it in `PROVENANCE.md`.
+- **A key that stops being published is refused, not reported as a change.** `--allow-removals`
+  is how a deliberate one gets through, and it is the only way. A key present in the
+  earlier artifact and absent from the later one means the build stopped publishing
+  something, which is a different event from a number moving.
+- **A number becoming `null` is a change to absence, never a removal.** ADR-0010 writes a
+  domain the layer stopped publishing as `null` rather than omitting it, so collapsing the
+  two would lose the distinction the artifact exists to carry.
+- **Nothing is compared as a float.** `1000` and `1000.0` are equal in Python and are not
+  the same published value; the comparison reports a type change. Empty containers get a
+  marker leaf, so deleting `"markers": {}` outright is visible rather than invisible.
+- **`make site-check` prints the leaf comparison before the byte-for-byte check decides.**
+  The comparison is a report and `diff -r` is still the gate; the report's exit status is
+  discarded deliberately, so it can add detail and can never turn a red target green.
+- **Refusals, per ADR-0004.** A missing file, an empty file, an unparseable one, and a
+  JSON document whose top level is not an object are each refused rather than parsed into
+  an empty document. Two empty documents compare equal, and would report "no change"
+  about two artifacts that were never read.
+- The gate was run against the faults it exists to catch, and one of those runs found a
+  weak assertion in this repository's own new test: with the emptiness check deleted, an
+  empty file still failed as unparseable JSON and `match="empty"` was satisfied by the
+  fixture's filename, `empty.json`. The fixture is renamed and the pattern now matches the
+  reason. A control that passes for the wrong reason is a control that is not there.
+
 ### Fixed, the browser accessibility gate was shallowing this checkout
 
 - **Every pull request's `verify` job could fail on five tests about tags.** On a
