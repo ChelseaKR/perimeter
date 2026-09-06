@@ -6,6 +6,24 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project a
 
 ## [Unreleased]
 
+### Fixed, the CodeQL gate was split across two version bumps that cannot both be half-applied
+
+- **`analyze` refuses to read a configuration `init` did not write, and Dependabot bumps
+  them separately.** `github/codeql-action/init` and `github/codeql-action/analyze` are
+  two entries in Dependabot's index and one program on the runner; the second reads state
+  the first left behind and checks the version stamped on it. The weekly 4.37.8 to 4.37.9
+  bump therefore arrived as two pull requests, and each one, on its own branch, produced
+  `Loaded a configuration file for version '4.37.9', but running version '4.37.8'` and a
+  `configuration error` job status. Merging either alone would have put that same skew on
+  `main` for as long as the other took to land, with the required `codeql` check failing
+  the whole time. Both `uses:` lines move to
+  `cdf488f595d80d6e07e03d4674febd5ab45fa938` # v4.37.9 in one commit.
+- **The recurrence, not just this week's instance.** `.github/dependabot.yml` now groups
+  `github/codeql-action*` into a single pull request, so next month's patch bump is one
+  branch that is either wholly applied or not applied at all. This is the mechanical fix;
+  nothing about the workflow's behaviour changes, and the pins stay full 40-character
+  SHAs with the tag in a trailing comment, which is what `zizmor` checks.
+
 ### Fixed, the audit gate was red on a lockfile pin that no dependency bump would move
 
 - **`fast-uri` was locked at 3.1.5, inside the vulnerable range of four high-severity
