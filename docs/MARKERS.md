@@ -256,11 +256,13 @@ and the file.
 A zero is a judgment call of exactly the same kind as a marker word, and until this
 section existed nothing here made it. `docs/MARKERS.md` audited every field that
 *declares* a vocabulary, and a numeric field deciding that its zeros are measurements
-declares nothing at all, so it was audited by nobody. Six fields publish a
+declares nothing at all, so it was audited by nobody. Five fields publish a
 `recorded_zero_values` count above zero. This is what each one's zeros are.
 
-`tests/test_schema.py` now fails when a numeric field publishes recorded zeros and this
-document does not cover it.
+`tests/test_schema.py` fails when a numeric field publishes recorded zeros and this
+document does not cover it, and it now reads the table below back against the artifacts
+as well: the count in the sentence above, the set of rows, and every number in the
+**Recorded zeros** column all have to match `site/data/*-coverage.json`.
 
 | Field | Recorded zeros | Reading | Declared? |
 |---|---|---|---|
@@ -269,7 +271,17 @@ document does not cover it.
 | `NOOFCARSONPROPERTY` | 55,831 | a count of no cars | no, a zero is the measurement |
 | `NUMBEROFUNITPERSTRUCTURE` | 58,411 | contested; see below | no, and the reason is recorded |
 | `ASSESSEDIMPROVEDVALUE` | 6,613 | contested; see below | no, and the reason is recorded |
-| `YEARBUILT` | 12,148 | a parcel record with no year on it | **yes**, marker `0`, inferred |
+
+`YEARBUILT` was the sixth row of that table, and it is the reason the checking above
+exists. Declaring `0` a marker for it moved all 12,148 of its zeros out of
+`recorded_zero_values` and into `explicit_unknown`, which is what
+`site/data/dins-coverage.json` has published since; the sentence and the row went on
+saying six and 12,148 for eight days, because the only gate reading this section asked
+whether a field was *named* somewhere in the file and nothing asked what the section said
+about it. The field's declaration is audited in section 4 and below; what changed is only
+which of the two audits covers it, exactly as ADR-0006 says: "a field whose zeros are
+declared as markers stops publishing recorded zeros, so the zero gate stops applying to
+it."
 
 `GIS_ACRES` on the FRAP side, and `LATITUDE` and `LONGITUDE` on the DINS side, hold no
 recorded zeros at all in the acquired files, so they make no call to audit. A `0` turning
