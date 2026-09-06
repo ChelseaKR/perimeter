@@ -139,7 +139,7 @@ class FieldSpec:
         if text in self.unknown_codes:
             return Cell.explicit_unknown(text)
         if text in self.recorded_absences:
-            return Cell.present(text)
+            return self._present(text, where=where)
         marker = normalize_marker(text)
         if marker in self.unknown_markers:
             return Cell.explicit_unknown(marker)
@@ -151,6 +151,37 @@ class FieldSpec:
                 f"published absences: {sorted(self.recorded_absences)}); "
                 "guessing here would publish an absence as a value"
             )
+        return self._present(text, where=where)
+
+    def _present(self, text: str, *, where: str) -> Cell:
+        """A recorded value, refused when a measured-as-a-number field holds one that isn't.
+
+        Nine fields declare ``numeric=True``, and until this existed exactly one of them
+        was ever parsed as a number: ``GIS_ACRES``, through ``records.float_value``,
+        which raises. The other eight are read by nothing that parses them, so a
+        reformatted column upstream (``1,250,000`` for ``1250000``, a units suffix, a
+        stray letter) classified as an ordinary recorded value and was published as a
+        measurement, on every page and in both artifacts, with nothing raised anywhere.
+
+        Two consequences, and the second is the worse one. Such a field's
+        ``recorded_zero_values`` silently reads 0, because the count that produced it
+        swallowed every failed parse; and the ADR-0006 audit gate skips any field
+        publishing no recorded zeros, so the gate went quiet at the exact moment the
+        field's numbers stopped being trustworthy.
+
+        Refusing here rather than at the count is deliberate. This module's contract is
+        that a row which cannot be classified stops at the edge, before anything
+        downstream sees a raw string; the count is downstream, and a check there can only
+        decide what to do with a value that has already been published as recorded.
+        """
+        if self.numeric:
+            try:
+                float(text)
+            except ValueError:
+                raise SchemaDriftError(
+                    f"{where}.{self.name}: {text!r} is not a number; this field is "
+                    "measured as one"
+                ) from None
         return Cell.present(text)
 
     def outside_domain(self, cell: Cell) -> bool:

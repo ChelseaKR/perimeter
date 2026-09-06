@@ -97,12 +97,13 @@ def field_coverage(records: Sequence[Record], spec: FieldSpec) -> FieldCoverage:
         value = cell.value()
         if spec.outside_domain(cell):
             outside[value] += 1
-        if spec.numeric:
-            try:
-                if float(value) == 0:
-                    zeros += 1
-            except ValueError:  # pragma: no cover - numeric drift raises at read time
-                pass
+        # No `try` here, and no pragma waiving one off the coverage floor. The parse
+        # cannot fail: `FieldSpec.classify` refuses a non-numeric value in a field
+        # declared `numeric=True` at the edge, so every cell that reaches this line has
+        # already been shown to be a number. The `try` this replaces claimed the same
+        # thing in a comment and was true of one field in nine; see issue #51.
+        if spec.numeric and float(value) == 0:
+            zeros += 1
     named = sorted(outside.items(), key=lambda item: (-item[1], item[0]))
     listed = dict(named[:OUTSIDE_DOMAIN_VALUE_CAP])
     # A field the layer publishes no domain for was never compared against one. Its

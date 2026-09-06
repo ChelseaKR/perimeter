@@ -101,9 +101,13 @@ share would have no denominator, the output says so in words instead of printing
 The build fails closed. A column this project measures going missing raises
 `SchemaDriftError`. A cell holding something that reads like a missing-data marker, in a
 field that has not declared that exact marker, raises `SentinelDriftError` rather than
-being guessed at. Every marker currently declared was read in its own field's context and
-carries a note saying why: `None` is a published street-type finding, while `None` in a
-parcel APN is a marker standing in for an absent parcel match.
+being guessed at. A recorded value that is not a number, in one of the nine fields this
+project measures as a number, raises `SchemaDriftError` as well: a column that starts
+arriving as `1,250,000` is drift, and until 2026-09-06 eight of those nine accepted one
+silently and published it as a measurement. See ADR-0011. Every marker currently declared
+was read in its own field's context and carries a note saying why: `None` is a published
+street-type finding, while `None` in a parcel APN is a marker standing in for an absent
+parcel match.
 
 An ordinary value outside a published domain is deliberately *not* an error. It is counted
 and published as `outside_published_domain`, because it is a real thing about the file and
