@@ -6,6 +6,32 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project a
 
 ## [Unreleased]
 
+### Fixed, the audit said six fields publish recorded zeros and five do
+
+- **The one number in `docs/MARKERS.md` that names an artifact key verbatim was wrong.**
+  Section 7 opened by saying six fields publish a `recorded_zero_values` count above
+  zero, and its table carried a sixth row giving `YEARBUILT` 12,148 of them. Declaring
+  `0` a marker for that field, eight days earlier, had moved all 12,148 into
+  `explicit_unknown`: `site/data/dins-coverage.json` has published
+  `"recorded_zero_values": 0` for `YEARBUILT` ever since, and `docs/adr/0006` says in as
+  many words that this is what declaring a marker does. The audit and the ADR
+  contradicted each other in the present tense, and README points a reader at exactly
+  this key to check. The sentence now says five, the table holds the five fields that
+  publish recorded zeros, and a paragraph says where the sixth row went and why.
+- **Nothing could re-derive it, so now something does.**
+  `numeric_zeros_missing_from_the_audit` asks whether a field is *named* in the file. It
+  cannot see a wrong figure in the table it is checking, and it skips any field whose
+  zeros have gone to zero, which is precisely the field whose row went stale. The new
+  `zero_audit_disagreements` reads section 7 back against both published artifacts: the
+  count in the opening sentence, the set of rows, and every figure in the Recorded zeros
+  column. Per ADR-0004 it is run against documents that must not pass it, including the
+  exact pre-fix text, and `test_the_older_gate_is_blind_to_all_four_of_them` pins the
+  reason a second gate had to exist rather than the first being widened.
+- **The gate refuses silence as well as disagreement.** A renamed heading, a table with
+  no rows, a deleted count sentence and a count written as a word it cannot read are each
+  reported rather than passed over, because each is a way for the section to stop being
+  checked while still looking checked.
+
 ### Fixed, the CodeQL gate was split across two version bumps that cannot both be half-applied
 
 - **`analyze` refuses to read a configuration `init` did not write, and Dependabot bumps

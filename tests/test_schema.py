@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import re
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
@@ -362,3 +364,261 @@ def test_the_zero_gate_says_nothing_about_a_field_with_no_zeros_to_explain() -> 
     """A numeric field publishing no zeros has made no call, so there is nothing to write up."""
     payload = {"fields": [{"name": "LATITUDE", "recorded_zero_values": 0}]}
     assert numeric_zeros_missing_from_the_audit(payload, "audit covering nothing") == []
+
+
+# --------------------------------------------------------------------------------------
+# Naming a field is not the same as saying the right thing about it. Issue #52.
+# --------------------------------------------------------------------------------------
+#
+# `numeric_zeros_missing_from_the_audit` above asks whether section 7 mentions a field.
+# It cannot see a wrong number in the table it is checking, and it skips a field whose
+# zeros have gone to zero, which is exactly the field whose row went stale: `YEARBUILT`
+# declared `0` a marker, dropped to `recorded_zero_values: 0`, and left both the opening
+# sentence's count and its own row saying what had been true the week before. The reader
+# invited by README to open `dins-coverage.json` and check the one number in this
+# document that names an artifact key verbatim found it wrong.
+#
+# So this reads the section back against the artifacts instead: the stated count, the set
+# of rows, and every figure in the Recorded zeros column.
+
+ZERO_TABLE_HEADER = "| Field | Recorded zeros | Reading | Declared? |"
+
+_ZERO_TABLE_ROW = re.compile(
+    r"^\|\s*`(?P<name>[A-Z0-9_]+)`\s*\|\s*(?P<zeros>[\d,]+)\s*\|"
+)
+
+# The sentence is wrapped in the document, so every gap in the pattern is a whitespace
+# run rather than a literal space. A gate that only matches its sentence on one line is a
+# gate that goes quiet the first time somebody reflows a paragraph.
+_ZERO_COUNT_SENTENCE = re.compile(
+    r"(?P<word>[A-Za-z]+)\s+fields?\s+publish(?:es)?\s+a\s+`recorded_zero_values`"
+    r"\s+count\s+above\s+zero"
+)
+
+NUMBER_WORDS = {
+    "No": 0,
+    "One": 1,
+    "Two": 2,
+    "Three": 3,
+    "Four": 4,
+    "Five": 5,
+    "Six": 6,
+    "Seven": 7,
+    "Eight": 8,
+    "Nine": 9,
+    "Ten": 10,
+    "Eleven": 11,
+    "Twelve": 12,
+}
+
+
+def _zero_section(doc: str) -> str:
+    """Section 7 alone, so the other tables in the file are not read as its table."""
+    start = doc.index("## 7. Zeros in numeric fields")
+    rest = doc[start:]
+    end = rest.find("\n## ", 1)
+    return rest if end == -1 else rest[:end]
+
+
+def _zero_table(section: str) -> dict[str, int] | None:
+    """The Recorded zeros column, or ``None`` when the table is not where it was.
+
+    ``None`` rather than an empty dict on purpose. A renamed heading or a reshaped table
+    would otherwise read as a table with nothing wrong in it, which is the failure this
+    whole section is about.
+    """
+    if ZERO_TABLE_HEADER not in section:
+        return None
+    body = section.split(ZERO_TABLE_HEADER, 1)[1]
+    rows: dict[str, int] = {}
+    for line in body.splitlines():
+        if not line.startswith("|"):
+            if rows:
+                break
+            continue
+        match = _ZERO_TABLE_ROW.match(line)
+        if match is not None:
+            rows[match["name"]] = int(match["zeros"].replace(",", ""))
+    return rows
+
+
+def _stated_count_problems(section: str, actual: int) -> list[str]:
+    """What the opening sentence claims, against what the artifacts publish."""
+    stated = _ZERO_COUNT_SENTENCE.search(section)
+    if stated is None:
+        return [
+            "section 7 no longer says how many fields publish recorded zeros, so the "
+            "count cannot be checked"
+        ]
+    written = NUMBER_WORDS.get(stated["word"])
+    if written is None:
+        return [
+            f"section 7 says {stated['word']!r} fields publish recorded zeros; this "
+            f"gate reads {sorted(NUMBER_WORDS)}"
+        ]
+    if written != actual:
+        return [
+            f"section 7 says {stated['word']} fields publish recorded zeros; "
+            f"{actual} do"
+        ]
+    return []
+
+
+def zero_audit_disagreements(payloads: Sequence[dict[str, Any]], doc: str) -> list[str]:
+    """Every way section 7 can disagree with the artifacts it describes."""
+    section = _zero_section(doc)
+    published = {
+        field["name"]: field["recorded_zero_values"]
+        for payload in payloads
+        for field in payload["fields"]
+        if field.get("recorded_zero_values")
+    }
+    rows = _zero_table(section)
+    if rows is None:
+        return [f"section 7 has no table headed {ZERO_TABLE_HEADER!r} to check"]
+    problems: list[str] = []
+    if not rows:
+        problems.append("section 7's table has no field rows, so it checks nothing")
+    for name, count in sorted(published.items()):
+        if name not in rows:
+            problems.append(
+                f"{name} publishes {count} recorded zeros and section 7's table has no "
+                f"row for it"
+            )
+        elif rows[name] != count:
+            problems.append(
+                f"{name}: section 7's table says {rows[name]} recorded zeros, the "
+                f"artifacts publish {count}"
+            )
+    for name, count in sorted(rows.items()):
+        if name not in published:
+            problems.append(
+                f"{name}: section 7's table gives it {count} recorded zeros, the "
+                f"artifacts publish none"
+            )
+    problems.extend(_stated_count_problems(section, len(published)))
+    return problems
+
+
+def test_the_zero_audit_agrees_with_the_artifacts_it_describes() -> None:
+    disagreements = zero_audit_disagreements(
+        [_published(name) for name in NUMERIC_ARTIFACTS], MARKERS_DOC
+    )
+    assert disagreements == [], (
+        "docs/MARKERS.md section 7 contradicts site/data/*-coverage.json: "
+        f"{disagreements}"
+    )
+
+
+# Every field named here is named somewhere in the text, which is all the older gate
+# looks for. `ASSESSEDIMPROVEDVALUE` is discussed in prose and has no row; the
+# `NOOFCARSONPROPERTY` row is one short; `YEARBUILT` keeps a row it stopped earning; and
+# the opening count still says six. `numeric_zeros_missing_from_the_audit` reports none
+# of it.
+STALE_SECTION = """## 7. Zeros in numeric fields
+
+Six fields publish a `recorded_zero_values` count above zero.
+
+| Field | Recorded zeros | Reading | Declared? |
+|---|---|---|---|
+| `NOOFCARSONPROPERTY` | 55,830 | a count of no cars | no |
+| `YEARBUILT` | 12,148 | a parcel record with no year | yes |
+
+### `ASSESSEDIMPROVEDVALUE`: considered, and not declared
+
+A parcel assessed at zero improved value is a thing that exists.
+
+## 8. Something else
+"""
+
+
+def test_the_gate_catches_the_shape_issue_52_found() -> None:
+    """A stale row, a stale count, a figure that drifted, and a row that is missing."""
+    payloads = [
+        {
+            "fields": [
+                {"name": "NOOFCARSONPROPERTY", "recorded_zero_values": 55831},
+                {"name": "ASSESSEDIMPROVEDVALUE", "recorded_zero_values": 6613},
+                {"name": "YEARBUILT", "recorded_zero_values": 0},
+            ]
+        }
+    ]
+    assert zero_audit_disagreements(payloads, STALE_SECTION) == [
+        "ASSESSEDIMPROVEDVALUE publishes 6613 recorded zeros and section 7's table has "
+        "no row for it",
+        "NOOFCARSONPROPERTY: section 7's table says 55830 recorded zeros, the artifacts "
+        "publish 55831",
+        "YEARBUILT: section 7's table gives it 12148 recorded zeros, the artifacts "
+        "publish none",
+        "section 7 says Six fields publish recorded zeros; 2 do",
+    ]
+
+
+def test_the_older_gate_is_blind_to_all_four_of_them() -> None:
+    """Why a second gate had to exist rather than the first one being tightened.
+
+    `numeric_zeros_missing_from_the_audit` asks whether a field is named in the file. All
+    three of these are, and the field whose row went stale publishes no zeros at all, so
+    it is skipped before the question is even asked.
+    """
+    payload = {
+        "fields": [
+            {"name": "NOOFCARSONPROPERTY", "recorded_zero_values": 55831},
+            {"name": "ASSESSEDIMPROVEDVALUE", "recorded_zero_values": 6613},
+            {"name": "YEARBUILT", "recorded_zero_values": 0},
+        ]
+    }
+    assert numeric_zeros_missing_from_the_audit(payload, STALE_SECTION) == []
+
+
+def test_the_gate_refuses_a_section_whose_table_moved() -> None:
+    """A renamed heading must not read as a table with nothing wrong in it."""
+    moved = "## 7. Zeros in numeric fields\n\nNo table here.\n\n## 8. Next\n"
+    assert zero_audit_disagreements([{"fields": []}], moved) == [
+        f"section 7 has no table headed {ZERO_TABLE_HEADER!r} to check"
+    ]
+
+
+def test_the_gate_refuses_a_table_with_no_rows() -> None:
+    empty = (
+        "## 7. Zeros in numeric fields\n\n"
+        "No fields publish a `recorded_zero_values` count above zero.\n\n"
+        f"{ZERO_TABLE_HEADER}\n|---|---|---|---|\n\n## 8. Next\n"
+    )
+    assert zero_audit_disagreements([{"fields": []}], empty) == [
+        "section 7's table has no field rows, so it checks nothing"
+    ]
+
+
+def test_the_gate_refuses_a_section_that_stopped_stating_the_count() -> None:
+    """Deleting the sentence must not be a way to stop it being checked."""
+    silent = (
+        "## 7. Zeros in numeric fields\n\nSome fields have zeros in them.\n\n"
+        f"{ZERO_TABLE_HEADER}\n|---|---|---|---|\n"
+        "| `NOOFCARSONPROPERTY` | 55,831 | a count of no cars | no |\n\n## 8. Next\n"
+    )
+    payloads = [
+        {"fields": [{"name": "NOOFCARSONPROPERTY", "recorded_zero_values": 55831}]}
+    ]
+    assert zero_audit_disagreements(payloads, silent) == [
+        "section 7 no longer says how many fields publish recorded zeros, so the count "
+        "cannot be checked"
+    ]
+
+
+def test_the_gate_refuses_a_count_it_cannot_read() -> None:
+    """A word this gate cannot turn into a number is a count nobody is checking."""
+    vague = (
+        "## 7. Zeros in numeric fields\n\n"
+        "Several fields publish a `recorded_zero_values` count above zero.\n\n"
+        f"{ZERO_TABLE_HEADER}\n|---|---|---|---|\n"
+        "| `NOOFCARSONPROPERTY` | 55,831 | a count of no cars | no |\n\n## 8. Next\n"
+    )
+    payloads = [
+        {"fields": [{"name": "NOOFCARSONPROPERTY", "recorded_zero_values": 55831}]}
+    ]
+    problems = zero_audit_disagreements(payloads, vague)
+    assert len(problems) == 1
+    assert problems[0].startswith(
+        "section 7 says 'Several' fields publish recorded zeros"
+    )
