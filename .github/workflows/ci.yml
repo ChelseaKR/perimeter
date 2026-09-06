@@ -124,13 +124,13 @@ jobs:
         with:
           persist-credentials: false
       - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          enable-cache: true
       # Online mode, on purpose. zizmor defaults to offline and, in that mode, silently
       # drops the audits that need the API: whether a pinned SHA is still reachable from
       # its tag, and whether a `uses:` resolves upstream at all. A gate that quietly runs
       # a subset of itself is the failure mode this repository is trying not to have.
       # GITHUB_TOKEN's contents:read is the whole permission it needs.
-        with:
-          enable-cache: true
       - name: workflow static analysis (zizmor, online)
         run: uvx --from zizmor==1.29.0 zizmor --format=plain .github/workflows/
         env:

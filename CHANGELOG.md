@@ -6,6 +6,24 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project a
 
 ## [Unreleased]
 
+### Changed, a hung CI job could hold a runner for six hours
+
+- **Every job now carries a `timeout-minutes`.** GitHub's default is 360 minutes and no
+  job in this repository has ever run longer than a few: `verify` is the slowest at about
+  1m10s. Nothing was hanging, but nothing would have said so for six hours if it had, and
+  a stuck run that nobody sees is the same failure as a gate nobody reads. The values are
+  sized well above what these jobs actually take: 15 for `secret-scan` and `zizmor`, 30
+  for `verify`, `sast`, `codeql` and both `pages` jobs.
+- **`setup-uv` caches its downloads on the three jobs that drive `uv`.** `verify`, `sast`
+  and `zizmor` all resolve the same dependency set on every run. `enable-cache: true` is
+  deliberately not added to `pages.yml`: that workflow holds the `id-token: write` deploy
+  job, where a warm cache is a hole in build isolation.
+- **What was already right and stayed untouched.** All three workflows already declare
+  `concurrency`, and correctly: `ci` and `codeql` cancel a superseded run, `pages` does
+  not, so an in-flight deployment is never killed halfway. No job was added, removed,
+  renamed or reordered, and no step logic changed, so every required check keeps the name
+  the branch ruleset at `.github/rulesets/main.json` refers to it by.
+
 ### Fixed, the CodeQL gate was split across two version bumps that cannot both be half-applied
 
 - **`analyze` refuses to read a configuration `init` did not write, and Dependabot bumps
