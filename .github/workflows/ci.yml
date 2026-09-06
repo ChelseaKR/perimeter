@@ -31,8 +31,24 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # A pull request's runs supersede each other: a new push makes the previous run's
+  # verdict irrelevant, so cancelling it costs nothing.
+  #
+  # A push to `main` is not like that. Every commit on `main` is what
+  # `.github/rulesets/main.json` is meant to gate and what `pages.yml` publishes, so it
+  # needs its own verdict. Keyed on `github.ref` with `cancel-in-progress: true`, every
+  # push to `main` shared one group with every other, so a second merge cancelled the
+  # first merge's run — and a cancelled run is not a failure, it is no signal at all. The
+  # commit reached `main` unverified and nothing anywhere said so. Six pull requests
+  # landed inside 45 minutes on 2026-09-06, which is precisely the shape that hits.
+  #
+  # Keying a push on its commit SHA gives it an uncontended group, so it always runs.
+  # The obvious alternative — `cancel-in-progress: false` on the shared key — is worse:
+  # GitHub holds only one pending run per group, so a third push silently evicts the
+  # second rather than queueing it. That loses the verdict just as completely and is
+  # harder to see afterwards, because an evicted run leaves no cancelled run behind.
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   verify:
