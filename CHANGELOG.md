@@ -6,6 +6,22 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project a
 
 ## [Unreleased]
 
+### Fixed, the README said Dependabot alerts were off and they are on
+
+- **A security row describing a posture the repository does not have.** The Security and
+  Supply-Chain row read "Dependabot alerts are disabled on the repository, so SEC-15 has
+  nothing to read". Measured 2026-09-06:
+  `repos/ChelseaKR/perimeter/vulnerability-alerts` returns 204, which is enabled, and
+  `dependabot/alerts` returns four, all four the `fast-uri` advisories and all four now
+  `fixed`. Alerts were switched on across the portfolio on 2026-09-05 and this row was
+  written before that.
+- **What is actually still off is the half that opens pull requests.**
+  `security_and_analysis.dependabot_security_updates` is `disabled`, so an advisory
+  raises an alert and nothing acts on it. That is the shape the `fast-uri` red run was:
+  four alerts raised, no security-update PR possible, and the fix arrived only because
+  somebody resolved the lockfile by hand. The row now says that, rather than saying the
+  alerts do not exist.
+
 ### Fixed, eight of the nine fields measured as numbers accepted anything at all
 
 - **A reformatted numeric column would have been published as a full set of recorded
