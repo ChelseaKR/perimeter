@@ -8,7 +8,7 @@ setting, which is the owner's call, not a pull request's.
 ## What is true today
 
 **No ruleset is applied on this repository.** Measured 2026-08-15, re-read
-2026-08-28 and again 2026-08-29, every time with the same answer:
+2026-08-28, 2026-08-29 and again 2026-09-06, every time with the same answer:
 
 | Question | Answer |
 |---|---|
@@ -93,14 +93,43 @@ a required context that matches nothing is a gate that has silently gone away.
 possible today and should not be.
 
 **`required_signatures`.** Checked before recommending it, because enabling it
-with an unsigned history locks the owner out: all fourteen commits on `main`
-report `verification.verified: true` from the GitHub API, across both
-`ChelseaKR` and `dependabot[bot]`, so nothing is locked out by turning it on.
+with an unsigned history locks the owner out. Re-measured 2026-09-06 at
+`d4f533f`, the tip of `main`: **66 commits**, and all 66 report
+`verification.verified: true` from the GitHub API, across `ChelseaKR` and
+`dependabot[bot]`. Nothing is locked out by turning it on. This paragraph said
+"all fourteen commits" until 2026-09-06, which was the count on 2026-08-15 and
+had not been re-read since; the conclusion survived the re-measurement, the
+evidence for it did not.
+
+Measure it the way this paragraph does, with one call, and not from a local
+checkout:
+
+```sh
+gh api 'repos/ChelseaKR/perimeter/commits?sha=main&per_page=100' \
+  --jq '[.[] | select(.commit.verification.verified | not)] | length'
+```
+
+**`git log --format='%G?'` is the wrong instrument here and reports the opposite
+answer.** Run locally against this repository it returns `N` — "no signature" —
+for thirteen commits, and `E` for the rest. Both readings are artifacts of the
+local checkout, not facts about the commits. The thirteen are SSH-signed with
+the owner's own key, and git 2.55 reports an SSH signature as `N` when no
+`gpg.ssh.allowedSignersFile` is configured; supply any allowed-signers file and
+the same commit reports `U`, a good signature from an untrusted key. The other
+fifty-three are PGP-signed by GitHub's web-flow key, and `E` means the key is
+not in the local keyring. Zero commits on `main` carry no signature. An audit
+that read `N` as "unsigned" would report thirteen unsigned commits that do not
+exist, which is this portfolio's most common defect — a read that failed
+published as a measurement — committed by the tool that was checking for it.
+GitHub's own enforcement of `required_signatures` uses the verification the API
+reports, so the API is also the instrument that matches the rule.
 
 **`required_linear_history`** with `allowed_merge_methods: ["squash", "rebase"]`.
 The repository currently also allows merge commits; linear history and a merge
-commit cannot both be had, and the three merge commits already on `main` are
-unaffected, since a ruleset governs new pushes rather than existing history.
+commit cannot both be had, and the **12** merge commits already on `main`
+are unaffected, since a ruleset governs new pushes rather than existing history.
+This said "three" until 2026-09-06, which was true on 2026-08-15; nine more have
+landed since, and none of them changes the reasoning.
 
 **`required_approving_review_count: 0`.** GitHub does not count self-approval,
 so `1` deadlocks every merge in a single-maintainer repository. This is the
