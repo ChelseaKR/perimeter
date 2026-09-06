@@ -6,6 +6,59 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project a
 
 ## [Unreleased]
 
+### Fixed, the CodeQL gate was split across two version bumps that cannot both be half-applied
+
+- **`analyze` refuses to read a configuration `init` did not write, and Dependabot bumps
+  them separately.** `github/codeql-action/init` and `github/codeql-action/analyze` are
+  two entries in Dependabot's index and one program on the runner; the second reads state
+  the first left behind and checks the version stamped on it. The weekly 4.37.8 to 4.37.9
+  bump therefore arrived as two pull requests, and each one, on its own branch, produced
+  `Loaded a configuration file for version '4.37.9', but running version '4.37.8'` and a
+  `configuration error` job status. Merging either alone would have put that same skew on
+  `main` for as long as the other took to land, with the required `codeql` check failing
+  the whole time. Both `uses:` lines move to
+  `cdf488f595d80d6e07e03d4674febd5ab45fa938` # v4.37.9 in one commit.
+- **The recurrence, not just this week's instance.** `.github/dependabot.yml` now groups
+  `github/codeql-action*` into a single pull request, so next month's patch bump is one
+  branch that is either wholly applied or not applied at all. This is the mechanical fix;
+  nothing about the workflow's behaviour changes, and the pins stay full 40-character
+  SHAs with the tag in a trailing comment, which is what `zizmor` checks.
+
+### Fixed, the audit gate was red on a lockfile pin that no dependency bump would move
+
+- **`fast-uri` was locked at 3.1.5, inside the vulnerable range of four high-severity
+  advisories.** `make verify` reaches `npm audit --audit-level=high` through `pages`, and
+  it exited 1 on GHSA-5jgf-p345-68v8, GHSA-f65p-4m7j-42xc, GHSA-fph4-wmhf-6fwf and
+  GHSA-jqff-g426-hqxp, all four filed against the range `3.0.0 - 3.1.5`. `main` had been
+  red on it since 2026-09-03 (run 33713082447, a real 1m10s failure, not the account-level
+  Actions block that produces zero-step jobs) and so had every open pull request. The
+  package is development-only and transitive, `html-validate` to `ajv` to `fast-uri`,
+  reached both directly and through `@sidvind/better-ajv-errors`; nothing from npm ships
+  in the pages, which carry no script at all.
+- **The remedy is the version, not an exception to the gate.** `ajv` 8.20.0 asks for
+  `fast-uri: ^3.0.1`, which the patched 3.1.7 already satisfies, so the vulnerable version
+  leaves the tree on a lockfile resolve alone. `package-lock.json` moves `fast-uri` from
+  3.1.5 to 3.1.7 and moves nothing else; `package.json` is unchanged, there is no
+  `overrides` pin, and there is no allowlisted advisory. The audit gate keeps the full
+  strength it had, which is the point: an advisory answered by suppressing the check would
+  leave `npm audit` unable to report the next one, and per ADR-0004 a gate that cannot
+  fail is not a gate.
+- **Two gates behind it had not run since 2026-09-03.** `node-audit` sits ahead of
+  `a11y-browser` and `browser-audit` in the `pages` prerequisite list, so `make` stopped
+  before the Chromium WCAG run and before the second `npm audit` over the
+  `tools/a11y_browser` toolchain. Both are observed running again. Measured after the
+  change, `make verify` is green end to end: 690 tests, 100% branch coverage,
+  `mypy --strict` clean, `pip-audit` clean, both npm audits reporting 0 vulnerabilities,
+  8 Playwright checks passing in Chromium, and the two determinism builds byte-identical.
+- **What would let it recur is unchanged and is the owner's call.** The npm entry in
+  `.github/dependabot.yml` carries no `allow: dependency-type: all`, so weekly version
+  updates only propose the three direct devDependencies and never re-resolve a transitive
+  one; Dependabot security updates are switched off at the repository
+  (`"dependabot_security_updates": {"status": "disabled"}`, and `/vulnerability-alerts`
+  404s), which README's Security & Supply-Chain row already records. So the next
+  transitive advisory will wedge `verify` the same way and will again need a hand.
+  Nothing here changes either setting.
+
 ### Fixed, the per-incident table's header and its body were two separate lists
 
 - **A column in one and not the other shifts every later value under the wrong heading.**
