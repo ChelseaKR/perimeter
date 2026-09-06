@@ -152,7 +152,35 @@ uv sync
 npm ci
 make verify          # lockfile, lint, format, types, tests, SCA, page checks, determinism
 make site-offline    # build from committed fixtures; runs anywhere, no network
+make diff OLD=a.json NEW=b.json   # compare two coverage artifacts leaf by leaf
 ```
+
+### What a refresh moved
+
+The figures on these pages move only when the pinned retrievals are deliberately
+refreshed, and a refresh replaces both JSON artifacts wholesale. `make diff` says what
+that changed, value by value rather than line by line:
+
+```sh
+make diff OLD=site/data/dins-coverage.json NEW=build/site-current/data/dins-coverage.json
+```
+
+Every leaf is compared at its path (`/fields[3]/present`), with both values printed.
+`--json` writes the same rows sorted by path, so a refresh can cite a comparison in
+`PROVENANCE.md` rather than a screenshot of `git diff`. Three distinctions it keeps:
+
+- A key the later artifact **stops publishing** is not the same event as a value moving.
+  It is refused outright unless `ALLOW_REMOVALS=1` names it as deliberate.
+- A number that becomes `null` is a **change to absence**, reported with both sides, and
+  never a removal. ADR-0010 writes a domain the layer stopped publishing as `null`.
+- `1000` and `1000.0` are a type change and are reported as one. Every percentage in
+  these artifacts is a `*_tenths_pct` integer so that no float decides an equality, and
+  nothing here converts, rounds, or tolerances a value.
+
+An empty, missing, or unparseable input is refused rather than compared: two empty files
+compare equal, and "no change" about two files that were never read is the failure this
+whole repository is organised against. `make site-check` prints the same leaf comparison
+before its byte-for-byte check decides, so a drift report names the values that moved.
 
 `make verify` includes `make pages`, which builds the pages from the committed fixtures and
 checks them four ways: `html-validate` for HTML conformance and the markup-level
