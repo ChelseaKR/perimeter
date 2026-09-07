@@ -3,7 +3,17 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "perimeter"
+# The distribution name on PyPI, not the import name and not the module you run:
+# `perimeter` is taken there by YunoJuno's Django middleware ("Site-wide perimeter
+# access control for Django projects", 0.14), so this project could never have been
+# released under it. `perimeter-wildfire` is free as of this decision (checked
+# against pypi.org on 2026-09-07, HTTP 404) and is a placeholder pending
+# confirmation, not a claim already made — nothing has been uploaded under either
+# name, and this repository has no publish workflow. The package directory stays
+# `src/perimeter/`, so `import perimeter` and `python -m perimeter.acquire` are
+# unaffected. The only other place carrying this string is the `[[package]]` entry
+# in `uv.lock` (regenerate with `uv lock`).
+name = "perimeter-wildfire"
 version = "0.1.0"
 description = "Coverage and completeness measures over California's public wildfire datasets"
 requires-python = ">=3.12"
