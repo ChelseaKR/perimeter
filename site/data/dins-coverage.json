@@ -6,6 +6,7 @@
     "inaccessible": 591,
     "total": 132522
   },
+  "artifact_schema_version": 1,
   "completeness_by_access": [
     {
       "assessed_present": 131931,

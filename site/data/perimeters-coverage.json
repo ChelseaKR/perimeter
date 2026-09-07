@@ -169,6 +169,7 @@
       300
     ]
   },
+  "artifact_schema_version": 1,
   "duplicate_signals": [
     {
       "description": "Records sharing one IRWIN ID. IRWIN is the federal incident identifier, so a repeat means two perimeter records point at one federal incident.",

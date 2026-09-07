@@ -10,6 +10,7 @@ import argparse
 import shutil
 from pathlib import Path
 
+from perimeter import schema_export
 from perimeter.artifacts import build
 from perimeter.render import SOCIAL_CARD, dins_page, index_page, perimeters_page
 from perimeter.sources import DINS, FRAP
@@ -49,6 +50,11 @@ def build_site(
     written = [
         out_dir / "data" / "perimeters-coverage.json",
         out_dir / "data" / "dins-coverage.json",
+        # The contract for those two files, written by the same run that writes them, so
+        # a schema can never describe an artifact a different build produced. Both are
+        # inside `site/`, so `make site-check` diffs them and the determinism gate
+        # compares them like everything else.
+        *schema_export.write(out_dir / "data", is_fixture=is_fixture),
     ]
     for name, markup in pages.items():
         path = out_dir / name
