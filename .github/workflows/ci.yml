@@ -114,6 +114,26 @@ jobs:
       - name: DIAGNOSTIC release-claims only
         if: always()
         run: uv run pytest tests/test_release_claims.py -x -q || true
+      - name: DIAGNOSTIC browser-sync then release-claims
+        if: always()
+        run: |
+          set -x
+          make browser-sync || true
+          git rev-parse --is-shallow-repository
+          cat .git/shallow 2>/dev/null || echo "no .git/shallow"
+          uv run pytest tests/test_release_claims.py -q || true
+      - name: DIAGNOSTIC full suite under xdist, then who made shallow
+        if: always()
+        run: |
+          set -x
+          uv run pytest -n auto -q 2>&1 | tail -20 || true
+          git rev-parse --is-shallow-repository
+          echo "--- .git/shallow ---"
+          cat .git/shallow 2>/dev/null || echo "no .git/shallow"
+          echo "--- what is that commit ---"
+          while read -r sha; do git log -1 --format='%H %s' "$sha" || true; done < .git/shallow 2>/dev/null || true
+          echo "--- .git listing ---"
+          ls -la .git/
       - name: make verify (byte-for-byte the local target)
         run: make verify
 
