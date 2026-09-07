@@ -92,6 +92,28 @@ jobs:
       # status, so the step stayed green; and with no files to hash both sides came out
       # identical, so an empty build passed. The script refuses an empty or missing tree,
       # and tests/test_determinism_gate.py runs it against trees that should fail it.
+      - name: DIAGNOSTIC after checkout
+        run: |
+          set -x
+          git rev-parse --is-shallow-repository
+          ls -la .git/ | head -40
+          cat .git/shallow 2>/dev/null || echo "no .git/shallow"
+          git config --get remote.origin.tagOpt || echo "no tagOpt"
+          git tag --list | head
+          git log --oneline -3
+          git rev-parse --is-inside-work-tree
+      - name: DIAGNOSTIC after sync steps
+        if: always()
+        run: |
+          set -x
+          make lock-check sync node-sync || true
+          git rev-parse --is-shallow-repository
+          cat .git/shallow 2>/dev/null || echo "no .git/shallow"
+          git config --get remote.origin.tagOpt || echo "no tagOpt"
+          git config --list --local | head -40
+      - name: DIAGNOSTIC release-claims only
+        if: always()
+        run: uv run pytest tests/test_release_claims.py -x -q || true
       - name: make verify (byte-for-byte the local target)
         run: make verify
 
