@@ -83,12 +83,28 @@ def field_of(survey: SourceSurvey, name: str) -> FieldSurvey:
 def test_the_survey_finds_exactly_what_the_build_refuses() -> None:
     """A candidate is reported if and only if `classify` would stop the build on it.
 
-    The planted values are deliberately drawn from the sentinel vocabulary itself rather
-    than invented, so this compares the two readers over the values that actually decide
-    the question rather than over a fixture that happens to be clean.
+    The planted values are drawn from the sentinel vocabulary and from **each field's own
+    declared values in their published casing**. That second half is what makes this a
+    test rather than a formality, and it was found the hard way: with only the sentinel
+    vocabulary planted, a control that reordered `classify` so the sentinel net ran before
+    the recorded-absence check stayed green. `SUSPECTED_SENTINELS` is lowercase and
+    `recorded_absences` holds the publisher's casing, so `'None'`, the published street
+    type, was never probed. Only the exact-cased declarations reach the branch where the
+    order matters.
     """
-    planted = [*sorted(SUSPECTED_SENTINELS), "Road", "No Damage", "0", "1975", "Butte"]
+    vocabulary = sorted(SUSPECTED_SENTINELS)
     for spec in (*DINS_FIELDS, *FRAP_FIELDS):
+        planted = [
+            *vocabulary,
+            *sorted(spec.recorded_absences),
+            *sorted(spec.unknown_codes),
+            *sorted(spec.unknown_markers),
+            "Road",
+            "No Damage",
+            "0",
+            "1975",
+            "Butte",
+        ]
         for text in planted:
             refused = False
             try:
