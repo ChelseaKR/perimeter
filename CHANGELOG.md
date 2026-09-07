@@ -6,6 +6,39 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project a
 
 ## [Unreleased]
 
+### Fixed, the browser accessibility gate was shallowing this checkout
+
+- **Every pull request's `verify` job could fail on five tests about tags.** On a
+  `pull_request` run, Playwright's git-info plugin calls `gitDiff`, which begins
+  `git fetch origin <pr base sha> --depth=1 ...`
+  (`node_modules/playwright/lib/runner/index.js`). `tools/a11y_browser` runs with its
+  working directory inside this work tree, so `--depth=1` wrote `.git/shallow` at the
+  repository root, naming `main`'s own tip. `tests/test_release_claims.py` then refused
+  to read the tag list, which is the correct refusal -- a shallow checkout cannot tell
+  an untagged repository from an unfetched one -- and `make verify` failed on branches
+  whose diffs had nothing to do with tags, releases, or accessibility.
+- **It read as intermittent, and was not.** Whether it fired depended on whether
+  `pytest -n auto` happened to schedule `tests/test_a11y_browser_gate.py` before the
+  release-claims tests, so some pull requests were green and others red on the same
+  content. Two open pull requests were red on it with nothing wrong in either diff.
+- **Measured on a runner, 2026-09-06**, on a `pull_request` event with
+  `fetch-depth: 0` and no `--depth` anywhere in the checkout's own fetch: `.git/shallow`
+  absent after checkout, absent after `make browser-sync`, present the moment
+  `tests/test_a11y_browser_gate.py` ran, holding `d4f533f` -- the base SHA. Bisected by
+  running each subprocess-invoking test module alone.
+- **`tools/a11y_browser/playwright.config.ts` declares
+  `captureGitInfo: { commit: false, diff: false }`.** Playwright reads an undeclared
+  half as "capture when this looks like CI", so leaving it unset is not the same as
+  off. The harness reads static files off disk; it has no reason to read git at all.
+- **The harness is also no longer told it is in CI.** `harness_env` in
+  `tests/test_a11y_browser_gate.py` removes `GITHUB_ACTIONS`, `GITHUB_EVENT_PATH`,
+  `GITLAB_CI` and `JENKINS_URL`. The existing `CI: ""` did nothing here, because the
+  plugin keys off those names rather than off `CI`.
+- **`tests/test_browser_gate_touches_no_git.py`** holds both halves: the config
+  declares the capture off, and the environment handed to the harness carries none of
+  the names Playwright reads. The environment test sets each variable before checking
+  it is gone, so it is not asserting the absence of something that was never there.
+
 ### Added, the declared version is now held to the tag that would make it true
 
 - **`0.1.0` named no artifact, and nothing could notice.** `pyproject.toml` declares

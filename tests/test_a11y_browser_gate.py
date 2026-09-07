@@ -65,6 +65,32 @@ pytestmark = [
 ]
 
 
+#: Environment names that tell Playwright it is running inside a GitHub Actions job.
+#: Its git-info plugin keys off ``GITHUB_ACTIONS`` -- not ``CI`` -- and, given a
+#: ``GITHUB_EVENT_PATH`` naming a pull request, runs
+#: ``git fetch origin <base sha> --depth=1`` in whatever work tree the harness's working
+#: directory belongs to. That is this repository, and the fetch writes ``.git/shallow``,
+#: which makes ``tests/test_release_claims.py`` refuse to read the tag list and fails
+#: ``make verify`` on branches that changed nothing related. ``playwright.config.ts``
+#: turns the capture off at the source; these are removed as well so the harness behaves
+#: the same way here as it does on a laptop, and so a future config edit cannot quietly
+#: re-enable a git write from inside a test run.
+_CI_NAMES_PLAYWRIGHT_READS = (
+    "GITHUB_ACTIONS",
+    "GITHUB_EVENT_PATH",
+    "GITLAB_CI",
+    "JENKINS_URL",
+)
+
+
+def harness_env(site_dir: Path) -> dict[str, str]:
+    """The environment the harness runs in: this build's pages, and no CI identity."""
+    env = {k: v for k, v in os.environ.items() if k not in _CI_NAMES_PLAYWRIGHT_READS}
+    env["PERIMETER_SITE_DIR"] = str(site_dir)
+    env["CI"] = ""
+    return env
+
+
 def run(spec: str, site_dir: Path) -> subprocess.CompletedProcess[str]:
     """Run one spec file against one directory of pages."""
     # Fixed argv, absolute runner, no shell. The only interpolated value is the test's
@@ -75,7 +101,7 @@ def run(spec: str, site_dir: Path) -> subprocess.CompletedProcess[str]:
         text=True,
         check=False,
         cwd=HARNESS,
-        env={**os.environ, "PERIMETER_SITE_DIR": str(site_dir), "CI": ""},
+        env=harness_env(site_dir),
     )
 
 
