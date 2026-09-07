@@ -124,6 +124,29 @@ class FieldSpec:
             self.unknown_codes or self.unknown_markers or self.recorded_absences
         )
 
+    def undeclared_marker(self, text: str) -> str | None:
+        """The normalized marker ``text`` would stop the build with, or ``None``.
+
+        This is the sentinel decision itself, lifted out of :meth:`classify` so that the
+        gate and :mod:`perimeter.survey` read one list rather than two that can drift.
+        The survey exists to find these before a build refuses one, and a survey working
+        from its own copy of the rule would go quiet at exactly the moment the rule moved.
+
+        ``text`` is expected already stripped, as :meth:`classify` hands it over. The
+        order below is the order that matters: a published domain code and a published
+        recorded absence are checked first, so a field that legitimately publishes
+        ``None`` or ``N/A`` as a finding keeps it as a finding and is not reported as a
+        candidate.
+        """
+        if text in self.unknown_codes or text in self.recorded_absences:
+            return None
+        marker = normalize_marker(text)
+        if marker in self.unknown_markers:
+            return None
+        if marker in SUSPECTED_SENTINELS:
+            return marker
+        return None
+
     def classify(self, raw: object, *, where: str) -> Cell:
         """Sort one cell into present, explicit-unknown, or not-recorded.
 
@@ -143,13 +166,16 @@ class FieldSpec:
         marker = normalize_marker(text)
         if marker in self.unknown_markers:
             return Cell.explicit_unknown(marker)
-        if marker in SUSPECTED_SENTINELS:
+        if self.undeclared_marker(text) is not None:
             raise SentinelDriftError(
                 f"{where}.{self.name}: cell {text!r} reads as a missing-data marker but "
                 f"is not one this project has reviewed for this field "
                 f"(reviewed markers: {sorted(self.unknown_markers | self.unknown_codes)}; "
                 f"published absences: {sorted(self.recorded_absences)}); "
-                "guessing here would publish an absence as a value"
+                "guessing here would publish an absence as a value. "
+                "`python -m perimeter.survey` inventories every candidate in a "
+                "retrieval at once, so a refresh does not have to be driven one "
+                "refusal at a time"
             )
         return self._present(text, where=where)
 

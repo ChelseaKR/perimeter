@@ -6,6 +6,39 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project a
 
 ## [Unreleased]
 
+### Added, a survey command that inventories a retrieval's candidate markers
+
+- **`python -m perimeter.survey` (`make survey`).** A refresh began from a crash. The
+  build refuses a cell holding something that reads like a missing-data marker in a field
+  that has not declared it, which is right, and which reports exactly one cell: a new
+  retrieval was worked through one refusal at a time. The survey reads the same files the
+  build reads and reports every candidate at once, per measured field, with counts.
+
+  It **declares nothing**. It writes no schema, edits no registry, and no part of the
+  build reads its output. Every candidate carries `basis: unreviewed`, in `survey.json`
+  and in the `survey.md` draft written in `docs/MARKERS.md`'s shape, so it cannot be
+  mistaken for a decision somebody made. The intended sequence is survey, review, declare,
+  build, diff, and the reviewing step is a person's.
+
+  **The survey and the gate read one list.** The sentinel decision moved out of
+  `FieldSpec.classify` into `FieldSpec.undeclared_marker`, which both now call. A survey
+  carrying its own copy of the rule would go quiet at exactly the moment the rule moved,
+  and a test holds the two readers to the same verdict over every value in the sentinel
+  vocabulary, for every field in both registries.
+
+  Three distinctions it keeps, being the same three the artifacts keep. A field above the
+  listing bound publishes its distinct count and says the listing was withheld, never an
+  empty list. A field with no published domain publishes `null` for values outside one,
+  never `0`, per ADR-0010. A numeric field in which nothing parsed as a number has no zero
+  share, not a zero one.
+
+  A zero the registry has already ruled on is reported and not flagged. `YEARBUILT`
+  declares the literal `0` for the 12,148 parcel records carrying no year, and re-asking
+  that question on every run is how a review aid stops being read.
+
+- **`SentinelDriftError` now names the survey command** in its message, so the first
+  refusal of a refresh points at the tool that lists the rest.
+
 ### Fixed, a distribution name that could never have been released
 
 - **`pyproject.toml` declared `name = "perimeter"`, which is somebody else's package.**
