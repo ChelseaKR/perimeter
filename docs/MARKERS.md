@@ -115,6 +115,15 @@ What the file shows (F1). Four things, and they agree:
 2. **They fall on opposite sides of one year.** Every one of the 6,544 `N/A` records
    belongs to an incident that started in 2018 or 2019. Every one of the 12,234 `NA`
    records belongs to an incident that started in 2020 or later.
+
+   This one is measured rather than remembered. Both counts and the boundary are
+   published per incident-start year under `not_applicable_spellings_by_year` in
+   `site/data/dins-coverage.json` and on the DINS page, and
+   `tests/test_completeness_cuts.py` holds this paragraph to that artifact in both
+   directions: the sentence has to state the counts the file produces, and the boundary
+   the sentence claims has to still hold in the file. Before that it was a number
+   somebody measured once and typed here, which is exactly the shape this document
+   exists to be suspicious of.
 3. **The question was asked on both sides of that line.** Recorded distances appear in
    both eras at comparable rates, 7,229 in 2018 alone against 2,799 in 2020, so the
    change is a change of spelling and not of whether the field was collected.

@@ -125,6 +125,375 @@
       },
       "type": "array"
     },
+    "completeness_by_county": {
+      "description": "Completeness per published `COUNTY` value. Each cohort carries its own record count as the denominator for everything in it, and the same assessed / inaccessible / neither split the whole file carries. The cohorts partition the file, so summing one cut per field and per state returns the file totals. Nothing here compares one cohort against another. The layer publishes no coded-value domain for this column, so every recorded spelling is its own cohort and nothing here decides that two spellings name one county. Records with no county, and records whose county carries a marker, are separate cohorts.",
+      "items": {
+        "additionalProperties": false,
+        "description": "One cohort, measured exactly as the whole file is measured.",
+        "properties": {
+          "access": {
+            "additionalProperties": false,
+            "description": "The assessed / inaccessible split, and the population in neither (ADR 0007).",
+            "properties": {
+              "assessed": {
+                "description": "Records the damage field places in the assessed population.",
+                "type": "integer"
+              },
+              "damage_explicit_unknown": {
+                "description": "Records whose damage cell carries a recorded-unknown marker.",
+                "type": "integer"
+              },
+              "damage_not_recorded": {
+                "description": "Records with an empty damage cell.",
+                "type": "integer"
+              },
+              "inaccessible": {
+                "description": "Records the damage field records as inaccessible.",
+                "type": "integer"
+              },
+              "total": {
+                "description": "All records in this population.",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "assessed",
+              "damage_explicit_unknown",
+              "damage_not_recorded",
+              "inaccessible",
+              "total"
+            ],
+            "type": "object"
+          },
+          "fields": {
+            "additionalProperties": {
+              "items": {
+                "type": "integer"
+              },
+              "maxItems": 3,
+              "minItems": 3,
+              "type": "array"
+            },
+            "description": "Field name to a three-element array of counts within this cohort, in `field_state_order`. The three counts are in the order published as `field_state_order`: present is a recorded value, explicit_unknown is a value the publisher records to mean it could not be determined, and not_recorded is an empty cell. A recorded unknown is neither present nor missing, and folding it into either one is the error this project exists to refuse.",
+            "type": "object"
+          },
+          "fields_by_access": {
+            "additionalProperties": {
+              "additionalProperties": false,
+              "description": "One field, split three ways by access, within this cohort.",
+              "properties": {
+                "assessed": {
+                  "description": "Records the damage field places in the assessed population: the count carrying a recorded value, then the count in that population.",
+                  "items": {
+                    "type": "integer"
+                  },
+                  "maxItems": 2,
+                  "minItems": 2,
+                  "type": "array"
+                },
+                "inaccessible": {
+                  "description": "Records the publisher marks inaccessible: the count carrying a recorded value, then the count in that population.",
+                  "items": {
+                    "type": "integer"
+                  },
+                  "maxItems": 2,
+                  "minItems": 2,
+                  "type": "array"
+                },
+                "undetermined": {
+                  "description": "Records in neither population: the count carrying a recorded value, then the count in that population.",
+                  "items": {
+                    "type": "integer"
+                  },
+                  "maxItems": 2,
+                  "minItems": 2,
+                  "type": "array"
+                }
+              },
+              "required": [
+                "assessed",
+                "inaccessible",
+                "undetermined"
+              ],
+              "type": "object"
+            },
+            "description": "Field name to that field's completeness inside this cohort, split by what the damage field says about the inspection. Each population is `[present, total]`: the pair rather than a share, because a population with no records has no share and publishing a zero there would say the field is empty rather than that nothing was counted. `undetermined` is the third population ADR 0007 requires: the records the damage field places in neither of the other two.",
+            "type": "object"
+          },
+          "label": {
+            "description": "What a page prints for this cohort.",
+            "type": "string"
+          },
+          "records": {
+            "description": "Records in this cohort. Its denominator.",
+            "type": "integer"
+          },
+          "value": {
+            "description": "The recorded value this cohort is, or null where the cohort is an absence rather than a value. Read this, not `label`, to tell a measured cohort from an absence without parsing English.",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "access",
+          "fields",
+          "fields_by_access",
+          "label",
+          "records",
+          "value"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "completeness_by_structure_category": {
+      "description": "Completeness per published `STRUCTURECATEGORY` value. Each cohort carries its own record count as the denominator for everything in it, and the same assessed / inaccessible / neither split the whole file carries. The cohorts partition the file, so summing one cut per field and per state returns the file totals. Nothing here compares one cohort against another. A recorded value the publisher's domain does not describe is counted in one `outside_published_domain` cohort rather than given a row of its own, because a row would publish a category CAL FIRE does not define as though this project had found one (ADR 0002). Records with no category, and records whose category carries a marker, are separate cohorts again.",
+      "items": {
+        "additionalProperties": false,
+        "description": "One cohort, measured exactly as the whole file is measured.",
+        "properties": {
+          "access": {
+            "additionalProperties": false,
+            "description": "The assessed / inaccessible split, and the population in neither (ADR 0007).",
+            "properties": {
+              "assessed": {
+                "description": "Records the damage field places in the assessed population.",
+                "type": "integer"
+              },
+              "damage_explicit_unknown": {
+                "description": "Records whose damage cell carries a recorded-unknown marker.",
+                "type": "integer"
+              },
+              "damage_not_recorded": {
+                "description": "Records with an empty damage cell.",
+                "type": "integer"
+              },
+              "inaccessible": {
+                "description": "Records the damage field records as inaccessible.",
+                "type": "integer"
+              },
+              "total": {
+                "description": "All records in this population.",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "assessed",
+              "damage_explicit_unknown",
+              "damage_not_recorded",
+              "inaccessible",
+              "total"
+            ],
+            "type": "object"
+          },
+          "fields": {
+            "additionalProperties": {
+              "items": {
+                "type": "integer"
+              },
+              "maxItems": 3,
+              "minItems": 3,
+              "type": "array"
+            },
+            "description": "Field name to a three-element array of counts within this cohort, in `field_state_order`. The three counts are in the order published as `field_state_order`: present is a recorded value, explicit_unknown is a value the publisher records to mean it could not be determined, and not_recorded is an empty cell. A recorded unknown is neither present nor missing, and folding it into either one is the error this project exists to refuse.",
+            "type": "object"
+          },
+          "fields_by_access": {
+            "additionalProperties": {
+              "additionalProperties": false,
+              "description": "One field, split three ways by access, within this cohort.",
+              "properties": {
+                "assessed": {
+                  "description": "Records the damage field places in the assessed population: the count carrying a recorded value, then the count in that population.",
+                  "items": {
+                    "type": "integer"
+                  },
+                  "maxItems": 2,
+                  "minItems": 2,
+                  "type": "array"
+                },
+                "inaccessible": {
+                  "description": "Records the publisher marks inaccessible: the count carrying a recorded value, then the count in that population.",
+                  "items": {
+                    "type": "integer"
+                  },
+                  "maxItems": 2,
+                  "minItems": 2,
+                  "type": "array"
+                },
+                "undetermined": {
+                  "description": "Records in neither population: the count carrying a recorded value, then the count in that population.",
+                  "items": {
+                    "type": "integer"
+                  },
+                  "maxItems": 2,
+                  "minItems": 2,
+                  "type": "array"
+                }
+              },
+              "required": [
+                "assessed",
+                "inaccessible",
+                "undetermined"
+              ],
+              "type": "object"
+            },
+            "description": "Field name to that field's completeness inside this cohort, split by what the damage field says about the inspection. Each population is `[present, total]`: the pair rather than a share, because a population with no records has no share and publishing a zero there would say the field is empty rather than that nothing was counted. `undetermined` is the third population ADR 0007 requires: the records the damage field places in neither of the other two.",
+            "type": "object"
+          },
+          "label": {
+            "description": "What a page prints for this cohort.",
+            "type": "string"
+          },
+          "records": {
+            "description": "Records in this cohort. Its denominator.",
+            "type": "integer"
+          },
+          "value": {
+            "description": "The recorded value this cohort is, or null where the cohort is an absence rather than a value. Read this, not `label`, to tell a measured cohort from an absence without parsing English.",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "access",
+          "fields",
+          "fields_by_access",
+          "label",
+          "records",
+          "value"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "completeness_by_year": {
+      "description": "Completeness per incident-start year, read from `INCIDENTSTARTDATE` in UTC. Each cohort carries its own record count as the denominator for everything in it, and the same assessed / inaccessible / neither split the whole file carries. The cohorts partition the file, so summing one cut per field and per state returns the file totals. Nothing here compares one cohort against another. Records whose start date is empty, and records whose start date carries a marker, are two separate cohorts and neither is a year.",
+      "items": {
+        "additionalProperties": false,
+        "description": "One cohort, measured exactly as the whole file is measured.",
+        "properties": {
+          "access": {
+            "additionalProperties": false,
+            "description": "The assessed / inaccessible split, and the population in neither (ADR 0007).",
+            "properties": {
+              "assessed": {
+                "description": "Records the damage field places in the assessed population.",
+                "type": "integer"
+              },
+              "damage_explicit_unknown": {
+                "description": "Records whose damage cell carries a recorded-unknown marker.",
+                "type": "integer"
+              },
+              "damage_not_recorded": {
+                "description": "Records with an empty damage cell.",
+                "type": "integer"
+              },
+              "inaccessible": {
+                "description": "Records the damage field records as inaccessible.",
+                "type": "integer"
+              },
+              "total": {
+                "description": "All records in this population.",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "assessed",
+              "damage_explicit_unknown",
+              "damage_not_recorded",
+              "inaccessible",
+              "total"
+            ],
+            "type": "object"
+          },
+          "fields": {
+            "additionalProperties": {
+              "items": {
+                "type": "integer"
+              },
+              "maxItems": 3,
+              "minItems": 3,
+              "type": "array"
+            },
+            "description": "Field name to a three-element array of counts within this cohort, in `field_state_order`. The three counts are in the order published as `field_state_order`: present is a recorded value, explicit_unknown is a value the publisher records to mean it could not be determined, and not_recorded is an empty cell. A recorded unknown is neither present nor missing, and folding it into either one is the error this project exists to refuse.",
+            "type": "object"
+          },
+          "fields_by_access": {
+            "additionalProperties": {
+              "additionalProperties": false,
+              "description": "One field, split three ways by access, within this cohort.",
+              "properties": {
+                "assessed": {
+                  "description": "Records the damage field places in the assessed population: the count carrying a recorded value, then the count in that population.",
+                  "items": {
+                    "type": "integer"
+                  },
+                  "maxItems": 2,
+                  "minItems": 2,
+                  "type": "array"
+                },
+                "inaccessible": {
+                  "description": "Records the publisher marks inaccessible: the count carrying a recorded value, then the count in that population.",
+                  "items": {
+                    "type": "integer"
+                  },
+                  "maxItems": 2,
+                  "minItems": 2,
+                  "type": "array"
+                },
+                "undetermined": {
+                  "description": "Records in neither population: the count carrying a recorded value, then the count in that population.",
+                  "items": {
+                    "type": "integer"
+                  },
+                  "maxItems": 2,
+                  "minItems": 2,
+                  "type": "array"
+                }
+              },
+              "required": [
+                "assessed",
+                "inaccessible",
+                "undetermined"
+              ],
+              "type": "object"
+            },
+            "description": "Field name to that field's completeness inside this cohort, split by what the damage field says about the inspection. Each population is `[present, total]`: the pair rather than a share, because a population with no records has no share and publishing a zero there would say the field is empty rather than that nothing was counted. `undetermined` is the third population ADR 0007 requires: the records the damage field places in neither of the other two.",
+            "type": "object"
+          },
+          "label": {
+            "description": "What a page prints for this cohort.",
+            "type": "string"
+          },
+          "records": {
+            "description": "Records in this cohort. Its denominator.",
+            "type": "integer"
+          },
+          "value": {
+            "description": "The recorded value this cohort is, or null where the cohort is an absence rather than a value. Read this, not `label`, to tell a measured cohort from an absence without parsing English.",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "access",
+          "fields",
+          "fields_by_access",
+          "label",
+          "records",
+          "value"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
     "damage_values": {
       "additionalProperties": {
         "type": "integer"
@@ -366,6 +735,65 @@
       "description": "What this artifact measures, in one sentence.",
       "type": "string"
     },
+    "not_applicable_spellings_by_year": {
+      "additionalProperties": false,
+      "description": "How often each declared spelling of one field's Not Applicable value was written, per incident-start year. Published because docs/MARKERS.md rests a marker decision on the observation that the two spellings fall on opposite sides of one year, and that observation was otherwise a sentence measured once by a person.",
+      "properties": {
+        "by_year": {
+          "description": "One row per incident-start year cohort, in the same cohort order as `completeness_by_year`.",
+          "items": {
+            "additionalProperties": false,
+            "description": "One year, and the spellings written in it.",
+            "properties": {
+              "label": {
+                "description": "What a page prints for this cohort.",
+                "type": "string"
+              },
+              "records": {
+                "description": "Records in this cohort.",
+                "type": "integer"
+              },
+              "spellings": {
+                "additionalProperties": {
+                  "type": "integer"
+                },
+                "description": "Spelling to the number of records writing it. A spelling absent from this object was written zero times in this year; the object names only what was found.",
+                "type": "object"
+              },
+              "value": {
+                "description": "The year, or null where the cohort is an absence rather than a year.",
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "label",
+              "records",
+              "spellings",
+              "value"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "field": {
+          "description": "The column these spellings belong to.",
+          "type": "string"
+        },
+        "note": {
+          "description": "What is counted here and what it is for.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "by_year",
+        "field",
+        "note"
+      ],
+      "type": "object"
+    },
     "records": {
       "description": "Records measured.",
       "type": "integer"
@@ -517,6 +945,9 @@
     "access",
     "artifact_schema_version",
     "completeness_by_access",
+    "completeness_by_county",
+    "completeness_by_structure_category",
+    "completeness_by_year",
     "damage_values",
     "damage_values_tenths_pct",
     "field_state_order",
@@ -525,6 +956,7 @@
     "incidents_detail",
     "is_fixture",
     "measurement",
+    "not_applicable_spellings_by_year",
     "records",
     "records_not_attributable_to_an_incident",
     "source"

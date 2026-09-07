@@ -20,7 +20,13 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 
 from perimeter.cells import present_tenths_of_percent
-from perimeter.coverage import DinsReport, FieldCoverage, PerimeterReport
+from perimeter.coverage import (
+    CohortCoverage,
+    DinsReport,
+    FieldCoverage,
+    PerimeterReport,
+    SpellingCohort,
+)
 from perimeter.schema import Basis
 from perimeter.sources import DINS, FRAP, Source
 
@@ -800,6 +806,108 @@ this page measures.</p>
     )
 
 
+def cohort_rows(
+    cohorts: Sequence[CohortCoverage], columns: Sequence[tuple[str, str]]
+) -> str:
+    """One row per cohort: its denominators, its access split, and a few field shares.
+
+    The field shares are taken over the cohort's **assessed** records rather than over
+    all of them, because that is the population the construction attributes describe. A
+    cohort holding no assessed records therefore has no denominator to divide by, and
+    :func:`pct` writes that in words. A ``0.0%`` there would say the inspectors found
+    nothing, when what happened is that nobody could walk up to anything.
+
+    The full per-field counts for every cohort, in all three states and all three access
+    populations, are in the JSON artifact beside the page.
+    """
+    rows: list[str] = []
+    for cohort in cohorts:
+        by_name = {row.name: row for row in cohort.by_access}
+        cells = "".join(
+            f'<td class="num">'
+            f"{pct(by_name[name].assessed_tenths_pct) if name in by_name else NOT_COUNTED}"
+            f"</td>"
+            for name, _label in columns
+        )
+        absence = (
+            ""
+            if cohort.value is not None
+            else ' <span class="absent-note">no value recorded</span>'
+        )
+        neither = (
+            cohort.access.damage_not_recorded + cohort.access.damage_explicit_unknown
+        )
+        rows.append(
+            "<tr>"
+            f'<th scope="row" class="name">{esc(cohort.label)}{absence}</th>'
+            f'<td class="num">{num(cohort.records)}</td>'
+            f'<td class="num">{num(cohort.access.assessed)}</td>'
+            f'<td class="num">{num(cohort.access.inaccessible)}</td>'
+            f'<td class="num">{num(neither)}</td>'
+            f"{cells}"
+            "</tr>"
+        )
+    return "".join(rows)
+
+
+def cohort_table(
+    cohorts: Sequence[CohortCoverage],
+    columns: Sequence[tuple[str, str]],
+    *,
+    caption_id: str,
+    caption: str,
+    first_column: str,
+) -> str:
+    headers = "".join(
+        f'<th scope="col" class="num">{esc(label)}</th>' for _name, label in columns
+    )
+    return (
+        f'<section class="scroll tall" tabindex="0" aria-labelledby="{caption_id}"><table>'
+        f'<caption class="visually-hidden" id="{caption_id}">{esc(caption)}</caption>'
+        "<thead><tr>"
+        f'<th scope="col">{esc(first_column)}</th>'
+        '<th scope="col" class="num">Records</th>'
+        '<th scope="col" class="num">Assessed</th>'
+        '<th scope="col" class="num">Inaccessible</th>'
+        '<th scope="col" class="num">Neither</th>'
+        f"{headers}"
+        "</tr></thead>"
+        f"<tbody>{cohort_rows(cohorts, columns)}</tbody></table></section>"
+    )
+
+
+def spelling_table(cohorts: Sequence[SpellingCohort], spellings: Sequence[str]) -> str:
+    """The two spellings of Not Applicable, per incident-start year."""
+    headers = "".join(
+        f'<th scope="col" class="num"><code>{esc(spelling)}</code></th>'
+        for spelling in spellings
+    )
+    rows = []
+    for cohort in cohorts:
+        cells = "".join(
+            f'<td class="num">{num(cohort.spellings.get(spelling, 0))}</td>'
+            for spelling in spellings
+        )
+        rows.append(
+            "<tr>"
+            f'<th scope="row" class="name">{esc(cohort.label)}</th>'
+            f'<td class="num">{num(cohort.records)}</td>'
+            f"{cells}"
+            "</tr>"
+        )
+    return (
+        '<section class="scroll tall" tabindex="0" aria-labelledby="cap-spellings"><table>'
+        '<caption class="visually-hidden" id="cap-spellings">Each recorded spelling of '
+        "the utility structure distance Not Applicable value, per incident start year"
+        "</caption><thead><tr>"
+        '<th scope="col">Incident start year</th>'
+        '<th scope="col" class="num">Records</th>'
+        f"{headers}"
+        "</tr></thead>"
+        f"<tbody>{''.join(rows)}</tbody></table></section>"
+    )
+
+
 def dins_page(report: DinsReport, *, is_fixture: bool) -> str:
     damage_rows = []
     for value, count in sorted(report.damage.items(), key=lambda kv: (-kv[1], kv[0])):
@@ -886,6 +994,18 @@ def dins_page(report: DinsReport, *, is_fixture: bool) -> str:
         for name, label in INCIDENT_FIELD_COLUMNS
         if any(field.name == name for field in report.fields)
     ]
+    # The spellings the page prints, taken from what the file actually holds rather than
+    # from a literal here. A spelling the registry declares and the file never writes
+    # would otherwise get a column of zeros, and a spelling the file starts writing would
+    # be counted in the artifact and invisible on the page.
+    spellings = sorted(
+        {
+            spelling
+            for cohort in report.not_applicable_spellings
+            for spelling in cohort.spellings
+        }
+    )
+
     incident_rows = []
     for incident in report.incident_rows:
         by_name = {field.name: field for field in incident.fields}
@@ -1024,6 +1144,84 @@ spatial join, so its coverage measures the join rather than the inspection. A co
 whose field this incident carries no coverage for reads <em>not counted</em>; the cell is
 written either way, because a row one cell short is a row whose later values have all
 moved under the wrong heading.</p>
+
+<h2>Completeness by year, by county, and by structure category</h2>
+<p>The file spans a decade of inspection practice, fifty-two counties and several classes
+of structure, and completeness differs along each. Fields exist only in later forms. The
+two spellings of Not Applicable occupy non-overlapping eras. Construction attributes apply
+to a residence and not to a shed. A reader planning to use <code>EAVES</code> needs to
+know it is blank in the early years and not the late ones, and one number across the file
+describes no year in particular.</p>
+<p>Each row below is its own denominator. Nothing is compared against anything: no county
+is ranked, no year is called better than another, and no row is a rate of anything but its
+own cells.</p>
+
+<h3>By incident start year</h3>
+{
+        cohort_table(
+            report.by_year,
+            columns,
+            caption_id="cap-by-year",
+            caption=(
+                "Records, access split and field completeness among assessed records, "
+                "per incident start year"
+            ),
+            first_column="Incident start year",
+        )
+    }
+
+<h3>By county</h3>
+<p>CAL FIRE publishes no coded-value domain for <code>COUNTY</code>, so every recorded
+spelling is its own row and nothing here decides that two spellings name one county.</p>
+{
+        cohort_table(
+            report.by_county,
+            columns,
+            caption_id="cap-by-county",
+            caption=(
+                "Records, access split and field completeness among assessed records, "
+                "per published county value"
+            ),
+            first_column="County",
+        )
+    }
+
+<h3>By structure category</h3>
+<p>This is what turns a blank into <em>not applicable to this class</em> without this
+project deciding so. It counts per class and lets the reader see the pattern. A recorded
+value the published domain does not describe is counted in one
+<code>outside_published_domain</code> row rather than given a row of its own, because a row
+would publish a category CAL FIRE does not define as though this project had found one.</p>
+{
+        cohort_table(
+            report.by_structure_category,
+            columns,
+            caption_id="cap-by-category",
+            caption=(
+                "Records, access split and field completeness among assessed records, "
+                "per published structure category"
+            ),
+            first_column="Structure category",
+        )
+    }
+<p class="measured">The field columns are the share of that cohort's <strong>assessed</strong>
+records carrying a recorded value, not the share of all of its records. That is the
+population the construction attributes describe, and it is why a cohort made entirely of
+structures nobody could reach reads <em>no records</em> in those columns rather than
+<em>0.0%</em>: there is no denominator to divide by, and a zero there would say the
+inspectors found nothing rather than that nobody could walk up to anything. Records whose
+damage field is blank or carries a marker are in neither population and are counted in
+their own column, so the three columns account for every record in the row. Cohorts with
+no records are not published at all: a row of zeros would read as a finding about a county
+the file simply never names.</p>
+
+<h3>The two spellings of Not Applicable, per year</h3>
+<p>The decision to count both <code>NA</code> and <code>N/A</code> as the publisher's
+finding rests on the observation that they fall on opposite sides of one year. That
+observation used to be a sentence somebody measured once and typed into
+<code>docs/MARKERS.md</code>. It is a published count now, so it moves when the file does
+instead of going quietly stale.</p>
+{spelling_table(report.not_applicable_spellings, spellings)}
 
 <h2>Methodology and the caveats this page operationalizes</h2>
 {caveat_block(DINS)}

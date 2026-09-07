@@ -430,6 +430,89 @@ def perimeters_schema() -> dict[str, Any]:
     return schema
 
 
+def _pair(what: str) -> dict[str, Any]:
+    """``[present, total]``. The pair, never a share.
+
+    A population with no records has no share, and a ``0`` where the share would go
+    reads as "the field is empty here" rather than as "nothing was counted here". The
+    consumer divides, and gets to see the denominator it divided by.
+    """
+    return {
+        "type": "array",
+        "description": f"{what}: the count carrying a recorded value, then the count in that population.",
+        "items": {"type": "integer"},
+        "minItems": 2,
+        "maxItems": 2,
+    }
+
+
+def _cohort_schema(what: str, absences: str) -> dict[str, Any]:
+    """One cut of the DINS file: cohorts of one column, each over its own denominator."""
+    return {
+        "type": "array",
+        "description": (
+            f"{what} Each cohort carries its own record count as the denominator for "
+            "everything in it, and the same assessed / inaccessible / neither split the "
+            "whole file carries. The cohorts partition the file, so summing one cut per "
+            "field and per state returns the file totals. Nothing here compares one "
+            f"cohort against another. {absences}"
+        ),
+        "items": _object(
+            "One cohort, measured exactly as the whole file is measured.",
+            {
+                "value": _string(
+                    "The recorded value this cohort is, or null where the cohort is an "
+                    "absence rather than a value. Read this, not `label`, to tell a "
+                    "measured cohort from an absence without parsing English.",
+                    nullable=True,
+                ),
+                "label": _string("What a page prints for this cohort."),
+                "records": _integer("Records in this cohort. Its denominator."),
+                "access": _access_schema(),
+                "fields": {
+                    "type": "object",
+                    "description": (
+                        "Field name to a three-element array of counts within this "
+                        f"cohort, in `field_state_order`. {_STATE_MEANING}"
+                    ),
+                    "additionalProperties": {
+                        "type": "array",
+                        "items": {"type": "integer"},
+                        "minItems": len(FIELD_STATE_ORDER),
+                        "maxItems": len(FIELD_STATE_ORDER),
+                    },
+                },
+                "fields_by_access": {
+                    "type": "object",
+                    "description": (
+                        "Field name to that field's completeness inside this cohort, "
+                        "split by what the damage field says about the inspection. Each "
+                        "population is `[present, total]`: the pair rather than a share, "
+                        "because a population with no records has no share and "
+                        "publishing a zero there would say the field is empty rather "
+                        "than that nothing was counted. `undetermined` is the third "
+                        "population ADR 0007 requires: the records the damage field "
+                        "places in neither of the other two."
+                    ),
+                    "additionalProperties": _object(
+                        "One field, split three ways by access, within this cohort.",
+                        {
+                            "assessed": _pair(
+                                "Records the damage field places in the assessed "
+                                "population"
+                            ),
+                            "inaccessible": _pair(
+                                "Records the publisher marks inaccessible"
+                            ),
+                            "undetermined": _pair("Records in neither population"),
+                        },
+                    ),
+                },
+            },
+        ),
+    }
+
+
 def dins_schema() -> dict[str, Any]:
     """The contract for ``dins-coverage.json``."""
     incident_fields = {
@@ -482,6 +565,66 @@ def dins_schema() -> dict[str, Any]:
                     ),
                     "items": {"type": "string"},
                 },
+                "completeness_by_year": _cohort_schema(
+                    "Completeness per incident-start year, read from "
+                    "`INCIDENTSTARTDATE` in UTC.",
+                    "Records whose start date is empty, and records whose start date "
+                    "carries a marker, are two separate cohorts and neither is a year.",
+                ),
+                "completeness_by_county": _cohort_schema(
+                    "Completeness per published `COUNTY` value.",
+                    "The layer publishes no coded-value domain for this column, so "
+                    "every recorded spelling is its own cohort and nothing here decides "
+                    "that two spellings name one county. Records with no county, and "
+                    "records whose county carries a marker, are separate cohorts.",
+                ),
+                "completeness_by_structure_category": _cohort_schema(
+                    "Completeness per published `STRUCTURECATEGORY` value.",
+                    "A recorded value the publisher's domain does not describe is "
+                    "counted in one `outside_published_domain` cohort rather than given "
+                    "a row of its own, because a row would publish a category CAL FIRE "
+                    "does not define as though this project had found one (ADR 0002). "
+                    "Records with no category, and records whose category carries a "
+                    "marker, are separate cohorts again.",
+                ),
+                "not_applicable_spellings_by_year": _object(
+                    "How often each declared spelling of one field's Not Applicable "
+                    "value was written, per incident-start year. Published because "
+                    "docs/MARKERS.md rests a marker decision on the observation that the "
+                    "two spellings fall on opposite sides of one year, and that "
+                    "observation was otherwise a sentence measured once by a person.",
+                    {
+                        "field": _string("The column these spellings belong to."),
+                        "note": _string("What is counted here and what it is for."),
+                        "by_year": {
+                            "type": "array",
+                            "description": (
+                                "One row per incident-start year cohort, in the same "
+                                "cohort order as `completeness_by_year`."
+                            ),
+                            "items": _object(
+                                "One year, and the spellings written in it.",
+                                {
+                                    "value": _string(
+                                        "The year, or null where the cohort is an "
+                                        "absence rather than a year.",
+                                        nullable=True,
+                                    ),
+                                    "label": _string(
+                                        "What a page prints for this cohort."
+                                    ),
+                                    "records": _integer("Records in this cohort."),
+                                    "spellings": _counts(
+                                        "Spelling to the number of records writing it. "
+                                        "A spelling absent from this object was written "
+                                        "zero times in this year; the object names only "
+                                        "what was found."
+                                    ),
+                                },
+                            ),
+                        },
+                    },
+                ),
                 "completeness_by_access": {
                     "type": "array",
                     "description": (
