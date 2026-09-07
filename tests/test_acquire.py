@@ -14,6 +14,8 @@ from __future__ import annotations
 
 import io
 import json
+import subprocess
+import sys
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -24,12 +26,15 @@ import pytest
 
 from perimeter import acquire as acquire_mod
 from perimeter.acquire import (
+    IDENTIFIER_FIELD,
     PAGE_SIZE,
     USER_AGENT,
     AcquisitionBlocked,
     AcquisitionFailed,
     acquire,
     fetch_layer,
+    identifier_failure,
+    iter_features,
     layer_record_count,
     main,
     write_rows,
@@ -219,7 +224,7 @@ def test_the_query_leaves_geometry_behind_and_orders_the_pages(
 ) -> None:
     urls: list[str] = []
 
-    def fake_get(url: str) -> dict[str, Any]:
+    def fake_get(url: str, **_: object) -> dict[str, Any]:
         urls.append(url)
         return page(1, exceeded=False)
 
@@ -241,7 +246,7 @@ def test_paging_continues_while_the_layer_says_there_is_more(
     ]
     calls: list[str] = []
 
-    def fake_get(url: str) -> dict[str, Any]:
+    def fake_get(url: str, **_: object) -> dict[str, Any]:
         calls.append(url)
         return pages[len(calls) - 1]
 
@@ -259,7 +264,7 @@ def test_paging_pauses_between_pages(monkeypatch: pytest.MonkeyPatch) -> None:
     pages = [page(PAGE_SIZE, exceeded=True), page(1, exceeded=False)]
     calls = 0
 
-    def fake_get(url: str) -> dict[str, Any]:
+    def fake_get(url: str, **_: object) -> dict[str, Any]:
         nonlocal calls
         calls += 1
         return pages[calls - 1]
@@ -271,7 +276,7 @@ def test_paging_pauses_between_pages(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_an_empty_first_page_ends_the_walk(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(acquire_mod, "_get", lambda url: {"features": []})
+    monkeypatch.setattr(acquire_mod, "_get", lambda url, **_: {"features": []})
     assert fetch_layer("https://example.invalid/query", ("OBJECTID",)) == []
 
 
@@ -280,7 +285,7 @@ def test_a_short_page_ends_the_walk_even_without_the_transfer_flag(
 ) -> None:
     calls = 0
 
-    def fake_get(url: str) -> dict[str, Any]:
+    def fake_get(url: str, **_: object) -> dict[str, Any]:
         nonlocal calls
         calls += 1
         return page(3, exceeded=False)
@@ -297,7 +302,7 @@ def test_a_full_page_without_the_transfer_flag_is_still_followed(
     pages = [page(PAGE_SIZE, exceeded=False), page(0, exceeded=False)]
     calls = 0
 
-    def fake_get(url: str) -> dict[str, Any]:
+    def fake_get(url: str, **_: object) -> dict[str, Any]:
         nonlocal calls
         calls += 1
         return pages[calls - 1]
@@ -309,7 +314,7 @@ def test_a_full_page_without_the_transfer_flag_is_still_followed(
     assert len(rows) == PAGE_SIZE
 
 
-def capped_layer(total: int, cap: int) -> Callable[[str], dict[str, Any]]:
+def capped_layer(total: int, cap: int) -> Callable[..., dict[str, Any]]:
     """A layer holding `total` records that never returns more than `cap` per page.
 
     This is not a hypothetical shape. It is what a GeoServices layer does whenever
@@ -321,7 +326,7 @@ def capped_layer(total: int, cap: int) -> Callable[[str], dict[str, Any]]:
     its offset by more than the page it was handed steps over real records.
     """
 
-    def fake_get(url: str) -> dict[str, Any]:
+    def fake_get(url: str, **_: object) -> dict[str, Any]:
         query = parse_qs(urlparse(url).query)
         offset = int(query["resultOffset"][0])
         asked = int(query["resultRecordCount"][0])
@@ -365,14 +370,14 @@ def test_the_count_query_asks_the_layer_the_same_question_the_walk_asks(
     """A count under a different predicate would not be a check on this walk at all."""
     urls: list[str] = []
 
-    def fake_get(url: str) -> dict[str, Any]:
+    def fake_get(url: str, **_: object) -> dict[str, Any]:
         urls.append(url)
         return {"count": 7}
 
     monkeypatch.setattr(acquire_mod, "_get", fake_get)
     assert layer_record_count("https://example.invalid/query") == 7
 
-    def counting_get(url: str) -> dict[str, Any]:
+    def counting_get(url: str, **_: object) -> dict[str, Any]:
         urls.append(url)
         return {"features": []}
 
@@ -393,7 +398,7 @@ def test_a_count_response_with_no_usable_count_is_refused(
     monkeypatch: pytest.MonkeyPatch, payload: dict[str, Any]
 ) -> None:
     """Unverifiable is not the same as verified. Without a total there is no check."""
-    monkeypatch.setattr(acquire_mod, "_get", lambda url: payload)
+    monkeypatch.setattr(acquire_mod, "_get", lambda url, **_: payload)
     with pytest.raises(AcquisitionFailed, match="no count"):
         layer_record_count("https://example.invalid/query")
 
@@ -404,9 +409,9 @@ def test_a_count_response_with_no_usable_count_is_refused(
 def one_row_layer(monkeypatch: pytest.MonkeyPatch, *, count: int = 1) -> None:
     """A layer holding one record, with its self-reported total under the test's control."""
     monkeypatch.setattr(
-        acquire_mod, "fetch_layer", lambda endpoint, fields: [{"OBJECTID": 1}]
+        acquire_mod, "fetch_layer", lambda endpoint, fields, **_: [{"OBJECTID": 1}]
     )
-    monkeypatch.setattr(acquire_mod, "layer_record_count", lambda endpoint: count)
+    monkeypatch.setattr(acquire_mod, "layer_record_count", lambda endpoint, **_: count)
 
 
 def test_a_short_walk_writes_nothing_at_all(
@@ -470,3 +475,339 @@ def test_the_fetch_field_lists_do_not_ask_for_geometry() -> None:
         assert fields
         assert "SHAPE" not in fields
         assert "geometry" not in fields
+
+
+# --- the library surface a consuming project asked for --------------------------------
+#
+# `wildfire-service-territory-overlap` pins a commit of this package and audited the seam
+# on 2026-09-05, recording four gaps in its docs/UPSTREAM.md. Each one below is one of
+# them, checked here rather than compensated for there.
+
+
+def test_a_caller_can_say_who_it_is_and_that_is_what_is_sent(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The gap: the walk sent this project's name whoever was calling.
+
+    An operator reading CAL FIRE's logs saw `perimeter-coverage` for requests a different
+    project made, so the header identified the library rather than the caller -- which is
+    the one thing a User-Agent exists to do.
+    """
+    sent: list[str] = []
+
+    def fake_urlopen(request: Any, timeout: int = 0) -> FakeResponse:
+        sent.append(request.get_header("User-agent"))
+        return json_response({"features": []})
+
+    monkeypatch.setattr(acquire_mod.urllib.request, "urlopen", fake_urlopen)
+    acquire_mod._get(
+        "https://example.invalid/query",
+        user_agent="somebody-else/2.0 (+https://x.test)",
+    )
+    assert sent == ["somebody-else/2.0 (+https://x.test)"]
+
+
+def test_the_default_user_agent_still_names_this_project(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The positive control for the test above: the default must not have moved."""
+    sent: list[str] = []
+
+    def fake_urlopen(request: Any, timeout: int = 0) -> FakeResponse:
+        sent.append(request.get_header("User-agent"))
+        return json_response({"features": []})
+
+    monkeypatch.setattr(acquire_mod.urllib.request, "urlopen", fake_urlopen)
+    acquire_mod._get("https://example.invalid/query")
+    assert sent == [USER_AGENT]
+    assert "perimeter" in USER_AGENT
+    assert "github.com/ChelseaKR/perimeter" in USER_AGENT
+
+
+@pytest.mark.parametrize("blank", ["", "   ", "\t\n"])
+def test_a_blank_user_agent_is_refused_rather_than_passed_through(blank: str) -> None:
+    """urllib would substitute `Python-urllib/3.x`, which identifies nobody.
+
+    A caller that passes nothing is not anonymous, it is mislabelled: the request still
+    goes out, under a header that names no project at all. That is an absent identity
+    sent as though it were one, so it is refused before a socket opens.
+    """
+    with pytest.raises(AcquisitionFailed, match="blank User-Agent"):
+        acquire_mod._get("https://example.invalid/query", user_agent=blank)
+
+
+def test_the_user_agent_reaches_the_count_query_and_the_walk(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Threaded, not just accepted. A parameter the callee drops is not a parameter."""
+    seen: list[object] = []
+
+    def fake_get(url: str, **kwargs: object) -> dict[str, Any]:
+        seen.append(kwargs.get("user_agent"))
+        if "returnCountOnly" in url:
+            return {"count": 1}
+        return page(1, exceeded=False)
+
+    monkeypatch.setattr(acquire_mod, "_get", fake_get)
+    layer_record_count("https://example.invalid/query", user_agent="caller/1.0")
+    fetch_layer("https://example.invalid/query", ("OBJECTID",), user_agent="caller/1.0")
+    assert seen == ["caller/1.0", "caller/1.0"]
+
+
+# --- geometry, which fetch_layer discards and a consumer needed ------------------------
+
+
+GEOMETRY = {
+    "rings": [[[-13_600_000.5, 4_500_000.25], [-13_600_001.0, 4_500_002.75]]],
+    "spatialReference": {"wkid": 102_100},
+}
+
+
+def test_geometry_requested_through_the_library_round_trips_unchanged(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The coordinates that come back are the coordinates the service sent.
+
+    Nothing rounds, reprojects, or normalises them on the way through. A consumer that
+    copied the offset loop to get at geometry can now ask for it here instead, and the
+    thing it gets is the service's own feature.
+    """
+    urls: list[str] = []
+
+    def fake_get(url: str, **_: object) -> dict[str, Any]:
+        urls.append(url)
+        return {
+            "features": [{"attributes": {"OBJECTID": 1}, "geometry": GEOMETRY}],
+            "exceededTransferLimit": False,
+        }
+
+    monkeypatch.setattr(acquire_mod, "_get", fake_get)
+    features = list(
+        iter_features(
+            "https://example.invalid/query",
+            ("OBJECTID",),
+            return_geometry=True,
+            out_sr=3310,
+        )
+    )
+    assert [feature["geometry"] for feature in features] == [GEOMETRY]
+    query = parse_qs(urlparse(urls[0]).query)
+    assert query["returnGeometry"] == ["true"]
+    assert query["outSR"] == ["3310"]
+
+
+def test_the_default_request_is_the_one_this_project_has_always_made(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The raw files pinned in sources.py must stay reproducible.
+
+    Adding geometry as an option must not add it as a default, and `outSR` must be absent
+    rather than sent with a default value: a reprojection nobody asked for would change
+    every coordinate in a file whose hash is published.
+    """
+    urls: list[str] = []
+
+    def fake_get(url: str, **_: object) -> dict[str, Any]:
+        urls.append(url)
+        return page(1, exceeded=False)
+
+    monkeypatch.setattr(acquire_mod, "_get", fake_get)
+    fetch_layer("https://example.invalid/query", ("OBJECTID",))
+    query = parse_qs(urlparse(urls[0]).query)
+    assert query["returnGeometry"] == ["false"]
+    assert "outSR" not in query
+
+
+def test_a_feature_is_yielded_whole_rather_than_merged(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A layer is free to publish a field called `geometry`, and some do.
+
+    Merging the geometry into the attributes would overwrite it, silently, and the loss
+    would look exactly like a layer that never published the field.
+    """
+
+    def fake_get(url: str, **_: object) -> dict[str, Any]:
+        return {
+            "features": [
+                {
+                    "attributes": {"OBJECTID": 1, "geometry": "a column of that name"},
+                    "geometry": GEOMETRY,
+                }
+            ],
+            "exceededTransferLimit": False,
+        }
+
+    monkeypatch.setattr(acquire_mod, "_get", fake_get)
+    feature = next(
+        iter_features(
+            "https://example.invalid/query", ("OBJECTID",), return_geometry=True
+        )
+    )
+    assert feature["attributes"]["geometry"] == "a column of that name"
+    assert feature["geometry"] == GEOMETRY
+
+
+# --- the post-walk guards: a count that matches is not enough --------------------------
+
+
+def scripted_layer(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    before: int,
+    after: int,
+    rows: list[dict[str, Any]],
+) -> None:
+    """A layer whose two self-reported totals and whose walk are each set separately."""
+    counts = iter([before, after])
+    monkeypatch.setattr(
+        acquire_mod, "layer_record_count", lambda endpoint, **_: next(counts)
+    )
+    monkeypatch.setattr(acquire_mod, "fetch_layer", lambda endpoint, fields, **_: rows)
+
+
+def rows_with_ids(*identifiers: object) -> list[dict[str, Any]]:
+    return [{IDENTIFIER_FIELD: value, "YEAR_": 2020} for value in identifiers]
+
+
+def test_a_layer_republished_mid_walk_is_refused_naming_both_counts(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """One count read before the walk cannot see this.
+
+    The walk ends at a total that matches the number the layer held when it started, so
+    the pre-walk check passes and a file assembled across two versions of the layer lands
+    on disk with a clean hash and a date beside it.
+    """
+    scripted_layer(monkeypatch, before=3, after=4, rows=rows_with_ids(1, 2, 3))
+    with pytest.raises(AcquisitionFailed) as caught:
+        acquire(FRAP, ("OBJECTID",), tmp_path)
+    message = str(caught.value)
+    assert "3 records before the walk" in message
+    assert "4 after it" in message
+    assert not (tmp_path / FRAP.raw_file).exists(), "a mixed download reached disk"
+
+
+def test_a_walk_shorter_than_the_post_walk_count_is_refused_naming_both(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    scripted_layer(monkeypatch, before=9, after=9, rows=rows_with_ids(1, 2, 3))
+    with pytest.raises(AcquisitionFailed) as caught:
+        acquire(FRAP, ("OBJECTID",), tmp_path)
+    message = str(caught.value)
+    assert "reports 9 records" in message
+    assert "collected 3" in message
+    assert not (tmp_path / FRAP.raw_file).exists()
+
+
+def test_a_repeated_identifier_is_refused_even_though_the_count_matches(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """The failure a record count cannot see.
+
+    A page handed back twice leaves the total intact: the walk collected the right number
+    of rows, and some of the layer's records are in it twice while others are not in it
+    at all.
+    """
+    scripted_layer(monkeypatch, before=4, after=4, rows=rows_with_ids(1, 2, 2, 3))
+    with pytest.raises(AcquisitionFailed) as caught:
+        acquire(FRAP, ("OBJECTID",), tmp_path)
+    message = str(caught.value)
+    assert "appears more than once" in message
+    assert "a count that matches is not evidence" in message.lower()
+    assert not (tmp_path / FRAP.raw_file).exists()
+
+
+def test_a_clean_walk_still_writes(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """The positive control. A guard that refuses everything is not a guard."""
+    scripted_layer(monkeypatch, before=3, after=3, rows=rows_with_ids(1, 2, 3))
+    result = acquire(FRAP, ("OBJECTID",), tmp_path)
+    assert result.record_count == 3
+    assert (tmp_path / FRAP.raw_file).exists()
+
+
+@pytest.mark.parametrize(
+    ("identifiers", "expected"),
+    [
+        ((1, 2, 3), None),
+        ((), None),
+        ((1, 2, 2), "appears more than once"),
+        ((3, 2, 1), "does not follow"),
+        ((1, 1), "appears more than once"),
+        (("7", 8), "not an integer"),
+        ((True, 2), "not an integer"),
+        ((None, 2), "not an integer"),
+    ],
+)
+def test_every_identifier_refusal_is_reachable(
+    identifiers: tuple[object, ...], expected: str | None
+) -> None:
+    """Each branch exercised directly, so none of them is reachable only from a fault.
+
+    `True` is in here on purpose: it is an `int` in Python, and an identifier column that
+    came back as a boolean would slip past an `isinstance(value, int)` check written
+    without the guard.
+    """
+    failure = identifier_failure(list(identifiers))
+    if expected is None:
+        assert failure is None
+    else:
+        assert failure is not None and expected in failure
+
+
+def test_the_manifest_records_which_guards_this_acquisition_passed(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A file written before the post-walk recount existed makes a weaker claim.
+
+    Nothing in the manifest distinguished the two, so a reader could not tell which
+    guarantee a given acquisition carried.
+    """
+    counts = iter([1, 1, 1, 1])
+    monkeypatch.setattr(
+        acquire_mod, "layer_record_count", lambda endpoint, **_: next(counts)
+    )
+    monkeypatch.setattr(
+        acquire_mod, "fetch_layer", lambda endpoint, fields, **_: rows_with_ids(1)
+    )
+    assert main(["--out", str(tmp_path)]) == 0
+    manifest = json.loads((tmp_path / "acquisition.json").read_text(encoding="utf-8"))
+    for entry in manifest:
+        assert entry["checks"]["counted_before_walk"] is True
+        assert entry["checks"]["counted_after_walk"] is True
+        assert entry["checks"]["identifier_field"] == IDENTIFIER_FIELD
+        assert entry["checks"]["identifiers_unique_and_ascending"] is True
+
+
+# --- PEP 561: a consumer running mypy --strict should need no override -----------------
+
+
+@pytest.mark.slow
+def test_a_strict_consumer_needs_no_override_to_import_this_package(
+    tmp_path: Path,
+) -> None:
+    """The fourth gap in the consumer's audit: no `py.typed`, so two mypy overrides.
+
+    This runs mypy over a minimal consumer rather than asserting the marker file exists,
+    because the marker existing and the marker being *shipped and honoured* are different
+    facts, and only the second one deletes the consumer's overrides.
+    """
+    consumer = tmp_path / "consumer.py"
+    consumer.write_text(
+        "from perimeter.acquire import fetch_layer\n"
+        "\n"
+        "def rows() -> int:\n"
+        "    return len(fetch_layer('https://example.invalid/query', ('OBJECTID',)))\n",
+        encoding="utf-8",
+    )
+    result = subprocess.run(  # noqa: S603
+        [sys.executable, "-m", "mypy", "--strict", "--no-incremental", str(consumer)],
+        capture_output=True,
+        text=True,
+        check=False,
+        cwd=tmp_path,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "py.typed" not in result.stdout, result.stdout

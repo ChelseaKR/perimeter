@@ -26,6 +26,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+from collections.abc import Iterator
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -39,6 +40,14 @@ USER_AGENT = "perimeter-coverage/0.1 (+https://github.com/ChelseaKR/perimeter)"
 
 WHERE = "1=1"
 """The predicate every request uses. The count check and the walk must agree on it."""
+
+IDENTIFIER_FIELD = "OBJECTID"
+"""The field the walk orders on, and the one the post-walk check reads.
+
+Both layers publish it and both required-column lists in ``schema.py`` name it, so it is
+always present in what the walk collects. Ordering on a field and then not checking the
+order is a check that cannot fail.
+"""
 
 PAGE_SIZE = 2000
 """Records asked for per page. Both layers publish ``maxRecordCount`` 2000, read from the
@@ -108,14 +117,32 @@ def write_rows(path: Path, rows: list[dict[str, Any]]) -> Acquired:
     )
 
 
-def _get(url: str) -> dict[str, Any]:
+def _get(url: str, *, user_agent: str = USER_AGENT) -> dict[str, Any]:
+    """One request. ``user_agent`` is what CAL FIRE's logs will see.
+
+    A consuming project that vendored this walk sent *this* project's name, so an
+    operator reading their own logs could not tell who was calling. The parameter exists
+    so a caller can say who it is; the default still names this project, because a
+    library that quietly sends nothing identifiable is worse than one that names the
+    wrong caller.
+
+    An empty or blank User-Agent is refused rather than passed through. urllib would
+    substitute its own ``Python-urllib/3.x``, which identifies nobody -- an absent
+    identity sent as though it were one.
+    """
+    if not user_agent.strip():
+        raise AcquisitionFailed(
+            "refusing to fetch with a blank User-Agent: urllib would substitute its own "
+            "default, which names no caller at all. Pass a User-Agent that identifies "
+            "the calling project, or leave the default, which names this one."
+        )
     if not url.startswith("https://"):
         raise AcquisitionFailed(f"refusing to fetch a non-HTTPS endpoint: {url!r}")
     # Audited: both linters flag urllib for accepting schemes such as file://. The
     # scheme is pinned to https immediately above, and the host comes from the reviewed
     # endpoints in sources.py rather than from user input or from any fetched content.
     # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
-    request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})  # noqa: S310
+    request = urllib.request.Request(url, headers={"User-Agent": user_agent})  # noqa: S310
     try:
         # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
         with urllib.request.urlopen(request, timeout=TIMEOUT_SECONDS) as response:  # noqa: S310
@@ -141,7 +168,7 @@ def _get(url: str) -> dict[str, Any]:
     return parsed
 
 
-def layer_record_count(endpoint: str) -> int:
+def layer_record_count(endpoint: str, *, user_agent: str = USER_AGENT) -> int:
     """How many records the layer says it holds, under the predicate the walk uses.
 
     The walk below can only be as honest as the pages it is handed. A layer that stops
@@ -153,7 +180,7 @@ def layer_record_count(endpoint: str) -> int:
     query = urllib.parse.urlencode(
         {"where": WHERE, "returnCountOnly": "true", "f": "json"}
     )
-    payload = _get(f"{endpoint}?{query}")
+    payload = _get(f"{endpoint}?{query}", user_agent=user_agent)
     count = payload.get("count")
     if not isinstance(count, int) or isinstance(count, bool):
         raise AcquisitionFailed(
@@ -164,27 +191,49 @@ def layer_record_count(endpoint: str) -> int:
     return count
 
 
-def fetch_layer(endpoint: str, fields: tuple[str, ...]) -> list[dict[str, Any]]:
-    """Page through a layer's attributes, geometry excluded."""
-    rows: list[dict[str, Any]] = []
+def iter_features(
+    endpoint: str,
+    fields: tuple[str, ...],
+    *,
+    user_agent: str = USER_AGENT,
+    return_geometry: bool = False,
+    out_sr: int | None = None,
+) -> Iterator[dict[str, Any]]:
+    """Page through a layer, yielding each GeoServices feature as the service sent it.
+
+    This is the paged walk itself, exposed. A consuming project needed geometry, could
+    not get it from :func:`fetch_layer` -- which discards everything but ``attributes``
+    -- and so copied the offset loop, including the part of it that is subtle. The whole
+    value of that loop is the offset rule below, and a copy of it drifts.
+
+    A feature is yielded whole: ``{"attributes": {...}}``, plus ``"geometry"`` when
+    ``return_geometry`` is set. Nothing is merged into the attributes, because a layer is
+    free to publish a field called ``geometry`` and a merge would silently overwrite it.
+
+    ``out_sr`` is the spatial reference to project coordinates into (a WKID). It is sent
+    only when given, so the default request is byte-for-byte the request this project has
+    always made: the raw files pinned in ``sources.py`` must stay reproducible.
+    """
     offset = 0
     while True:
-        query = urllib.parse.urlencode(
-            {
-                "where": WHERE,
-                "outFields": ",".join(fields),
-                "returnGeometry": "false",
-                "orderByFields": "OBJECTID ASC",
-                "resultOffset": offset,
-                "resultRecordCount": PAGE_SIZE,
-                "f": "json",
-            }
+        query: dict[str, Any] = {
+            "where": WHERE,
+            "outFields": ",".join(fields),
+            "returnGeometry": "true" if return_geometry else "false",
+            "orderByFields": f"{IDENTIFIER_FIELD} ASC",
+            "resultOffset": offset,
+            "resultRecordCount": PAGE_SIZE,
+            "f": "json",
+        }
+        if out_sr is not None:
+            query["outSR"] = out_sr
+        payload = _get(
+            f"{endpoint}?{urllib.parse.urlencode(query)}", user_agent=user_agent
         )
-        payload = _get(f"{endpoint}?{query}")
         features = payload.get("features", [])
         if not features:
             break
-        rows.extend(feature["attributes"] for feature in features)
+        yield from features
         if not payload.get("exceededTransferLimit") and len(features) < PAGE_SIZE:
             break
         # Step by the page that arrived, not by the page that was asked for. `resultOffset`
@@ -195,10 +244,70 @@ def fetch_layer(endpoint: str, fields: tuple[str, ...]) -> list[dict[str, Any]]:
         # never there.
         offset += len(features)
         time.sleep(PAUSE_SECONDS)
-    return rows
 
 
-def acquire(source: Source, fields: tuple[str, ...], out_dir: Path) -> Acquired:
+def fetch_layer(
+    endpoint: str,
+    fields: tuple[str, ...],
+    *,
+    user_agent: str = USER_AGENT,
+) -> list[dict[str, Any]]:
+    """Page through a layer's attributes, geometry excluded."""
+    return [
+        feature["attributes"]
+        for feature in iter_features(endpoint, fields, user_agent=user_agent)
+    ]
+
+
+def identifier_failure(identifiers: list[Any]) -> str | None:
+    """Why this walk's identifiers do not describe one ordered pass over the layer.
+
+    The walk asks the service to order by ``OBJECTID`` and steps an offset through the
+    result. Two things can go wrong that a record count cannot see, because both leave
+    the count intact: the service can hand back a page it has already handed back (a
+    repeated identifier), and it can reorder under a concurrent edit (an identifier that
+    goes backwards). Either one means some records were collected twice and others not at
+    all, and the file that lands on disk is the wrong size in two directions at once.
+
+    Split out from the walk so every refusing branch is reachable from a test rather than
+    only from a misbehaving service.
+    """
+    if not identifiers:
+        return None
+    previous: Any = None
+    seen: set[Any] = set()
+    for position, value in enumerate(identifiers):
+        if not isinstance(value, int) or isinstance(value, bool):
+            return (
+                f"row {position} carries {IDENTIFIER_FIELD}={value!r}, which is not an "
+                "integer. The walk orders on this field, so a non-integer means the "
+                "ordering the offset relies on is not the ordering that happened"
+            )
+        if value in seen:
+            return (
+                f"{IDENTIFIER_FIELD} {value} appears more than once. A repeated "
+                "identifier means a page was handed back twice, so the walk collected "
+                "some records twice and missed others"
+            )
+        if previous is not None and value <= previous:
+            return (
+                f"{IDENTIFIER_FIELD} {value} at row {position} does not follow "
+                f"{previous}. The walk asks for {IDENTIFIER_FIELD} ASC and steps an "
+                "offset through the answer; an identifier that goes backwards means the "
+                "result was reordered mid-walk"
+            )
+        seen.add(value)
+        previous = value
+    return None
+
+
+def acquire(
+    source: Source,
+    fields: tuple[str, ...],
+    out_dir: Path,
+    *,
+    user_agent: str = USER_AGENT,
+) -> Acquired:
     """Read the layer whole, or write nothing at all.
 
     The record count this returns is copied into ``sources.py`` by hand, printed on both
@@ -206,15 +315,41 @@ def acquire(source: Source, fields: tuple[str, ...], out_dir: Path) -> Acquired:
     reaches the build is not published as a failed download; it is published as a smaller
     dataset, with a hash and a date beside it. So the layer's own total is read first and
     the walk is checked against it before any file is written.
+
+    **The count is read twice, before the walk and after it**, and both are compared to
+    what the walk collected. One count read before a walk cannot see a layer that was
+    republished while the walk was in progress: the walk ends at a total that matches the
+    number the layer held an hour ago, and the file that lands is a mixture of two
+    versions with a clean hash on it. Two counts that disagree mean exactly that, and the
+    only honest thing to do with them is refuse and say both numbers.
+
+    The identifiers are checked too, for the reason :func:`identifier_failure` gives: a
+    repeated or reordered page leaves the count intact and the contents wrong.
     """
-    expected = layer_record_count(source.endpoint)
-    rows = fetch_layer(source.endpoint, fields)
-    if len(rows) != expected:
+    before = layer_record_count(source.endpoint, user_agent=user_agent)
+    rows = fetch_layer(source.endpoint, fields, user_agent=user_agent)
+    after = layer_record_count(source.endpoint, user_agent=user_agent)
+    if before != after:
         raise AcquisitionFailed(
-            f"{source.key}: the layer reports {expected} records and the walk collected "
+            f"{source.key}: the layer reported {before} records before the walk and "
+            f"{after} after it, so it was republished while this was reading it. Nothing "
+            f"was written. The walk collected {len(rows)} records, and a file assembled "
+            "across two versions of a layer is not either of them. Re-run the "
+            "acquisition."
+        )
+    if len(rows) != after:
+        raise AcquisitionFailed(
+            f"{source.key}: the layer reports {after} records and the walk collected "
             f"{len(rows)}. Nothing was written. If the layer was republished mid-walk, "
             "re-run the acquisition; if it was not, the walk is dropping records and "
             "must be fixed before any count from this file is published."
+        )
+    failure = identifier_failure([row.get(IDENTIFIER_FIELD) for row in rows])
+    if failure is not None:
+        raise AcquisitionFailed(
+            f"{source.key}: the walk collected {len(rows)} records, which is what the "
+            f"layer reports, but {failure}. Nothing was written. A count that matches is "
+            "not evidence that the right records were collected."
         )
     acquired = write_rows(out_dir / source.raw_file, rows)
     return Acquired(
@@ -268,6 +403,17 @@ def main(argv: list[str] | None = None) -> int:
                 "raw_bytes": result.raw_bytes,
                 "sha256": result.sha256,
                 "retrieved": result.retrieved,
+                # Which guards this acquisition actually passed, rather than which ones
+                # the code contains. A manifest from before the post-walk recount existed
+                # and one from after it are otherwise indistinguishable, and the whole
+                # point of the recount is that a file which passed it is a different
+                # claim from a file which did not.
+                "checks": {
+                    "counted_before_walk": True,
+                    "counted_after_walk": True,
+                    "identifier_field": IDENTIFIER_FIELD,
+                    "identifiers_unique_and_ascending": True,
+                },
             }
         )
     manifest_path = args.out / "acquisition.json"
