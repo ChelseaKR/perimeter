@@ -6,6 +6,38 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project a
 
 ## [Unreleased]
 
+### Fixed, the ruleset profile's supporting evidence had gone stale and one reading of it was backwards
+
+- **`.github/rulesets/README.md` counted a repository that no longer exists.** It argued
+  for `required_signatures` from "all fourteen commits on `main`" and against a merge
+  commit from "the three merge commits already on `main`". Measured 2026-09-06 at
+  `d4f533f`: 66 commits and 12 merge commits. Both conclusions survive the
+  re-measurement; neither piece of evidence did. The numbers are now stated against the
+  commit they were taken at, so they stay true as `main` advances instead of needing a
+  hand edit per merge.
+- **A local `git log --format='%G?'` reads this repository's signatures backwards, and an
+  audit acted on it.** It reports `N`, "no signature", for the thirteen SSH-signed
+  commits, because git 2.55 cannot classify an SSH signature without a configured
+  `gpg.ssh.allowedSignersFile`; supply any such file and the same commit reports `U`. The
+  other fifty-three are PGP-signed by GitHub's web-flow key and report `E`, key not in
+  the local keyring. Zero commits on `main` carry no signature and all 66 report
+  `verification.verified: true` from the API, which is also the verification GitHub's own
+  `required_signatures` rule uses. The document now names the instrument, the trap and
+  the one-call measurement, because "thirteen unsigned commits" is a failed read
+  published as a measurement, this portfolio's most common defect, produced here by the
+  check that was looking for it.
+- **`tests/test_ruleset_evidence.py`** holds both halves. The commit and merge counts are
+  re-measured from the SHA the prose pins, so a number edited without moving the pin, or
+  a pin advanced without re-measuring, fails; a checkout too shallow to see that commit
+  fails rather than passing vacuously. Every required status check context in
+  `main.json` is derived from the workflow files, so a renamed job fails here instead of
+  silently emptying the profile the day it is applied. Each gate was run against the
+  fault it exists to catch, with the sabotage asserted present in the file before the
+  result was read.
+- Not changed: the ruleset is still **not applied**, re-confirmed 2026-09-06
+  (`rulesets` is `[]`, `main` reports `"protected": false`). Applying it is the owner's
+  action and stays open as #15.
+
 ### Added, a refresh can now say what it moved
 
 - **`python -m perimeter.diff OLD NEW`, and `make diff`.** A refresh of the pinned
