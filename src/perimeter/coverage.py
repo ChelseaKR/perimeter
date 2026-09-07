@@ -8,18 +8,25 @@ denominator. Where a share would have to be invented, the share is absent.
 from __future__ import annotations
 
 from collections import Counter
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 
 from perimeter.cells import CellState, present_tenths_of_percent
 from perimeter.dins import (
+    NOT_APPLICABLE_FIELD,
     AccessSplit,
+    CohortKey,
     IncidentKey,
     access_split,
+    county_cohort_key,
     damage_distribution,
+    group_by_cohort,
     group_by_incident,
     is_assessed,
     is_inaccessible,
+    recorded_absence_spellings,
+    structure_category_cohort_key,
+    year_cohort_key,
 )
 from perimeter.perimeters import (
     DuplicateSignal,
@@ -253,6 +260,10 @@ class DinsReport:
     damage: dict[str, int]
     by_access: list[AccessFieldCoverage]
     incident_rows: list[IncidentCoverage]
+    by_year: list[CohortCoverage]
+    by_county: list[CohortCoverage]
+    by_structure_category: list[CohortCoverage]
+    not_applicable_spellings: list[SpellingCohort]
 
 
 def access_field_coverages(
@@ -302,6 +313,13 @@ def dins_report(records: Sequence[Record]) -> DinsReport:
         access=access_split(records),
         damage=damage_distribution(records),
         by_access=access_field_coverages(records, DINS_FIELDS),
+        # Three cuts of the same measurement, each a partition of the same records, so
+        # every cut sums back to the file totals per field and per state. A test asserts
+        # that partition rather than trusting it.
+        by_year=cohort_coverages(records, year_cohort_key),
+        by_county=cohort_coverages(records, county_cohort_key),
+        by_structure_category=cohort_coverages(records, structure_category_cohort_key),
+        not_applicable_spellings=not_applicable_spellings_by_year(records),
         incident_rows=[
             IncidentCoverage(
                 key=key,
@@ -313,3 +331,100 @@ def dins_report(records: Sequence[Record]) -> DinsReport:
             for key, group in groups
         ],
     )
+
+
+@dataclass(frozen=True)
+class CohortCoverage:
+    """One cut of the file: a cohort, its own denominator, and every field inside it.
+
+    A cut answers a question an average over the file cannot. Completeness differs along
+    every axis this file has: fields that exist only in later inspection forms, the two
+    spellings of Not Applicable that occupy non-overlapping eras, construction attributes
+    that apply to a residence and not to an outbuilding. A reader planning to use
+    ``EAVES`` needs to know it is blank in the early years and not the late ones, and the
+    file-wide number describes no year in particular.
+
+    Each cohort carries its own ``records`` as the denominator for everything in it, and
+    the same assessed / inaccessible / neither split the whole file carries, because the
+    reason a cell is blank inside a cohort is the same question as it is across the file.
+
+    Nothing here compares one cohort against another and no row becomes a rate of
+    anything but its own cells.
+    """
+
+    key: CohortKey
+    records: int
+    access: AccessSplit
+    fields: list[FieldCoverage]
+    by_access: list[AccessFieldCoverage]
+    """The same field table again, split by what the damage field says about access.
+
+    Carried per cohort because the question the split answers is not a property of the
+    file as a whole. A construction attribute blank on a structure the inspection could
+    not reach is a different fact from the same attribute blank on a structure that was
+    assessed, and which of those a year is made of changes year by year. Without this a
+    cohort of entirely inaccessible records reads as a year with terrible completeness
+    rather than as a year nobody could walk up to.
+
+    It is also what keeps an empty denominator from being published as a rate:
+    ``assessed_tenths_pct`` is ``None`` where a cohort holds no assessed records, and a
+    page renders that in words rather than as ``0.0%``.
+    """
+
+    @property
+    def label(self) -> str:
+        return self.key.label
+
+    @property
+    def value(self) -> str | None:
+        """The recorded value this cohort is, or ``None`` where it is an absence."""
+        return self.key.value
+
+
+def cohort_coverages(
+    records: Sequence[Record],
+    key: Callable[[Record], CohortKey],
+    specs: Sequence[FieldSpec] = DINS_FIELDS,
+) -> list[CohortCoverage]:
+    """Every cohort of one cut, each measured exactly as the whole file is measured."""
+    return [
+        CohortCoverage(
+            key=cohort_key,
+            records=len(group),
+            access=access_split(group),
+            fields=field_coverages(group, specs),
+            by_access=access_field_coverages(group, specs),
+        )
+        for cohort_key, group in group_by_cohort(records, key)
+    ]
+
+
+@dataclass(frozen=True)
+class SpellingCohort:
+    """One cohort, and how often each spelling of one field's Not Applicable was used."""
+
+    key: CohortKey
+    records: int
+    spellings: dict[str, int]
+
+    @property
+    def label(self) -> str:
+        return self.key.label
+
+
+def not_applicable_spellings_by_year(records: Sequence[Record]) -> list[SpellingCohort]:
+    """The `NA` against `N/A` era claim, per incident-start year, as counts.
+
+    ``docs/MARKERS.md`` section 2 rests the decision to count both spellings as the
+    published finding on the observation that they fall on opposite sides of one year.
+    That observation was measured once by a person and typed into a document. This
+    publishes it, so the claim moves when the file does instead of going quietly stale.
+    """
+    return [
+        SpellingCohort(
+            key=key,
+            records=len(group),
+            spellings=recorded_absence_spellings(group, NOT_APPLICABLE_FIELD),
+        )
+        for key, group in group_by_cohort(records, year_cohort_key)
+    ]

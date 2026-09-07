@@ -6,6 +6,59 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project a
 
 ## [Unreleased]
 
+### Added, DINS completeness cut by year, by county and by structure category
+
+- **Three cuts of the damage inspection file**, published as
+  `completeness_by_year`, `completeness_by_county` and
+  `completeness_by_structure_category` in `site/data/dins-coverage.json` and as three
+  tables on the DINS page. Completeness was published for the whole file and per
+  incident, and it differs along every axis this file has: fields that exist only in
+  later inspection forms, the two spellings of Not Applicable that occupy
+  non-overlapping eras, construction attributes that apply to a residence and not to a
+  shed. A reader planning to use `EAVES` needs to know it is blank in the early years
+  and not the late ones, and one number across the file describes no year in particular.
+
+  Each cohort carries its own record count as its denominator, the same assessed /
+  inaccessible / neither split the whole file carries, the three-state count for every
+  registered field, and each field's completeness inside each of those three access
+  populations as `[present, total]` pairs rather than as shares. Nothing compares one
+  cohort against another, no county is ranked, and no row is a rate of anything but its
+  own cells.
+
+  Three refusals are load-bearing and each has a test.
+
+  A record whose county cell is empty, and a record whose county cell carries a marker,
+  are two cohorts and neither is a county: their published `value` is `null` while their
+  `label` is prose, so a consumer grouping by `value` never acquires a county named the
+  empty string. A recorded structure category the publisher's domain does not describe
+  goes to one `outside_published_domain` cohort rather than getting a row, because a row
+  would publish a category CAL FIRE does not define as though this project had found one
+  (ADR 0002). And the page's field columns are shares of each cohort's *assessed*
+  records, so a cohort made entirely of structures nobody could reach reads *no records*
+  rather than *0.0%*: there is no denominator to divide by, and a zero would say the
+  inspectors found nothing when what happened is that nobody could walk up to anything.
+
+  Cohorts with no records are not published at all. A row of zeros reads as a finding
+  about a county the file simply never names.
+
+  `test_each_cut_sums_back_to_the_file_totals` asserts the partition per field and per
+  state across the whole registry, in all three cuts, so a cut that lost or double
+  counted a record fails rather than publishing a quietly smaller denominator.
+
+- **The `NA` against `N/A` era claim is measured rather than remembered.**
+  `docs/MARKERS.md` section 2 rests the decision to count both spellings as CAL FIRE's
+  finding on the observation that they fall on opposite sides of one year, and both
+  counts and that boundary were numbers a person measured once and typed into the
+  document. They are published now, per incident-start year, under
+  `not_applicable_spellings_by_year`, and a test holds the paragraph to the artifact in
+  both directions: the sentence must state the counts the file produces, and the
+  boundary the sentence claims must still hold in it. Measured on the acquired file at
+  the same values the document already carried: 6,544 `N/A` records, all in 2018 and
+  2019; 12,234 `NA` records, all in 2020 and later; no year carrying both.
+
+  Every existing number is unchanged. `make diff` against the previous artifact reports
+  24,947 additions, **0 changes and 0 removals** across 81,189 leaves.
+
 ### Added, the artifacts are the product and now carry a contract a consumer can hold them to
 
 - **`site/data/schema/perimeters-coverage.schema.json` and

@@ -18,13 +18,14 @@ from typing import Any
 
 from perimeter.cells import present_tenths_of_percent
 from perimeter.coverage import (
+    CohortCoverage,
     DinsReport,
     FieldCoverage,
     PerimeterReport,
     dins_report,
     perimeter_report,
 )
-from perimeter.dins import AccessSplit, load_inspections
+from perimeter.dins import NOT_APPLICABLE_FIELD, AccessSplit, load_inspections
 from perimeter.perimeters import (
     COLLECTION_ACRE_THRESHOLDS,
     DuplicateSignal,
@@ -143,6 +144,35 @@ def _access_json(access: AccessSplit) -> dict[str, Any]:
     }
 
 
+def _cohort_json(cohort: CohortCoverage) -> dict[str, Any]:
+    """One cohort of one cut, in the compact per-field shape `incidents_detail` uses.
+
+    ``value`` is the recorded value this cohort is, and it is ``null`` for the cohorts
+    that are absences: a record whose county cell is empty, and a record whose county
+    cell carries a marker, are two different cohorts and neither of them is a county.
+    ``label`` is what a page prints. Reading ``value`` rather than ``label`` is how a
+    consumer tells a measured cohort from an absence without parsing English.
+    """
+    return {
+        "value": cohort.value,
+        "label": cohort.label,
+        "records": cohort.records,
+        "access": _access_json(cohort.access),
+        "fields": {
+            field.name: [field.present, field.explicit_unknown, field.not_recorded]
+            for field in cohort.fields
+        },
+        "fields_by_access": {
+            row.name: {
+                "assessed": [row.assessed_present, row.assessed_total],
+                "inaccessible": [row.inaccessible_present, row.inaccessible_total],
+                "undetermined": [row.undetermined_present, row.undetermined_total],
+            }
+            for row in cohort.by_access
+        },
+    }
+
+
 def perimeters_payload(report: PerimeterReport, *, is_fixture: bool) -> dict[str, Any]:
     return {
         "is_fixture": is_fixture,
@@ -212,6 +242,34 @@ def dins_payload(report: DinsReport, *, is_fixture: bool) -> dict[str, Any]:
         },
         "fields": [_field_json(field) for field in report.fields],
         "field_state_order": list(FIELD_STATE_ORDER),
+        # Three cuts of the same records. Each is a partition of the file, so summing a
+        # cut per field and per state returns the file totals; nothing is estimated and
+        # no cohort is compared against another.
+        "completeness_by_year": [_cohort_json(cohort) for cohort in report.by_year],
+        "completeness_by_county": [_cohort_json(cohort) for cohort in report.by_county],
+        "completeness_by_structure_category": [
+            _cohort_json(cohort) for cohort in report.by_structure_category
+        ],
+        # The era claim docs/MARKERS.md rests a marker decision on, as counts rather
+        # than as a sentence somebody measured once and typed in.
+        "not_applicable_spellings_by_year": {
+            "field": NOT_APPLICABLE_FIELD,
+            "note": (
+                "How often each declared spelling of this field's Not Applicable value "
+                "was written, per incident-start year. Both spellings are counted as the "
+                "publisher's finding rather than one being read as missing data; "
+                "docs/MARKERS.md section 2 sets out the evidence and the confidence."
+            ),
+            "by_year": [
+                {
+                    "value": cohort.key.value,
+                    "label": cohort.label,
+                    "records": cohort.records,
+                    "spellings": dict(cohort.spellings),
+                }
+                for cohort in report.not_applicable_spellings
+            ],
+        },
         "completeness_by_access": [
             {
                 "name": row.name,
