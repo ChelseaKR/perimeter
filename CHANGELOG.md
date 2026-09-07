@@ -6,6 +6,23 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project a
 
 ## [Unreleased]
 
+### Fixed, a distribution name that could never have been released
+
+- **`pyproject.toml` declared `name = "perimeter"`, which is somebody else's package.**
+  On PyPI that name is [YunoJuno's Django access-control middleware](https://pypi.org/project/perimeter/)
+  ("Site-wide perimeter access control for Django projects", 0.14). Nothing here has been
+  published and there is no release workflow, so nothing broke — but the declared identity
+  was one no upload could ever have used, and a reader who typed `pip install perimeter`
+  got a Django middleware instead of a wildfire coverage measurement.
+
+  The distribution is now `perimeter-wildfire`, following the pattern five other
+  repositories here use for the same collision (`cairn-assistant`, `gauntlet-evals`,
+  `nearmiss-safety`, `ledger-archive`, `plumbline-eval`): keep the word, add the qualifier.
+  It was free on PyPI when chosen (checked 2026-09-07). **The import name and the package
+  directory are unchanged** — `import perimeter`, `src/perimeter/`,
+  `python -m perimeter.acquire`. The README now says plainly that there is nothing to
+  install and names the collision, rather than leaving a reader to find it at a shell.
+
 ### Added, DINS completeness cut by year, by county and by structure category
 
 - **Three cuts of the damage inspection file**, published as

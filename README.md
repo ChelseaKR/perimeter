@@ -38,6 +38,14 @@ computed, tested, and published against pinned dataset retrievals (FRAP `firep25
 FIRE DINS, retrieved 2026-08-07). The figures move only when those retrievals are deliberately
 refreshed.
 
+**There is nothing to install.** Nothing here has ever been published to a package registry,
+and there is no release workflow to publish it with; the served pages above and the offline
+build from this checkout are the whole of what exists today. Do not `pip install perimeter` —
+that name on PyPI is [an unrelated Django access-control middleware](https://pypi.org/project/perimeter/)
+by YunoJuno and has nothing to do with wildfire data. If this is ever packaged, the
+distribution name is `perimeter-wildfire`, which is what `pyproject.toml` declares; the
+import name stays `perimeter`.
+
 ## The two measurements
 
 **Historical fire perimeter completeness** (`site/perimeters.html`) over FRAP's
@@ -325,7 +333,7 @@ build time. Nothing in CI can check it against the source.
 | AI Evaluation | N/A (no model, no LLM, no generated text anywhere in the pipeline or the pages) |
 | Quality & Metrics | Applies: fail-closed gates throughout, covering schema drift, sentinel drift, the coverage floor, and page checks that fail on a number no pipeline produced. Not met: no Definition of Done and no metrics ledger |
 | Documentation | Applies: README, `PROVENANCE.md`, `docs/MARKERS.md`, `CONTRIBUTING.md`, `SECURITY.md`, `CHANGELOG.md`, `CITATION.cff`, a `docs/adr/` log, this table, and a `.standards-version` pin that `tests/test_standards_conformance.py` reads |
-| Release & Versioning | Applies (not met). Version `0.1.0` in `pyproject.toml` and `CITATION.cff`, no tag cut, no signed tag, no release workflow, no published artifact. That is now a gate rather than a sentence: `tests/test_release_claims.py` reads `git tag --list` and fails if the declared version is neither tagged nor disclosed as untagged in this row or the status line, if `CITATION.cff` restates a different version, or if `date-released` appears without a tag naming it. `CITATION.cff` carried `date-released: 2026-08-07` against no release until this row was made enforceable |
+| Release & Versioning | Applies (not met). Version `0.1.0` in `pyproject.toml` and `CITATION.cff`, no tag cut, no signed tag, no release workflow, no published artifact. The distribution name is `perimeter-wildfire` rather than `perimeter`: the bare name on PyPI belongs to YunoJuno's Django access-control middleware, so a release under it was never possible, and the repository carried a name that could not have accepted an upload. `perimeter-wildfire` was free when chosen (2026-09-07); free is not reserved, and nothing has been uploaded. That is now a gate rather than a sentence: `tests/test_release_claims.py` reads `git tag --list` and fails if the declared version is neither tagged nor disclosed as untagged in this row or the status line, if `CITATION.cff` restates a different version, or if `date-released` appears without a tag naming it. `CITATION.cff` carried `date-released: 2026-08-07` against no release until this row was made enforceable |
 | Responsible-Tech Framework | Applies: unofficial framing on every served page, no claim about any agency's infrastructure or security posture, no address, parcel number or assessed value republished, and an acquisition path that stops rather than routing around an access control. Not met: no dated ethics, transparency or residual-risk artifacts |
 | Performance | Applies (not met). Three static pages, no script shipped, no web font; that is a good starting position and it is not a measurement. No budget recorded and no Lighthouse run |
 | Incident Response | Applies: `SECURITY.md` routes reports to GitHub private vulnerability reporting with a 72-hour acknowledgment SLA. Not met: no severity convention, no secret-leak runbook, no committed-postmortem requirement |
