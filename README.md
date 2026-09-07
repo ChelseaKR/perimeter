@@ -163,6 +163,42 @@ make site-offline    # build from committed fixtures; runs anywhere, no network
 make diff OLD=a.json NEW=b.json   # compare two coverage artifacts leaf by leaf
 ```
 
+### Before a refresh: what the new file holds
+
+A refresh used to begin from a crash. The build refuses a cell holding something that
+reads like a missing-data marker in a field nobody has reviewed for it, which is the right
+behaviour and a poor way to find out: it reports one cell, in one field, and says nothing
+about the next one, so a new retrieval gets worked through one refusal at a time.
+
+`make survey` reads the same files the build reads and reports every candidate at once:
+
+```sh
+make survey                                   # over data/raw/, after make acquire
+make survey SURVEY_DINS=fixtures/dins_postfire.sample.json \
+            SURVEY_PERIMETERS=fixtures/frap_perimeters.sample.json
+```
+
+Per measured field it writes the distinct values with counts, the values that read like a
+missing-data marker the field has not declared, the values outside a published domain, and
+for a numeric field how many of its records hold a zero. Output is `survey.json` and a
+`survey.md` draft in `docs/MARKERS.md`'s shape, where every entry reads `basis:
+unreviewed`.
+
+It declares nothing. It writes no schema, edits no registry, and no part of the build
+reads it. The sequence is survey, review, declare, build, diff, and the reviewing step is
+a person's.
+
+Three things it will not round off, because they are the same three the artifacts refuse
+to round off:
+
+- A field with more distinct values than the listing bound reports **the bound and its
+  distinct count**, never an empty list. A reader must be able to tell "this field holds
+  nothing" from "this field holds too much to show".
+- A field with **no published domain** reports `null` for values outside one, not `0`.
+  There was no comparison to have a result.
+- A numeric field in which nothing parsed as a number has **no zero share**, not a zero
+  one.
+
 ### What a refresh moved
 
 The figures on these pages move only when the pinned retrievals are deliberately
@@ -288,6 +324,7 @@ here is how much of each published field is actually filled in, and what the bla
 | `src/perimeter/artifacts.py` | Deterministic JSON |
 | `src/perimeter/render.py` | The static pages |
 | `src/perimeter/acquire.py` | The only code that touches the network. Run by hand, never in CI |
+| `src/perimeter/survey.py` | Inventory a retrieval's candidate markers before a build refuses one. Declares nothing |
 | `tools/a11y.mjs` | axe-core over the built pages in a headless DOM; an undecided rule is not a pass |
 | `tools/determinism.sh` | Compare two build trees; refuse an empty or missing one |
 | `site/` | The built pages and their JSON artifacts. Tracked in git, and published by `.github/workflows/pages.yml` |

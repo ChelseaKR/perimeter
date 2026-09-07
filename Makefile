@@ -183,3 +183,26 @@ determinism:
 # Network. Run by hand, never from a build. See PROVENANCE.md.
 acquire:
 	uv run python -m perimeter.acquire --out data/raw
+
+# Inventory the candidate markers in an acquired retrieval, before a build refuses one.
+#
+# Offline, and deliberately NOT a prerequisite of anything. It declares nothing, writes no
+# schema, and no part of the build reads its output: it is a review aid for the person
+# doing a refresh, and a target that ran it automatically would turn a list of open
+# questions into something a build appears to have answered.
+#
+# It is not part of `verify` for the same reason `acquire` is not: it reads data/raw/,
+# which is never in git and never in CI. Point it at the fixtures to see the shape:
+#
+#   make survey SURVEY_DINS=fixtures/dins_postfire.sample.json \
+#               SURVEY_PERIMETERS=fixtures/frap_perimeters.sample.json
+#
+SURVEY_DINS ?= data/raw/dins_postfire.json
+SURVEY_PERIMETERS ?= data/raw/frap_perimeters.json
+SURVEY_OUT ?= build/survey
+
+survey:
+	uv run python -m perimeter.survey \
+		--perimeters $(SURVEY_PERIMETERS) \
+		--dins $(SURVEY_DINS) \
+		--out $(SURVEY_OUT)
