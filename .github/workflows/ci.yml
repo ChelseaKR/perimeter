@@ -122,6 +122,26 @@ jobs:
           git rev-parse --is-shallow-repository
           cat .git/shallow 2>/dev/null || echo "no .git/shallow"
           uv run pytest tests/test_release_claims.py -q || true
+      - name: DIAGNOSTIC bisect which test writes .git/shallow
+        if: always()
+        run: |
+          probe() {
+            rm -f .git/shallow
+            echo "=== RUN: $* ==="
+            uv run pytest -n auto -q "$@" >/dev/null 2>&1 || true
+            if [ -f .git/shallow ]; then
+              echo "SHALLOW CREATED BY: $*"
+              echo "--- FETCH_HEAD ---"; cat .git/FETCH_HEAD
+              echo "--- shallow ---"; cat .git/shallow
+            else
+              echo "clean after: $*"
+            fi
+          }
+          probe tests/test_a11y_browser_gate.py
+          probe tests/test_a11y_gate.py
+          probe tests/test_determinism_gate.py
+          probe --ignore=tests/test_a11y_browser_gate.py --ignore=tests/test_a11y_gate.py --ignore=tests/test_determinism_gate.py
+          rm -f .git/shallow
       - name: DIAGNOSTIC full suite under xdist, then who made shallow
         if: always()
         run: |
