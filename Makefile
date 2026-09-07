@@ -1,5 +1,5 @@
 .PHONY: verify lock-check sync lint format typecheck test audit site site-offline \
-        site-check acquire pages node-sync htmlvalidate a11y node-audit determinism \
+        site-check diff acquire pages node-sync htmlvalidate a11y node-audit determinism \
         browser-sync a11y-browser browser-audit
 
 # CI / `make verify` body: the two MUST stay byte-for-byte identical.
@@ -76,8 +76,39 @@ site-check:
 		--perimeters data/raw/frap_perimeters.json \
 		--dins data/raw/dins_postfire.json \
 		--out build/site-current
+	@# What moved, before what follows decides whether it may. `diff -r` is the gate;
+	@# this is the report, and it is written so it can only ever add detail: its exit
+	@# status is deliberately discarded here and the byte comparison below is what
+	@# fails the target. A reporting step that could turn a red target green would be
+	@# the swallowed-failure defect ADR-0004 is about.
+	@for f in perimeters-coverage.json dins-coverage.json; do \
+	  uv run python -m perimeter.diff "site/data/$$f" "build/site-current/data/$$f" \
+	    --allow-removals || true; \
+	done
 	diff -r site build/site-current
 	@echo "site-check: site/ is byte-identical to a fresh build from data/raw/"
+
+# Compare two coverage artifacts leaf by leaf. Offline, reads only the two files named.
+#
+# `git diff` answers a different question about these documents: it reports lines, so a
+# reordered list reads as hundreds of changes and one count that moved reads as two. This
+# reports values, with their paths, and refuses a key the later artifact stopped
+# publishing unless ALLOW_REMOVALS names that as deliberate. Exit 0 no change, 1 changes
+# reported, 2 a refused removal or an unreadable input.
+#
+#   make diff OLD=site/data/dins-coverage.json NEW=build/site-current/data/dins-coverage.json
+#   make diff OLD=a.json NEW=b.json ALLOW_REMOVALS=1 IGNORE=is_fixture
+#
+# Those three exit codes are the module's. Make collapses every recipe failure to its own
+# exit 2, so a script that needs to tell "changes reported" from "removal refused" must
+# call `uv run python -m perimeter.diff` directly. This target is for a person at a
+# terminal, where the printed lines carry the distinction.
+DIFF_FLAGS = $(if $(ALLOW_REMOVALS),--allow-removals,) $(if $(IGNORE),--ignore $(IGNORE),) $(if $(JSON),--json,)
+
+diff:
+	@test -n "$(OLD)" || { echo "make diff: set OLD=<earlier artifact>" >&2; exit 2; }
+	@test -n "$(NEW)" || { echo "make diff: set NEW=<later artifact>" >&2; exit 2; }
+	uv run python -m perimeter.diff "$(OLD)" "$(NEW)" $(DIFF_FLAGS)
 
 # The same pipeline over committed fixtures: runs anywhere, output flagged is_fixture.
 site-offline:
