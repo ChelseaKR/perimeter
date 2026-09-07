@@ -25,7 +25,11 @@ dev = [
 ]
 
 [tool.hatch.build.targets.wheel]
+# `py.typed` (PEP 561) rides along with the package directory. Without it a consumer
+# running `mypy --strict` skips this module and carries an override for it, which is what
+# the audit in the consuming project's docs/UPSTREAM.md recorded on 2026-09-05.
 packages = ["src/perimeter"]
+artifacts = ["src/perimeter/py.typed"]
 
 # --- CODE-QUALITY-STANDARD §2 single-source ruff/mypy/pytest config ---
 # Portfolio default: repos change values, not keys. Do not fork this block;

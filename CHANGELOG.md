@@ -65,6 +65,50 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project a
   is the vacuous pass the file exists to prevent. `ci.yml`'s verify job now checks out
   with `fetch-depth: 0`, because `actions/checkout` fetches none at its default depth.
 
+### Added, `perimeter.acquire` is a library a second project can consume
+
+- **A consuming project audited this seam and recorded four gaps.**
+  `wildfire-service-territory-overlap` pins a commit of this package and its
+  `docs/UPSTREAM.md` (2026-09-05, at `dac60195`) lists what it had to compensate for.
+  All four are closed here, so those compensations can be deleted at its next pin.
+- **A caller can say who it is.** `_get`, `layer_record_count`, `fetch_layer` and
+  `acquire` take `user_agent`, defaulting to this project's. The walk used to send
+  `perimeter-coverage` whoever was calling, so CAL FIRE's logs named the library rather
+  than the caller — the one thing a User-Agent exists to do. A blank User-Agent is
+  refused rather than passed through: urllib would substitute `Python-urllib/3.x`, which
+  identifies nobody, and a request that names no caller at all is an absent identity sent
+  as though it were one.
+- **`iter_features` exposes the paged walk**, with `return_geometry` and `out_sr`. The
+  consumer needed geometry, `fetch_layer` discards everything but `attributes`, so it
+  copied the offset loop — including the subtle part, the rule that steps by the page
+  that arrived rather than the page that was asked for. A copy of that rule drifts. A
+  feature is yielded whole rather than merged into its attributes, because a layer is
+  free to publish a field called `geometry` and a merge would silently overwrite it.
+  Requesting nothing new leaves the request byte-for-byte what it has always been, so
+  the raw files pinned in `sources.py` stay reproducible; `outSR` is absent rather than
+  defaulted.
+- **The layer's total is now read twice, before the walk and after it.** One count read
+  before a walk cannot see a layer republished while the walk was running: the walk ends
+  at the total the layer held an hour ago, and a file assembled across two versions lands
+  on disk with a clean hash and a date beside it. Two counts that disagree say exactly
+  that, and both numbers are named in the refusal.
+- **The identifiers are checked too, because a count that matches is not evidence.** The
+  walk asks for `OBJECTID ASC` and steps an offset through the answer. A page handed back
+  twice, or a result reordered under a concurrent edit, leaves the count intact and the
+  contents wrong — some records collected twice, others not at all. `identifier_failure`
+  refuses a repeated identifier, one that goes backwards, and one that is not an integer
+  (`True` included: it is an `int` in Python and would have slipped past the obvious
+  check). Every branch is exercised directly rather than only from a misbehaving service.
+- **`acquisition.json` records which guards the acquisition passed**, not which ones the
+  code contains. A manifest written before the post-walk recount existed and one written
+  after it were otherwise indistinguishable, and a file that passed the recount is a
+  different claim from a file that did not.
+- **`src/perimeter/py.typed`.** A strict consumer had to carry two mypy overrides. The
+  test runs `mypy --strict` over a minimal consumer rather than asserting the marker file
+  exists, because the marker existing and the marker being shipped and honoured are
+  different facts, and only the second one deletes an override. This makes the annotations
+  a published interface: a later signature change is a breaking change for the consumer.
+
 ### Fixed, CITATION.cff published a release date for a release that never happened
 
 - `date-released: "2026-08-07"` sat in `CITATION.cff` against no tag, no signed tag and
