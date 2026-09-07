@@ -40,7 +40,7 @@ refreshed.
 
 **There is nothing to install.** Nothing here has ever been published to a package registry,
 and there is no release workflow to publish it with; the served pages above and the offline
-build from this checkout are the whole of what exists today. Do not `pip install perimeter` —
+build from this checkout are the whole of what exists today. Do not `pip install perimeter`:
 that name on PyPI is [an unrelated Django access-control middleware](https://pypi.org/project/perimeter/)
 by YunoJuno and has nothing to do with wildfire data. If this is ever packaged, the
 distribution name is `perimeter-wildfire`, which is what `pyproject.toml` declares; the
