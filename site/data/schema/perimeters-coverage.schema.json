@@ -1,0 +1,520 @@
+{
+  "$id": "https://chelseakr.github.io/perimeter/data/schema/perimeters-coverage.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Completeness of the FRAP historical fire perimeter record, measured as counts of cells in three named states. Nothing is estimated, nothing is interpolated across a gap, and no share is published over an empty denominator.",
+  "field_state_order": [
+    "present",
+    "explicit_unknown",
+    "not_recorded"
+  ],
+  "properties": {
+    "acre_thresholds": {
+      "additionalProperties": false,
+      "description": "Records per decade counted against the acreages FRAP's published current collection criteria name. Not the criteria of every earlier era, and a record below a threshold is not an error.",
+      "properties": {
+        "by_decade": {
+          "description": "One row per decade, plus the no-year cohort.",
+          "items": {
+            "additionalProperties": false,
+            "description": "One decade of surviving records.",
+            "properties": {
+              "acres_recorded": {
+                "description": "Of those, carrying a recorded acreage. The denominator for the counts below.",
+                "type": "integer"
+              },
+              "below": {
+                "additionalProperties": {
+                  "type": "integer"
+                },
+                "description": "Threshold acreage to the count of records below it. Keys are the thresholds as strings.",
+                "type": "object"
+              },
+              "decade": {
+                "description": "First year of the decade, or null for records carrying no year.",
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "records": {
+                "description": "Records in this decade.",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "acres_recorded",
+              "below",
+              "decade",
+              "records"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "note": {
+          "description": "What these counts are and are not.",
+          "type": "string"
+        },
+        "thresholds": {
+          "description": "The acreages counted against.",
+          "items": {
+            "type": "integer"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "by_decade",
+        "note",
+        "thresholds"
+      ],
+      "type": "object"
+    },
+    "artifact_schema_version": {
+      "const": 1,
+      "description": "The version of this contract. Bumped when a consumer validating against the previous schema would reject the new artifact or would read an existing key as meaning something else.",
+      "type": "integer"
+    },
+    "duplicate_signals": {
+      "description": "Duplicate candidates, keyed several ways.",
+      "items": {
+        "additionalProperties": false,
+        "description": "One duplicate-candidate signal: records sharing an identifier or an identifying combination. Candidates, not findings; this project does not decide that two records are the same fire.",
+        "properties": {
+          "description": {
+            "description": "What was keyed on, in words.",
+            "type": "string"
+          },
+          "distinct_keys": {
+            "description": "Distinct key values among them.",
+            "type": "integer"
+          },
+          "key": {
+            "description": "Identifier for the signal.",
+            "type": "string"
+          },
+          "keyed_records": {
+            "description": "Records carrying a value for that key.",
+            "type": "integer"
+          },
+          "records_sharing_a_key": {
+            "description": "Records carrying a reused key value.",
+            "type": "integer"
+          },
+          "reused_keys": {
+            "description": "Key values carried by more than one record.",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "description",
+          "distinct_keys",
+          "key",
+          "keyed_records",
+          "records_sharing_a_key",
+          "reused_keys"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "earliest_year": {
+      "description": "Earliest fire year carried by any record, or null if none carries one.",
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "fields": {
+      "description": "Every measured field, in registry order.",
+      "items": {
+        "additionalProperties": false,
+        "description": "Completeness of one measured field. The three counts are in the order published as `field_state_order`: present is a recorded value, explicit_unknown is a value the publisher records to mean it could not be determined, and not_recorded is an empty cell. A recorded unknown is neither present nor missing, and folding it into either one is the error this project exists to refuse.",
+        "properties": {
+          "explicit_unknown": {
+            "description": "Cells carrying a published marker meaning the value could not be determined (explicit_unknown).",
+            "type": "integer"
+          },
+          "label": {
+            "description": "Human-readable label from the field registry.",
+            "type": "string"
+          },
+          "marker_basis": {
+            "description": "Whether the recorded-unknown markers for this field are the publisher's own (`published`) or this project's reading of the data (`inferred`). See docs/MARKERS.md.",
+            "type": "string"
+          },
+          "markers": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "description": "Which recorded-unknown marker was found, and how often. Keys are the publisher's spellings, which differ between eras of the same file.",
+            "type": "object"
+          },
+          "name": {
+            "description": "Column name as the publisher spells it.",
+            "type": "string"
+          },
+          "not_recorded": {
+            "description": "Empty cells (not_recorded).",
+            "type": "integer"
+          },
+          "note": {
+            "description": "The field registry's note on this field. Absent where the registry carries none.",
+            "type": "string"
+          },
+          "outside_published_domain": {
+            "description": "Recorded values that are not in the publisher's coded-value domain for this field. Null, never zero, where the layer publishes no domain: nothing was counted against a domain that does not exist, and a zero would say the file and the domain agree.",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "outside_published_domain_distinct": {
+            "description": "How many distinct such values were found. Null with no published domain.",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "outside_published_domain_values": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "description": "Up to `OUTSIDE_DOMAIN_VALUE_CAP` of those values with their counts. Compare `outside_published_domain_values_listed` against `outside_published_domain_distinct` before reading this as the whole set. Null with no published domain.",
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "outside_published_domain_values_listed": {
+            "description": "How many of the distinct values the object above actually names.",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "present": {
+            "description": "Cells carrying a recorded value (present).",
+            "type": "integer"
+          },
+          "present_tenths_pct": {
+            "description": "Share of cells carrying a recorded value, in tenths of a percent, as an integer. Null where the denominator is zero: no share is published over an empty population.",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "recorded_zero_values": {
+            "description": "Cells recording a literal zero, for a field measured as a number. A zero is a judgment call (ADR 0006) and is published separately rather than folded into either presence or absence. Absent for a field that is not numeric.",
+            "type": "integer"
+          },
+          "total": {
+            "description": "The three counts summed. The denominator for this field.",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "explicit_unknown",
+          "label",
+          "marker_basis",
+          "markers",
+          "name",
+          "not_recorded",
+          "outside_published_domain",
+          "outside_published_domain_distinct",
+          "outside_published_domain_values",
+          "outside_published_domain_values_listed",
+          "present",
+          "present_tenths_pct",
+          "total"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "irwin_id_present": {
+      "description": "Records carrying an IRWIN identifier.",
+      "type": "integer"
+    },
+    "irwin_id_present_tenths_pct": {
+      "description": "Share carrying an IRWIN identifier, in tenths of a percent, as an integer. Null where the denominator is zero: no share is published over an empty population.",
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "is_fixture": {
+      "description": "True when this artifact was built from the committed sample fixtures rather than the publisher's file. A fixture build publishes no acquisition facts and its counts describe ten records.",
+      "type": "boolean"
+    },
+    "latest_year": {
+      "description": "Latest fire year carried by any record, or null if none carries one.",
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "marker_counterfactuals": {
+      "description": "The same keying run against a value this project does not treat as a marker, so a reader can see what the marker choice bought.",
+      "items": {
+        "additionalProperties": false,
+        "description": "One duplicate-candidate signal: records sharing an identifier or an identifying combination. Candidates, not findings; this project does not decide that two records are the same fire.",
+        "properties": {
+          "description": {
+            "description": "What was keyed on, in words.",
+            "type": "string"
+          },
+          "distinct_keys": {
+            "description": "Distinct key values among them.",
+            "type": "integer"
+          },
+          "key": {
+            "description": "Identifier for the signal.",
+            "type": "string"
+          },
+          "keyed_records": {
+            "description": "Records carrying a value for that key.",
+            "type": "integer"
+          },
+          "records_sharing_a_key": {
+            "description": "Records carrying a reused key value.",
+            "type": "integer"
+          },
+          "reused_keys": {
+            "description": "Key values carried by more than one record.",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "description",
+          "distinct_keys",
+          "key",
+          "keyed_records",
+          "records_sharing_a_key",
+          "reused_keys"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "measurement": {
+      "description": "What this artifact measures, in one sentence.",
+      "type": "string"
+    },
+    "records": {
+      "description": "Records measured.",
+      "type": "integer"
+    },
+    "records_without_year": {
+      "description": "Records carrying no fire year at all.",
+      "type": "integer"
+    },
+    "source": {
+      "additionalProperties": false,
+      "description": "Provenance for the file this artifact measures, from the reviewed record in `perimeter.sources`. In a fixture build every acquisition fact is null.",
+      "properties": {
+        "acquired_bytes": {
+          "description": "Size of the downloaded file, or null in a fixture build.",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "acquired_record_count": {
+          "description": "Rows in the downloaded file, or null in a fixture build.",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "acquired_sha256": {
+          "description": "SHA-256 of the downloaded file, or null in a fixture build.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "caveats": {
+          "description": "The publisher's own statements about where the data is incomplete, quoted, each with the measurement built from it.",
+          "items": {
+            "additionalProperties": false,
+            "description": "One published limitation and the measurement that answers it.",
+            "properties": {
+              "measured_as": {
+                "description": "What this project counts in response.",
+                "type": "string"
+              },
+              "quote": {
+                "description": "The publisher's words, verbatim.",
+                "type": "string"
+              },
+              "topic": {
+                "description": "Short topic label.",
+                "type": "string"
+              }
+            },
+            "required": [
+              "measured_as",
+              "quote",
+              "topic"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "data_card": {
+          "description": "Path to the data card for this source in the repository.",
+          "type": "string"
+        },
+        "data_tier": {
+          "description": "This project's governance tier for the source.",
+          "type": "string"
+        },
+        "endpoint": {
+          "description": "The service endpoint the rows were queried from.",
+          "type": "string"
+        },
+        "key": {
+          "description": "Stable identifier for the source.",
+          "type": "string"
+        },
+        "landing_page": {
+          "description": "The dataset's landing page.",
+          "type": "string"
+        },
+        "layer": {
+          "description": "The layer within that service.",
+          "type": "string"
+        },
+        "licence": {
+          "description": "The licence the publisher states.",
+          "type": "string"
+        },
+        "licence_url": {
+          "description": "URL for that licence.",
+          "type": "string"
+        },
+        "publisher": {
+          "description": "The agency that publishes it.",
+          "type": "string"
+        },
+        "refresh_cadence": {
+          "description": "When this project re-pulls the source, in words.",
+          "type": "string"
+        },
+        "retrieved": {
+          "description": "ISO date the file was downloaded, or null in a fixture build.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "staleness_sla_days": {
+          "description": "How long a retrieval is taken to describe the published file. This project's declaration, not a commitment by the publisher. Nothing here computes staleness: the artifacts carry no clock, so a consumer subtracts `retrieved` from its own.",
+          "type": "integer"
+        },
+        "title": {
+          "description": "The publisher's title for the dataset.",
+          "type": "string"
+        },
+        "version": {
+          "description": "The publisher's version string, or null in a fixture build.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "acquired_bytes",
+        "acquired_record_count",
+        "acquired_sha256",
+        "caveats",
+        "data_card",
+        "data_tier",
+        "endpoint",
+        "key",
+        "landing_page",
+        "layer",
+        "licence",
+        "licence_url",
+        "publisher",
+        "refresh_cadence",
+        "retrieved",
+        "staleness_sla_days",
+        "title",
+        "version"
+      ],
+      "type": "object"
+    },
+    "years": {
+      "description": "One row per fire year, plus one row for the records carrying no year. Years are not interpolated and no year is invented for a record that carries none.",
+      "items": {
+        "additionalProperties": false,
+        "description": "One fire year, or the cohort of records carrying no year.",
+        "properties": {
+          "irwin_explicit_unknown": {
+            "description": "Carrying a recorded-unknown marker in that field.",
+            "type": "integer"
+          },
+          "irwin_not_recorded": {
+            "description": "With that cell empty.",
+            "type": "integer"
+          },
+          "irwin_present": {
+            "description": "Of those, carrying an IRWIN identifier.",
+            "type": "integer"
+          },
+          "irwin_present_tenths_pct": {
+            "description": "Share of this cohort carrying an IRWIN identifier, in tenths of a percent, as an integer. Null where the denominator is zero: no share is published over an empty population.",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "records": {
+            "description": "Records in this cohort.",
+            "type": "integer"
+          },
+          "year": {
+            "description": "The fire year, or null for the no-year cohort.",
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "irwin_explicit_unknown",
+          "irwin_not_recorded",
+          "irwin_present",
+          "irwin_present_tenths_pct",
+          "records",
+          "year"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "acre_thresholds",
+    "artifact_schema_version",
+    "duplicate_signals",
+    "earliest_year",
+    "fields",
+    "irwin_id_present",
+    "irwin_id_present_tenths_pct",
+    "is_fixture",
+    "latest_year",
+    "marker_counterfactuals",
+    "measurement",
+    "records",
+    "records_without_year",
+    "source",
+    "years"
+  ],
+  "title": "Perimeter: FRAP fire perimeter completeness",
+  "type": "object"
+}

@@ -6,6 +6,60 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project a
 
 ## [Unreleased]
 
+### Added, the artifacts are the product and now carry a contract a consumer can hold them to
+
+- **`site/data/schema/perimeters-coverage.schema.json` and
+  `dins-coverage.schema.json`** publish the shape of both artifacts as JSON Schema
+  (draft 2020-12), written by the same build that writes the artifacts. Until now the
+  only contract for `site/data/*.json` was this repository's source, and the three-state
+  model — the whole point of the measurement — was invisible in the JSON: `[222, 0, 0]`
+  means nothing without `FIELD_STATE_ORDER`, and nothing in the artifact said so. The
+  schemas name every key, say which of the three counts is a recorded value, which is a
+  published marker meaning the value could not be determined and which is an empty cell,
+  and say why a share is null rather than zero over an empty denominator.
+
+- **`site/data/datapackage.json`** is a Frictionless Data Package naming both resources
+  with the licence, the endpoint, the layer, the retrieval date, the byte count, the
+  record count and the SHA-256 of the file each was measured from. Those facts come from
+  `perimeter.sources`, the single reviewed provenance record, so a descriptor cannot
+  state a hash the artifacts do not; `tests/test_artifact_schemas.py` holds it there the
+  same way `tests/test_provenance.py` holds `PROVENANCE.md`. A fixture build writes a
+  fixture descriptor: `isFixture: true` and every acquisition fact `null`, because a
+  fixture was never downloaded from anywhere and a descriptor is the most quotable place
+  a fixture could pass itself off as a measurement of CAL FIRE's files.
+
+- **`artifact_schema_version`** is published in both artifacts. Bump it when a consumer
+  validating against the previous schema would reject the new artifact, or would read an
+  existing key as meaning something else: a key removed, a key renamed, a type widened or
+  narrowed, or the meaning of a value changed. Adding an *optional* key does not require
+  a bump; adding a required one does, because `additionalProperties` is `false` in the
+  previous schema and rejects it either way. The rule is stated here and beside the
+  constant in `artifacts.py`, and a test holds the two together so neither can be edited
+  alone.
+
+- **The footer of all three pages links the descriptor and both schemas.** The pages are
+  one rendering of the artifacts; a reader who wants the artifacts should not have to
+  read `render.py` to find out what is in them.
+
+  Every existing number is unchanged. The rebuild from the acquired files moved exactly
+  one leaf in each artifact — `artifact_schema_version` — which `make diff` reports as
+  the only addition.
+
+  The schemas are declared in `schema_export.py` rather than generated from the
+  dataclasses, because the payloads are not dataclasses: `perimeters_payload` and
+  `dins_payload` assemble dictionaries by hand, adding derived keys, renaming others and
+  dropping some conditionally, so a generator over `FieldCoverage` would describe the
+  dataclass and not the artifact. What holds them to the writer instead is validation in
+  both directions against a real build: every object closes with
+  `additionalProperties: false` and requires every key it declares, so a key the writer
+  starts emitting fails as an unexpected property and a key the schema starts demanding
+  fails as a missing one. The single case that leaves uncovered — a key marked optional
+  that nothing emits — is pinned by name to the two keys `_field_json` writes
+  conditionally, each shown present for some field of the published artifact and absent
+  for another. Per ADR 0004 the gate was run against eight mutations it must refuse,
+  including the one issue #63 names: a fixture artifact with `field_state_order` removed
+  fails, and the error names the path.
+
 ### Fixed, the ruleset profile's supporting evidence had gone stale and one reading of it was backwards
 
 - **`.github/rulesets/README.md` counted a repository that no longer exists.** It argued

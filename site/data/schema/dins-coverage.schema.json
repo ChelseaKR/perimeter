@@ -1,0 +1,534 @@
+{
+  "$id": "https://chelseakr.github.io/perimeter/data/schema/dins-coverage.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Coverage of the CAL FIRE DINS damage inspection record, measured as counts of cells in three named states, for the whole file, per access population, and per incident.",
+  "field_state_order": [
+    "present",
+    "explicit_unknown",
+    "not_recorded"
+  ],
+  "properties": {
+    "access": {
+      "additionalProperties": false,
+      "description": "The assessed / inaccessible split, and the population in neither (ADR 0007).",
+      "properties": {
+        "assessed": {
+          "description": "Records the damage field places in the assessed population.",
+          "type": "integer"
+        },
+        "damage_explicit_unknown": {
+          "description": "Records whose damage cell carries a recorded-unknown marker.",
+          "type": "integer"
+        },
+        "damage_not_recorded": {
+          "description": "Records with an empty damage cell.",
+          "type": "integer"
+        },
+        "inaccessible": {
+          "description": "Records the damage field records as inaccessible.",
+          "type": "integer"
+        },
+        "total": {
+          "description": "All records in this population.",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "assessed",
+        "damage_explicit_unknown",
+        "damage_not_recorded",
+        "inaccessible",
+        "total"
+      ],
+      "type": "object"
+    },
+    "artifact_schema_version": {
+      "const": 1,
+      "description": "The version of this contract. Bumped when a consumer validating against the previous schema would reject the new artifact or would read an existing key as meaning something else.",
+      "type": "integer"
+    },
+    "completeness_by_access": {
+      "description": "Each field's completeness split by access population, each column over its own denominator. The third population is published rather than left out (ADR 0007).",
+      "items": {
+        "additionalProperties": false,
+        "description": "One field, split three ways by access.",
+        "properties": {
+          "assessed_present": {
+            "description": "Recorded, among assessed records.",
+            "type": "integer"
+          },
+          "assessed_tenths_pct": {
+            "description": "Share recorded among assessed, in tenths of a percent, as an integer. Null where the denominator is zero: no share is published over an empty population.",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "assessed_total": {
+            "description": "Assessed records. Its own denominator.",
+            "type": "integer"
+          },
+          "inaccessible_present": {
+            "description": "Recorded, among records the publisher marks inaccessible.",
+            "type": "integer"
+          },
+          "inaccessible_tenths_pct": {
+            "description": "Share recorded among inaccessible, in tenths of a percent, as an integer. Null where the denominator is zero: no share is published over an empty population.",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "inaccessible_total": {
+            "description": "Inaccessible records.",
+            "type": "integer"
+          },
+          "label": {
+            "description": "Human-readable label.",
+            "type": "string"
+          },
+          "name": {
+            "description": "Column name as the publisher spells it.",
+            "type": "string"
+          },
+          "undetermined_present": {
+            "description": "Recorded, among the records neither population holds.",
+            "type": "integer"
+          },
+          "undetermined_tenths_pct": {
+            "description": "Share recorded among the records in neither population, in tenths of a percent, as an integer. Null where the denominator is zero: no share is published over an empty population.",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "undetermined_total": {
+            "description": "Records in neither population.",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "assessed_present",
+          "assessed_tenths_pct",
+          "assessed_total",
+          "inaccessible_present",
+          "inaccessible_tenths_pct",
+          "inaccessible_total",
+          "label",
+          "name",
+          "undetermined_present",
+          "undetermined_tenths_pct",
+          "undetermined_total"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "damage_values": {
+      "additionalProperties": {
+        "type": "integer"
+      },
+      "description": "The damage field's recorded values and their counts, as the publisher spells them.",
+      "type": "object"
+    },
+    "damage_values_tenths_pct": {
+      "additionalProperties": {
+        "type": [
+          "integer",
+          "null"
+        ]
+      },
+      "description": "The same values as a share of all records, in tenths of a percent. Null where the denominator is zero.",
+      "type": "object"
+    },
+    "field_state_order": {
+      "description": "What the three counts in every compact triple mean, in order. The three counts are in the order published as `field_state_order`: present is a recorded value, explicit_unknown is a value the publisher records to mean it could not be determined, and not_recorded is an empty cell. A recorded unknown is neither present nor missing, and folding it into either one is the error this project exists to refuse.",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "fields": {
+      "description": "Every measured field, in registry order.",
+      "items": {
+        "additionalProperties": false,
+        "description": "Completeness of one measured field. The three counts are in the order published as `field_state_order`: present is a recorded value, explicit_unknown is a value the publisher records to mean it could not be determined, and not_recorded is an empty cell. A recorded unknown is neither present nor missing, and folding it into either one is the error this project exists to refuse.",
+        "properties": {
+          "explicit_unknown": {
+            "description": "Cells carrying a published marker meaning the value could not be determined (explicit_unknown).",
+            "type": "integer"
+          },
+          "label": {
+            "description": "Human-readable label from the field registry.",
+            "type": "string"
+          },
+          "marker_basis": {
+            "description": "Whether the recorded-unknown markers for this field are the publisher's own (`published`) or this project's reading of the data (`inferred`). See docs/MARKERS.md.",
+            "type": "string"
+          },
+          "markers": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "description": "Which recorded-unknown marker was found, and how often. Keys are the publisher's spellings, which differ between eras of the same file.",
+            "type": "object"
+          },
+          "name": {
+            "description": "Column name as the publisher spells it.",
+            "type": "string"
+          },
+          "not_recorded": {
+            "description": "Empty cells (not_recorded).",
+            "type": "integer"
+          },
+          "note": {
+            "description": "The field registry's note on this field. Absent where the registry carries none.",
+            "type": "string"
+          },
+          "outside_published_domain": {
+            "description": "Recorded values that are not in the publisher's coded-value domain for this field. Null, never zero, where the layer publishes no domain: nothing was counted against a domain that does not exist, and a zero would say the file and the domain agree.",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "outside_published_domain_distinct": {
+            "description": "How many distinct such values were found. Null with no published domain.",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "outside_published_domain_values": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "description": "Up to `OUTSIDE_DOMAIN_VALUE_CAP` of those values with their counts. Compare `outside_published_domain_values_listed` against `outside_published_domain_distinct` before reading this as the whole set. Null with no published domain.",
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "outside_published_domain_values_listed": {
+            "description": "How many of the distinct values the object above actually names.",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "present": {
+            "description": "Cells carrying a recorded value (present).",
+            "type": "integer"
+          },
+          "present_tenths_pct": {
+            "description": "Share of cells carrying a recorded value, in tenths of a percent, as an integer. Null where the denominator is zero: no share is published over an empty population.",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "recorded_zero_values": {
+            "description": "Cells recording a literal zero, for a field measured as a number. A zero is a judgment call (ADR 0006) and is published separately rather than folded into either presence or absence. Absent for a field that is not numeric.",
+            "type": "integer"
+          },
+          "total": {
+            "description": "The three counts summed. The denominator for this field.",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "explicit_unknown",
+          "label",
+          "marker_basis",
+          "markers",
+          "name",
+          "not_recorded",
+          "outside_published_domain",
+          "outside_published_domain_distinct",
+          "outside_published_domain_values",
+          "outside_published_domain_values_listed",
+          "present",
+          "present_tenths_pct",
+          "total"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "incidents": {
+      "description": "Distinct incidents the records group into.",
+      "type": "integer"
+    },
+    "incidents_detail": {
+      "description": "One row per incident. Any part of an incident key may be absent, and absence is part of the key: records naming the same fire but differing in whether a number was recorded stay apart, because merging them would assume they are the same incident.",
+      "items": {
+        "additionalProperties": false,
+        "description": "One incident's records and per-field completeness.",
+        "properties": {
+          "access": {
+            "additionalProperties": false,
+            "description": "The assessed / inaccessible split, and the population in neither (ADR 0007).",
+            "properties": {
+              "assessed": {
+                "description": "Records the damage field places in the assessed population.",
+                "type": "integer"
+              },
+              "damage_explicit_unknown": {
+                "description": "Records whose damage cell carries a recorded-unknown marker.",
+                "type": "integer"
+              },
+              "damage_not_recorded": {
+                "description": "Records with an empty damage cell.",
+                "type": "integer"
+              },
+              "inaccessible": {
+                "description": "Records the damage field records as inaccessible.",
+                "type": "integer"
+              },
+              "total": {
+                "description": "All records in this population.",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "assessed",
+              "damage_explicit_unknown",
+              "damage_not_recorded",
+              "inaccessible",
+              "total"
+            ],
+            "type": "object"
+          },
+          "damage_values": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "description": "The damage field's recorded values within this incident.",
+            "type": "object"
+          },
+          "fields": {
+            "additionalProperties": {
+              "items": {
+                "type": "integer"
+              },
+              "maxItems": 3,
+              "minItems": 3,
+              "type": "array"
+            },
+            "description": "Field name to a three-element array of counts within this incident, in `field_state_order`. The three counts are in the order published as `field_state_order`: present is a recorded value, explicit_unknown is a value the publisher records to mean it could not be determined, and not_recorded is an empty cell. A recorded unknown is neither present nor missing, and folding it into either one is the error this project exists to refuse.",
+            "type": "object"
+          },
+          "incident_name": {
+            "description": "Incident name, or null where none was recorded.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "incident_number": {
+            "description": "Incident number, or null where none was recorded.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "records": {
+            "description": "Records in this incident.",
+            "type": "integer"
+          },
+          "start_year": {
+            "description": "Incident start year, or null where none was recorded.",
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "access",
+          "damage_values",
+          "fields",
+          "incident_name",
+          "incident_number",
+          "records",
+          "start_year"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "is_fixture": {
+      "description": "True when this artifact was built from the committed sample fixtures rather than the publisher's file. A fixture build publishes no acquisition facts and its counts describe ten records.",
+      "type": "boolean"
+    },
+    "measurement": {
+      "description": "What this artifact measures, in one sentence.",
+      "type": "string"
+    },
+    "records": {
+      "description": "Records measured.",
+      "type": "integer"
+    },
+    "records_not_attributable_to_an_incident": {
+      "description": "Records carrying no part of an incident key, so nothing places them in an incident. Published rather than dropped.",
+      "type": "integer"
+    },
+    "source": {
+      "additionalProperties": false,
+      "description": "Provenance for the file this artifact measures, from the reviewed record in `perimeter.sources`. In a fixture build every acquisition fact is null.",
+      "properties": {
+        "acquired_bytes": {
+          "description": "Size of the downloaded file, or null in a fixture build.",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "acquired_record_count": {
+          "description": "Rows in the downloaded file, or null in a fixture build.",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "acquired_sha256": {
+          "description": "SHA-256 of the downloaded file, or null in a fixture build.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "caveats": {
+          "description": "The publisher's own statements about where the data is incomplete, quoted, each with the measurement built from it.",
+          "items": {
+            "additionalProperties": false,
+            "description": "One published limitation and the measurement that answers it.",
+            "properties": {
+              "measured_as": {
+                "description": "What this project counts in response.",
+                "type": "string"
+              },
+              "quote": {
+                "description": "The publisher's words, verbatim.",
+                "type": "string"
+              },
+              "topic": {
+                "description": "Short topic label.",
+                "type": "string"
+              }
+            },
+            "required": [
+              "measured_as",
+              "quote",
+              "topic"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "data_card": {
+          "description": "Path to the data card for this source in the repository.",
+          "type": "string"
+        },
+        "data_tier": {
+          "description": "This project's governance tier for the source.",
+          "type": "string"
+        },
+        "endpoint": {
+          "description": "The service endpoint the rows were queried from.",
+          "type": "string"
+        },
+        "key": {
+          "description": "Stable identifier for the source.",
+          "type": "string"
+        },
+        "landing_page": {
+          "description": "The dataset's landing page.",
+          "type": "string"
+        },
+        "layer": {
+          "description": "The layer within that service.",
+          "type": "string"
+        },
+        "licence": {
+          "description": "The licence the publisher states.",
+          "type": "string"
+        },
+        "licence_url": {
+          "description": "URL for that licence.",
+          "type": "string"
+        },
+        "publisher": {
+          "description": "The agency that publishes it.",
+          "type": "string"
+        },
+        "refresh_cadence": {
+          "description": "When this project re-pulls the source, in words.",
+          "type": "string"
+        },
+        "retrieved": {
+          "description": "ISO date the file was downloaded, or null in a fixture build.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "staleness_sla_days": {
+          "description": "How long a retrieval is taken to describe the published file. This project's declaration, not a commitment by the publisher. Nothing here computes staleness: the artifacts carry no clock, so a consumer subtracts `retrieved` from its own.",
+          "type": "integer"
+        },
+        "title": {
+          "description": "The publisher's title for the dataset.",
+          "type": "string"
+        },
+        "version": {
+          "description": "The publisher's version string, or null in a fixture build.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "acquired_bytes",
+        "acquired_record_count",
+        "acquired_sha256",
+        "caveats",
+        "data_card",
+        "data_tier",
+        "endpoint",
+        "key",
+        "landing_page",
+        "layer",
+        "licence",
+        "licence_url",
+        "publisher",
+        "refresh_cadence",
+        "retrieved",
+        "staleness_sla_days",
+        "title",
+        "version"
+      ],
+      "type": "object"
+    }
+  },
+  "required": [
+    "access",
+    "artifact_schema_version",
+    "completeness_by_access",
+    "damage_values",
+    "damage_values_tenths_pct",
+    "field_state_order",
+    "fields",
+    "incidents",
+    "incidents_detail",
+    "is_fixture",
+    "measurement",
+    "records",
+    "records_not_attributable_to_an_incident",
+    "source"
+  ],
+  "title": "Perimeter: CAL FIRE DINS damage inspection coverage",
+  "type": "object"
+}

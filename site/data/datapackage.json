@@ -1,0 +1,94 @@
+{
+  "artifactSchemaVersion": 1,
+  "description": "Counts of cells in three named states across CAL FIRE's historical fire perimeter record and its damage inspection record. Unofficial. Both publishers state in their own words that these files are incomplete; this measures how, in counts, with no estimation and no share over an empty denominator.",
+  "fieldStateMeaning": "The three counts are in the order published as `field_state_order`: present is a recorded value, explicit_unknown is a value the publisher records to mean it could not be determined, and not_recorded is an empty cell. A recorded unknown is neither present nor missing, and folding it into either one is the error this project exists to refuse.",
+  "fieldStateOrder": [
+    "present",
+    "explicit_unknown",
+    "not_recorded"
+  ],
+  "homepage": "https://chelseakr.github.io/perimeter/",
+  "isFixture": false,
+  "licenses": [
+    {
+      "name": "CC-BY-4.0",
+      "path": "http://www.opendefinition.org/licenses/cc-by",
+      "title": "Creative Commons Attribution"
+    }
+  ],
+  "name": "perimeter-coverage",
+  "profile": "data-package",
+  "resources": [
+    {
+      "description": "Per-field, per-year and per-decade counts over the FRAP historical fire perimeter record.",
+      "format": "json",
+      "jsonSchema": "schema/perimeters-coverage.schema.json",
+      "licenses": [
+        {
+          "name": "CC-BY-4.0",
+          "path": "http://www.opendefinition.org/licenses/cc-by",
+          "title": "Creative Commons Attribution"
+        }
+      ],
+      "mediatype": "application/json",
+      "name": "frap_perimeters",
+      "path": "perimeters-coverage.json",
+      "profile": "data-resource",
+      "sources": [
+        {
+          "bytes": 7964688,
+          "dataTier": "L1",
+          "endpoint": "https://services1.arcgis.com/jUJYIo9tSA7EHvfZ/arcgis/rest/services/California_Historic_Fire_Perimeters/FeatureServer/0/query",
+          "hash": "sha256:9be7bcb9c08f6813ba13263eabebc96256f0ea8fb0e809ad8a4171046466a16a",
+          "layer": "California Fire Perimeters (all)",
+          "path": "https://data.cnra.ca.gov/dataset/california-historical-fire-perimeters",
+          "publisher": "California Department of Forestry and Fire Protection, Fire and Resource Assessment Program",
+          "recordCount": 23334,
+          "refreshCadence": "On each published FRAP version. The layer is released as a versioned annual product and the acquired file is firep25_1.",
+          "retrieved": "2026-08-07",
+          "stalenessSlaDays": 400,
+          "title": "California Historical Fire Perimeters",
+          "version": "firep25_1"
+        }
+      ],
+      "title": "FRAP fire perimeter completeness",
+      "type": "table"
+    },
+    {
+      "description": "Per-field, per-access-population and per-incident counts over the CAL FIRE damage inspection record.",
+      "format": "json",
+      "jsonSchema": "schema/dins-coverage.schema.json",
+      "licenses": [
+        {
+          "name": "CC-BY-4.0",
+          "path": "http://www.opendefinition.org/licenses/cc-by",
+          "title": "Creative Commons Attribution"
+        }
+      ],
+      "mediatype": "application/json",
+      "name": "dins_postfire",
+      "path": "dins-coverage.json",
+      "profile": "data-resource",
+      "sources": [
+        {
+          "bytes": 163728068,
+          "dataTier": "L1",
+          "endpoint": "https://services1.arcgis.com/jUJYIo9tSA7EHvfZ/arcgis/rest/services/POSTFIRE_MASTER_DATA_SHARE/FeatureServer/0/query",
+          "hash": "sha256:7683850bec00c201ad05ae55ab3c70baf53acd298a1da2fe8fd3c5432a624761",
+          "layer": "POSTFIRE",
+          "path": "https://data.ca.gov/dataset/cal-fire-damage-inspection-dins-data",
+          "publisher": "California Department of Forestry and Fire Protection",
+          "recordCount": 132522,
+          "refreshCadence": "After each fire season. The layer carries no version string and is appended to as inspections complete, so there is no release to wait for.",
+          "retrieved": "2026-08-07",
+          "stalenessSlaDays": 180,
+          "title": "CAL FIRE Damage Inspection (DINS) Data",
+          "version": "POSTFIRE_MASTER_DATA_SHARE"
+        }
+      ],
+      "title": "CAL FIRE DINS damage inspection coverage",
+      "type": "table"
+    }
+  ],
+  "title": "Perimeter: coverage of two California wildfire datasets"
+}

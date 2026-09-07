@@ -35,6 +35,24 @@ from perimeter.sources import DINS, FRAP, Source
 FIELD_STATE_ORDER = ("present", "explicit_unknown", "not_recorded")
 """The order of the three counts in every compact per-incident field triple."""
 
+ARTIFACT_SCHEMA_VERSION = 1
+"""The version of the published artifact contract, carried in every artifact.
+
+Bump it when a consumer validating against the previous schema in ``site/data/schema/``
+would reject the new artifact, or would read an existing key as meaning something else:
+a key removed, a key renamed, a type widened or narrowed, or the meaning of a value
+changed. Adding an *optional* key does not require a bump; adding a required one does,
+because ``additionalProperties: false`` in the previous schema rejects it either way.
+
+``CHANGELOG.md`` states the same rule for a reader, and
+``test_the_changelog_states_the_rule_for_bumping_the_schema_version`` holds the two
+together so the rule cannot be edited in one place only.
+
+It lives here rather than in :mod:`perimeter.schema_export` because the writer is what
+declares the contract's version; the schema module reads it. Putting it there instead
+would make :mod:`perimeter.artifacts` import the module that describes it.
+"""
+
 
 def _source_json(source: Source, *, is_fixture: bool) -> dict[str, Any]:
     """Provenance for one source. A fixture build publishes no acquisition facts.
@@ -128,6 +146,7 @@ def _access_json(access: AccessSplit) -> dict[str, Any]:
 def perimeters_payload(report: PerimeterReport, *, is_fixture: bool) -> dict[str, Any]:
     return {
         "is_fixture": is_fixture,
+        "artifact_schema_version": ARTIFACT_SCHEMA_VERSION,
         "measurement": "Completeness of the FRAP historical fire perimeter record",
         "source": _source_json(FRAP, is_fixture=is_fixture),
         "records": report.records,
@@ -179,6 +198,7 @@ def perimeters_payload(report: PerimeterReport, *, is_fixture: bool) -> dict[str
 def dins_payload(report: DinsReport, *, is_fixture: bool) -> dict[str, Any]:
     return {
         "is_fixture": is_fixture,
+        "artifact_schema_version": ARTIFACT_SCHEMA_VERSION,
         "measurement": "Coverage of the CAL FIRE DINS damage inspection record",
         "source": _source_json(DINS, is_fixture=is_fixture),
         "records": report.records,
