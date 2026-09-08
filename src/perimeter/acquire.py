@@ -145,8 +145,26 @@ def write_rows(path: Path, rows: list[dict[str, Any]]) -> Acquired:
     )
 
 
-def _get(url: str, *, user_agent: str = USER_AGENT) -> dict[str, Any]:
-    """One request. ``user_agent`` is what CAL FIRE's logs will see.
+def fetch_document(url: str, *, user_agent: str = USER_AGENT) -> dict[str, Any]:
+    """One request, with every refusal this module makes about somebody else's server.
+
+    Public, and named rather than underscored, because the refusals below are the whole
+    of what this module promises: HTTPS only, an honest User-Agent, a hard stop on 401,
+    403 and 429, a non-JSON answer read as a challenge page rather than parsed, and an
+    error payload refused rather than treated as data. A consumer that needs to read one
+    JSON document from a publisher this project already talks to should get all five,
+    and while this was private the only way to have them was to write them again.
+
+    That is not hypothetical. ``wildfire-service-territory-overlap`` carried a second
+    copy of exactly these five for months, and its ``docs/UPSTREAM.md`` named the reason:
+    "because ``fetch_feature_pages`` needs a fetch and ``_get`` is private". The walk it
+    needed is now shared; this is the other half.
+
+    It is a single request and nothing more. It does no paging, so a caller reading a
+    layer wants :func:`iter_features`, whose offset rule is the thing that must not be
+    copied.
+
+    ``user_agent`` is what CAL FIRE's logs will see.
 
     A consuming project that vendored this walk sent *this* project's name, so an
     operator reading their own logs could not tell who was calling. The parameter exists
@@ -208,7 +226,7 @@ def layer_record_count(endpoint: str, *, user_agent: str = USER_AGENT) -> int:
     query = urllib.parse.urlencode(
         {"where": WHERE, "returnCountOnly": "true", "f": "json"}
     )
-    payload = _get(f"{endpoint}?{query}", user_agent=user_agent)
+    payload = fetch_document(f"{endpoint}?{query}", user_agent=user_agent)
     count = payload.get("count")
     if not isinstance(count, int) or isinstance(count, bool):
         raise AcquisitionFailed(
@@ -276,7 +294,7 @@ def iter_features(
         }
         if out_sr is not None:
             query["outSR"] = out_sr
-        payload = _get(
+        payload = fetch_document(
             f"{endpoint}?{urllib.parse.urlencode(query)}", user_agent=user_agent
         )
         if "features" not in payload:

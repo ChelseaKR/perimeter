@@ -50,7 +50,7 @@ from perimeter.sources import DINS, FRAP
 def no_socket_reaches_cal_fire(monkeypatch: pytest.MonkeyPatch) -> None:
     """The docstring above says the real endpoints are never contacted. Enforce it.
 
-    Every test here substitutes either `_get` or `urlopen`, and until this fixture
+    Every test here substitutes either `fetch_document` or `urlopen`, and until this fixture
     existed that was a convention rather than a rule: a test that forgot, or a code path
     that grew a second request, would quietly fetch from CAL FIRE's servers instead of
     failing. A test that reaches this now fails with a message saying what to substitute.
@@ -59,14 +59,14 @@ def no_socket_reaches_cal_fire(monkeypatch: pytest.MonkeyPatch) -> None:
     def refuse(*args: object, **kwargs: object) -> None:
         raise AssertionError(
             "a test tried to open a socket to a real endpoint; substitute "
-            "acquire._get or urllib.request.urlopen in the test"
+            "acquire.fetch_document or urllib.request.urlopen in the test"
         )
 
     monkeypatch.setattr(acquire_mod.urllib.request, "urlopen", refuse)
 
 
 class FakeResponse(io.BytesIO):
-    """The two attributes `_get` reads off a urlopen result, and nothing else."""
+    """The two attributes `fetch_document` reads off a urlopen result, and nothing else."""
 
     def __init__(self, body: bytes, content_type: str = "application/json") -> None:
         super().__init__(body)
@@ -117,7 +117,7 @@ def test_write_rows_reports_what_it_wrote(tmp_path: Path) -> None:
     assert len(result.sha256) == 64
 
 
-# --- _get: the refusals -------------------------------------------------------------
+# --- fetch_document: the refusals -------------------------------------------------------------
 
 
 def test_a_non_https_endpoint_is_refused_before_any_socket_opens(
@@ -128,9 +128,9 @@ def test_a_non_https_endpoint_is_refused_before_any_socket_opens(
 
     monkeypatch.setattr(acquire_mod.urllib.request, "urlopen", explode)
     with pytest.raises(AcquisitionFailed, match="non-HTTPS"):
-        acquire_mod._get("http://example.invalid/query")
+        acquire_mod.fetch_document("http://example.invalid/query")
     with pytest.raises(AcquisitionFailed, match="non-HTTPS"):
-        acquire_mod._get("file:///etc/passwd")
+        acquire_mod.fetch_document("file:///etc/passwd")
 
 
 def test_the_request_names_the_project_rather_than_imitating_a_browser(
@@ -143,7 +143,7 @@ def test_the_request_names_the_project_rather_than_imitating_a_browser(
         return json_response({"features": []})
 
     monkeypatch.setattr(acquire_mod.urllib.request, "urlopen", fake_urlopen)
-    acquire_mod._get("https://example.invalid/query")
+    acquire_mod.fetch_document("https://example.invalid/query")
     assert seen["User-agent"] == USER_AGENT
     assert "perimeter" in USER_AGENT
     assert "github.com/ChelseaKR/perimeter" in USER_AGENT
@@ -160,7 +160,7 @@ def test_a_declined_request_stops_instead_of_working_around_it(
 
     monkeypatch.setattr(acquire_mod.urllib.request, "urlopen", fake_urlopen)
     with pytest.raises(AcquisitionBlocked) as caught:
-        acquire_mod._get("https://example.invalid/query")
+        acquire_mod.fetch_document("https://example.invalid/query")
     assert "by hand" in str(caught.value)
     assert "PROVENANCE.md" in str(caught.value)
 
@@ -174,7 +174,7 @@ def test_an_endpoint_that_is_broken_rather_than_closed_fails_loudly(
 
     monkeypatch.setattr(acquire_mod.urllib.request, "urlopen", fake_urlopen)
     with pytest.raises(AcquisitionFailed, match=str(code)):
-        acquire_mod._get("https://example.invalid/query")
+        acquire_mod.fetch_document("https://example.invalid/query")
 
 
 def test_an_html_answer_is_read_as_a_challenge_page_and_not_parsed(
@@ -185,7 +185,7 @@ def test_an_html_answer_is_read_as_a_challenge_page_and_not_parsed(
 
     monkeypatch.setattr(acquire_mod.urllib.request, "urlopen", fake_urlopen)
     with pytest.raises(AcquisitionBlocked, match="rather than JSON"):
-        acquire_mod._get("https://example.invalid/query")
+        acquire_mod.fetch_document("https://example.invalid/query")
 
 
 def test_an_arcgis_error_payload_is_not_mistaken_for_data(
@@ -198,7 +198,7 @@ def test_an_arcgis_error_payload_is_not_mistaken_for_data(
 
     monkeypatch.setattr(acquire_mod.urllib.request, "urlopen", fake_urlopen)
     with pytest.raises(AcquisitionFailed, match="error payload"):
-        acquire_mod._get("https://example.invalid/query")
+        acquire_mod.fetch_document("https://example.invalid/query")
 
 
 def test_a_json_content_type_with_a_charset_is_still_json(
@@ -208,7 +208,9 @@ def test_a_json_content_type_with_a_charset_is_still_json(
         return json_response({"features": []}, "Application/JSON;charset=UTF-8")
 
     monkeypatch.setattr(acquire_mod.urllib.request, "urlopen", fake_urlopen)
-    assert acquire_mod._get("https://example.invalid/query") == {"features": []}
+    assert acquire_mod.fetch_document("https://example.invalid/query") == {
+        "features": []
+    }
 
 
 # --- fetch_layer: paging, and what it asks the server for ---------------------------
@@ -232,7 +234,7 @@ def test_the_query_leaves_geometry_behind_and_orders_the_pages(
         urls.append(url)
         return page(1, exceeded=False)
 
-    monkeypatch.setattr(acquire_mod, "_get", fake_get)
+    monkeypatch.setattr(acquire_mod, "fetch_document", fake_get)
     fetch_layer("https://example.invalid/query", ("YEAR_", "GIS_ACRES"))
     assert "returnGeometry=false" in urls[0]
     assert "orderByFields=OBJECTID+ASC" in urls[0]
@@ -254,7 +256,7 @@ def test_paging_continues_while_the_layer_says_there_is_more(
         calls.append(url)
         return pages[len(calls) - 1]
 
-    monkeypatch.setattr(acquire_mod, "_get", fake_get)
+    monkeypatch.setattr(acquire_mod, "fetch_document", fake_get)
     monkeypatch.setattr(acquire_mod.time, "sleep", lambda _: None)
     rows = fetch_layer("https://example.invalid/query", ("OBJECTID",))
     assert len(rows) == 2 * PAGE_SIZE + 7
@@ -273,14 +275,16 @@ def test_paging_pauses_between_pages(monkeypatch: pytest.MonkeyPatch) -> None:
         calls += 1
         return pages[calls - 1]
 
-    monkeypatch.setattr(acquire_mod, "_get", fake_get)
+    monkeypatch.setattr(acquire_mod, "fetch_document", fake_get)
     monkeypatch.setattr(acquire_mod.time, "sleep", slept.append)
     fetch_layer("https://example.invalid/query", ("OBJECTID",))
     assert slept == [acquire_mod.PAUSE_SECONDS]
 
 
 def test_an_empty_first_page_ends_the_walk(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(acquire_mod, "_get", lambda url, **_: {"features": []})
+    monkeypatch.setattr(
+        acquire_mod, "fetch_document", lambda url, **_: {"features": []}
+    )
     assert fetch_layer("https://example.invalid/query", ("OBJECTID",)) == []
 
 
@@ -294,7 +298,7 @@ def test_a_short_page_ends_the_walk_even_without_the_transfer_flag(
         calls += 1
         return page(3, exceeded=False)
 
-    monkeypatch.setattr(acquire_mod, "_get", fake_get)
+    monkeypatch.setattr(acquire_mod, "fetch_document", fake_get)
     fetch_layer("https://example.invalid/query", ("OBJECTID",))
     assert calls == 1
 
@@ -311,7 +315,7 @@ def test_a_full_page_without_the_transfer_flag_is_still_followed(
         calls += 1
         return pages[calls - 1]
 
-    monkeypatch.setattr(acquire_mod, "_get", fake_get)
+    monkeypatch.setattr(acquire_mod, "fetch_document", fake_get)
     monkeypatch.setattr(acquire_mod.time, "sleep", lambda _: None)
     rows = fetch_layer("https://example.invalid/query", ("OBJECTID",))
     assert calls == 2
@@ -357,7 +361,7 @@ def test_a_capped_page_does_not_step_over_the_records_it_withheld(
     describes a fraction of the layer as though it were the whole of it.
     """
     total, cap = 5_000, 1_000
-    monkeypatch.setattr(acquire_mod, "_get", capped_layer(total, cap))
+    monkeypatch.setattr(acquire_mod, "fetch_document", capped_layer(total, cap))
     monkeypatch.setattr(acquire_mod.time, "sleep", lambda _: None)
     rows = fetch_layer("https://example.invalid/query", ("OBJECTID",))
     assert [row["OBJECTID"] for row in rows] == list(range(total)), (
@@ -378,14 +382,14 @@ def test_the_count_query_asks_the_layer_the_same_question_the_walk_asks(
         urls.append(url)
         return {"count": 7}
 
-    monkeypatch.setattr(acquire_mod, "_get", fake_get)
+    monkeypatch.setattr(acquire_mod, "fetch_document", fake_get)
     assert layer_record_count("https://example.invalid/query") == 7
 
     def counting_get(url: str, **_: object) -> dict[str, Any]:
         urls.append(url)
         return {"features": []}
 
-    monkeypatch.setattr(acquire_mod, "_get", counting_get)
+    monkeypatch.setattr(acquire_mod, "fetch_document", counting_get)
     fetch_layer("https://example.invalid/query", ("OBJECTID",))
 
     counted, walked = (parse_qs(urlparse(url).query) for url in urls)
@@ -402,7 +406,7 @@ def test_a_count_response_with_no_usable_count_is_refused(
     monkeypatch: pytest.MonkeyPatch, payload: dict[str, Any]
 ) -> None:
     """Unverifiable is not the same as verified. Without a total there is no check."""
-    monkeypatch.setattr(acquire_mod, "_get", lambda url, **_: payload)
+    monkeypatch.setattr(acquire_mod, "fetch_document", lambda url, **_: payload)
     with pytest.raises(AcquisitionFailed, match="no count"):
         layer_record_count("https://example.invalid/query")
 
@@ -504,7 +508,7 @@ def test_a_caller_can_say_who_it_is_and_that_is_what_is_sent(
         return json_response({"features": []})
 
     monkeypatch.setattr(acquire_mod.urllib.request, "urlopen", fake_urlopen)
-    acquire_mod._get(
+    acquire_mod.fetch_document(
         "https://example.invalid/query",
         user_agent="somebody-else/2.0 (+https://x.test)",
     )
@@ -522,7 +526,7 @@ def test_the_default_user_agent_still_names_this_project(
         return json_response({"features": []})
 
     monkeypatch.setattr(acquire_mod.urllib.request, "urlopen", fake_urlopen)
-    acquire_mod._get("https://example.invalid/query")
+    acquire_mod.fetch_document("https://example.invalid/query")
     assert sent == [USER_AGENT]
     assert "perimeter" in USER_AGENT
     assert "github.com/ChelseaKR/perimeter" in USER_AGENT
@@ -537,7 +541,7 @@ def test_a_blank_user_agent_is_refused_rather_than_passed_through(blank: str) ->
     sent as though it were one, so it is refused before a socket opens.
     """
     with pytest.raises(AcquisitionFailed, match="blank User-Agent"):
-        acquire_mod._get("https://example.invalid/query", user_agent=blank)
+        acquire_mod.fetch_document("https://example.invalid/query", user_agent=blank)
 
 
 def test_the_user_agent_reaches_the_count_query_and_the_walk(
@@ -552,7 +556,7 @@ def test_the_user_agent_reaches_the_count_query_and_the_walk(
             return {"count": 1}
         return page(1, exceeded=False)
 
-    monkeypatch.setattr(acquire_mod, "_get", fake_get)
+    monkeypatch.setattr(acquire_mod, "fetch_document", fake_get)
     layer_record_count("https://example.invalid/query", user_agent="caller/1.0")
     fetch_layer("https://example.invalid/query", ("OBJECTID",), user_agent="caller/1.0")
     assert seen == ["caller/1.0", "caller/1.0"]
@@ -585,7 +589,7 @@ def test_geometry_requested_through_the_library_round_trips_unchanged(
             "exceededTransferLimit": False,
         }
 
-    monkeypatch.setattr(acquire_mod, "_get", fake_get)
+    monkeypatch.setattr(acquire_mod, "fetch_document", fake_get)
     features = list(
         iter_features(
             "https://example.invalid/query",
@@ -616,7 +620,7 @@ def test_the_default_request_is_the_one_this_project_has_always_made(
         urls.append(url)
         return page(1, exceeded=False)
 
-    monkeypatch.setattr(acquire_mod, "_get", fake_get)
+    monkeypatch.setattr(acquire_mod, "fetch_document", fake_get)
     fetch_layer("https://example.invalid/query", ("OBJECTID",))
     query = parse_qs(urlparse(urls[0]).query)
     assert query["returnGeometry"] == ["false"]
@@ -666,7 +670,7 @@ def test_a_caller_asking_for_geojson_gets_the_services_own_features(
         urls.append(url)
         return sent
 
-    monkeypatch.setattr(acquire_mod, "_get", fake_get)
+    monkeypatch.setattr(acquire_mod, "fetch_document", fake_get)
     features = list(
         iter_features(
             "https://example.invalid/query",
@@ -711,7 +715,7 @@ def test_the_capped_page_rule_is_shared_by_the_non_default_format(
             "exceededTransferLimit": offset + served < total,
         }
 
-    monkeypatch.setattr(acquire_mod, "_get", fake_get)
+    monkeypatch.setattr(acquire_mod, "fetch_document", fake_get)
     monkeypatch.setattr(acquire_mod.time, "sleep", lambda _: None)
     features = list(
         iter_features(
@@ -743,7 +747,7 @@ def test_a_format_the_walk_cannot_page_is_refused_before_any_request(
     def fake_get(url: str, **_: object) -> dict[str, Any]:
         raise AssertionError("the refusal must come before the request")
 
-    monkeypatch.setattr(acquire_mod, "_get", fake_get)
+    monkeypatch.setattr(acquire_mod, "fetch_document", fake_get)
     with pytest.raises(UnpageableFormatError) as raised:
         list(
             iter_features(
@@ -768,7 +772,7 @@ def test_a_page_with_no_features_key_is_refused_rather_than_read_as_the_end(
     def fake_get(url: str, **_: object) -> dict[str, Any]:
         return {"objectIdFieldName": "OBJECTID", "exceededTransferLimit": False}
 
-    monkeypatch.setattr(acquire_mod, "_get", fake_get)
+    monkeypatch.setattr(acquire_mod, "fetch_document", fake_get)
     with pytest.raises(AcquisitionFailed) as raised:
         list(iter_features("https://example.invalid/query", ("OBJECTID",)))
     assert "features" in str(raised.value)
@@ -795,7 +799,7 @@ def test_a_features_value_that_is_not_a_list_is_refused(
             "exceededTransferLimit": False,
         }
 
-    monkeypatch.setattr(acquire_mod, "_get", fake_get)
+    monkeypatch.setattr(acquire_mod, "fetch_document", fake_get)
     with pytest.raises(AcquisitionFailed) as raised:
         list(iter_features("https://example.invalid/query", ("OBJECTID",)))
     assert "rather than a list" in str(raised.value)
@@ -814,7 +818,7 @@ def test_a_layer_that_really_is_empty_is_still_walked_to_a_clean_stop(
     def fake_get(url: str, **_: object) -> dict[str, Any]:
         return {"features": [], "exceededTransferLimit": False}
 
-    monkeypatch.setattr(acquire_mod, "_get", fake_get)
+    monkeypatch.setattr(acquire_mod, "fetch_document", fake_get)
     assert list(iter_features("https://example.invalid/query", ("OBJECTID",))) == []
 
 
@@ -849,7 +853,7 @@ def test_a_feature_is_yielded_whole_rather_than_merged(
             "exceededTransferLimit": False,
         }
 
-    monkeypatch.setattr(acquire_mod, "_get", fake_get)
+    monkeypatch.setattr(acquire_mod, "fetch_document", fake_get)
     feature = next(
         iter_features(
             "https://example.invalid/query", ("OBJECTID",), return_geometry=True

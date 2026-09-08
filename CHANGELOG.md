@@ -39,6 +39,14 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project a
   reason to expose the walk at all is that the offset rule stops being copied, and a
   non-default format reaching the same records by an untested path would leave the
   consumer with a second implementation of the subtle part after all.
+- **`_get` is now `fetch_document`, and public.** The refusals it carries are the whole
+  of what this module promises about somebody else's server -- HTTPS only, an honest
+  User-Agent, a hard stop on 401, 403 and 429, a non-JSON answer read as a challenge page
+  rather than parsed, and an error payload refused rather than treated as data -- and
+  while it was private the only way for a consumer to have them was to write them again.
+  `wildfire-service-territory-overlap` did, for months, and its `docs/UPSTREAM.md` named
+  the reason in those words. A caller reading a *layer* still wants `iter_features`; this
+  is for a caller reading one document, such as the item metadata behind a layer.
 - **A `features` value that is not a list is refused.** `yield from` over a mapping
   yields its keys and `len()` of it counts them, so a page shaped that way made the walk
   emit strings and step its offset by a number with nothing to do with any record, and
