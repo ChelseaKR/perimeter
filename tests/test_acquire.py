@@ -12,6 +12,7 @@ docstring. The real endpoints are never contacted, from here or from any other t
 
 from __future__ import annotations
 
+import inspect
 import io
 import json
 import subprocess
@@ -26,11 +27,14 @@ import pytest
 
 from perimeter import acquire as acquire_mod
 from perimeter.acquire import (
+    DEFAULT_OUT_FORMAT,
     IDENTIFIER_FIELD,
     PAGE_SIZE,
+    PAGEABLE_OUT_FORMATS,
     USER_AGENT,
     AcquisitionBlocked,
     AcquisitionFailed,
+    UnpageableFormatError,
     acquire,
     fetch_layer,
     identifier_failure,
@@ -603,7 +607,8 @@ def test_the_default_request_is_the_one_this_project_has_always_made(
 
     Adding geometry as an option must not add it as a default, and `outSR` must be absent
     rather than sent with a default value: a reprojection nobody asked for would change
-    every coordinate in a file whose hash is published.
+    every coordinate in a file whose hash is published. The same holds for `f`: another
+    output format is another set of bytes on disk under the same recorded hash.
     """
     urls: list[str] = []
 
@@ -616,6 +621,185 @@ def test_the_default_request_is_the_one_this_project_has_always_made(
     query = parse_qs(urlparse(urls[0]).query)
     assert query["returnGeometry"] == ["false"]
     assert "outSR" not in query
+    assert query["f"] == ["json"]
+    assert DEFAULT_OUT_FORMAT == "json"
+
+
+# --- output format, which the consumer's fourth layer needs and this walk did not send -
+
+
+def geojson_page(count: int, *, exceeded: bool, start: int = 0) -> dict[str, Any]:
+    """What a GeoServices layer answers to `f=geojson`.
+
+    Two things about it decide whether the walk can be shared. The features are GeoJSON
+    `Feature` objects -- no `attributes` key anywhere in them -- and the paging signals
+    the walk reads sit at the top level exactly as they do under `f=json`.
+    """
+    return {
+        "type": "FeatureCollection",
+        "features": [
+            {
+                "type": "Feature",
+                "geometry": {"type": "Point", "coordinates": [-121.5, 38.5 + i]},
+                "properties": {"OBJECTID": start + i, "YEAR_": 2020},
+            }
+            for i in range(count)
+        ],
+        "exceededTransferLimit": exceeded,
+    }
+
+
+def test_a_caller_asking_for_geojson_gets_the_services_own_features(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The consuming project reads three polygon layers as GeoJSON and had to copy the
+    walk to do it, because this one hard-coded `f=json`.
+
+    What comes back is the service's own `Feature`, whole: no conversion, no rename of
+    `properties` to `attributes`, no reprojection. A conversion here would be this
+    project rewriting the geometry every measurement downstream runs on.
+    """
+    urls: list[str] = []
+    sent = geojson_page(2, exceeded=False)
+
+    def fake_get(url: str, **_: object) -> dict[str, Any]:
+        urls.append(url)
+        return sent
+
+    monkeypatch.setattr(acquire_mod, "_get", fake_get)
+    features = list(
+        iter_features(
+            "https://example.invalid/query",
+            ("OBJECTID",),
+            return_geometry=True,
+            out_format="geojson",
+        )
+    )
+    assert features == sent["features"]
+    assert all("attributes" not in feature for feature in features)
+    assert parse_qs(urlparse(urls[0]).query)["f"] == ["geojson"]
+
+
+def test_the_capped_page_rule_is_shared_by_the_non_default_format(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The whole point of exposing the walk is that the offset rule stops being copied.
+
+    A format that reached the same records by a different path would leave the consumer
+    with a second implementation of the subtle part after all, so the rule is exercised
+    here under `f=geojson` rather than assumed to be shared. The layer caps its pages
+    below what is asked for, which is what makes stepping by the page asked for wrong.
+    """
+    total, cap = 5_000, 1_000
+
+    def fake_get(url: str, **_: object) -> dict[str, Any]:
+        query = parse_qs(urlparse(url).query)
+        assert query["f"] == ["geojson"]
+        offset = int(query["resultOffset"][0])
+        asked = int(query["resultRecordCount"][0])
+        served = max(0, min(asked, cap, total - offset))
+        return {
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "geometry": None,
+                    "properties": {"OBJECTID": offset + i},
+                }
+                for i in range(served)
+            ],
+            "exceededTransferLimit": offset + served < total,
+        }
+
+    monkeypatch.setattr(acquire_mod, "_get", fake_get)
+    monkeypatch.setattr(acquire_mod.time, "sleep", lambda _: None)
+    features = list(
+        iter_features(
+            "https://example.invalid/query", ("OBJECTID",), out_format="geojson"
+        )
+    )
+    identifiers = [feature["properties"]["OBJECTID"] for feature in features]
+    assert identifiers == list(range(total)), (
+        f"the layer holds {total} records and the geojson walk collected {len(features)}"
+    )
+
+
+def test_a_format_the_walk_cannot_page_is_refused_before_any_request(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A format carrying no top-level `features` walks zero records and stops.
+
+    That is indistinguishable from an empty layer: no exception, no short-file warning,
+    a clean hash over nothing. The refusal is what keeps this walk from publishing an
+    absence as a measurement, so it happens before a socket is opened.
+
+    The planted value is not the next plausible format name. A format this service grows
+    into would make the assertion silently vacuous, so it is a string no `f=` parameter
+    can ever be.
+    """
+    unpageable = "f-that-no-geoservices-layer-will-ever-publish"
+    assert unpageable not in PAGEABLE_OUT_FORMATS
+
+    def fake_get(url: str, **_: object) -> dict[str, Any]:
+        raise AssertionError("the refusal must come before the request")
+
+    monkeypatch.setattr(acquire_mod, "_get", fake_get)
+    with pytest.raises(UnpageableFormatError) as raised:
+        list(
+            iter_features(
+                "https://example.invalid/query", ("OBJECTID",), out_format=unpageable
+            )
+        )
+    assert unpageable in str(raised.value)
+    assert "features" in str(raised.value)
+
+
+def test_a_page_with_no_features_key_is_refused_rather_than_read_as_the_end(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """`payload.get("features", [])` made two different facts one value.
+
+    An answer the walk cannot read and a layer that holds nothing both produced an empty
+    list, so a service that changed the shape of its reply would have ended the walk on
+    its first page and written a file with a clean hash and no records in it. The
+    published record count is copied out of that file by hand.
+    """
+
+    def fake_get(url: str, **_: object) -> dict[str, Any]:
+        return {"objectIdFieldName": "OBJECTID", "exceededTransferLimit": False}
+
+    monkeypatch.setattr(acquire_mod, "_get", fake_get)
+    with pytest.raises(AcquisitionFailed) as raised:
+        list(iter_features("https://example.invalid/query", ("OBJECTID",)))
+    assert "features" in str(raised.value)
+
+
+def test_a_layer_that_really_is_empty_is_still_walked_to_a_clean_stop(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The other side of the same boundary, and the one an over-broad refusal breaks.
+
+    An empty `features` list is the layer answering the question; only a missing key is
+    the layer answering a different one. If this ever fails, the refusal above has been
+    widened into a rule that refuses honest emptiness.
+    """
+
+    def fake_get(url: str, **_: object) -> dict[str, Any]:
+        return {"features": [], "exceededTransferLimit": False}
+
+    monkeypatch.setattr(acquire_mod, "_get", fake_get)
+    assert list(iter_features("https://example.invalid/query", ("OBJECTID",))) == []
+
+
+def test_fetch_layer_takes_no_output_format(monkeypatch: pytest.MonkeyPatch) -> None:
+    """It reads `feature["attributes"]`, which only the GeoServices formats carry.
+
+    A format argument here would either raise `KeyError` on every row of a GeoJSON page
+    or force a rename of `properties`, which would make this function a converter. The
+    signature is the documentation of that decision, so it is pinned.
+    """
+    assert "out_format" not in inspect.signature(fetch_layer).parameters
+    assert "out_format" in inspect.signature(iter_features).parameters
 
 
 def test_a_feature_is_yielded_whole_rather_than_merged(

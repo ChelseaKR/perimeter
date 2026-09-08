@@ -6,6 +6,40 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project a
 
 ## [Unreleased]
 
+### Added, the shared walk can be asked for an output format, which closes the consumer's last acquisition gap
+
+- **`iter_features` takes `out_format`, defaulting to `"json"`.** `return_geometry` and
+  `out_sr` landed in the library work above; `f` stayed hard-coded, and it was the one
+  that kept the duplication alive. `wildfire-service-territory-overlap` reads four layers
+  and three of them as `f=geojson`, which `iter_features` could not ask for, so its own
+  `fetch_feature_pages` — a second copy of the offset rule, and a second copy of this
+  module's refusals about somebody else's server — stayed in the tree. Re-audited at the
+  pin `3a6aa47` on 2026-09-07 and raised here as #84.
+- **The default request has not moved.** `f=json` is what every request this project
+  makes has always asked for, and `sources.py` pins the sha256 of the files it produced.
+  The test that holds it now names the format alongside `returnGeometry=false` and the
+  absent `outSR`.
+- **A format the walk cannot page is refused before a socket opens.** The walk is not
+  format-agnostic: it reads `features` and `exceededTransferLimit` out of the top level
+  of every answer, and only a format carrying both can be walked. A JSON-shaped format
+  carrying neither would yield nothing on its first page and stop — which is exactly what
+  an empty layer looks like, with no error and a clean hash over it. `PAGEABLE_OUT_FORMATS`
+  names the three that carry both and `UnpageableFormatError` names the rest.
+- **A page with no `features` key is now a refusal rather than the end of the walk.**
+  `payload.get("features", [])` made "the service answered something this walk cannot
+  read" and "the layer holds no records" the same value. Both ended the walk quietly, and
+  the record count copied out of the resulting file is published on both pages. An empty
+  `features` list still stops the walk cleanly, and a test holds that side of the boundary
+  so the refusal cannot widen into one that refuses honest emptiness.
+- **`fetch_layer` deliberately takes no `out_format`,** and its signature is pinned by a
+  test that says why: it reads `feature["attributes"]`, which a GeoJSON `Feature` does not
+  carry, so a format argument there would either raise on every row or turn the function
+  into a converter. This project converts nobody's geometry.
+- **The capped-page rule is exercised under `f=geojson`, not assumed to be shared.** The
+  reason to expose the walk at all is that the offset rule stops being copied, and a
+  non-default format reaching the same records by an untested path would leave the
+  consumer with a second implementation of the subtle part after all.
+
 ### Added, a survey command that inventories a retrieval's candidate markers
 
 - **`python -m perimeter.survey` (`make survey`).** A refresh began from a crash. The

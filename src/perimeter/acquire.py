@@ -63,6 +63,34 @@ length of the page it was handed, never by the length it asked for.
 PAUSE_SECONDS = 0.2
 TIMEOUT_SECONDS = 180
 
+DEFAULT_OUT_FORMAT = "json"
+"""The output format every request this project makes asks for.
+
+``sources.py`` pins the sha256 of files fetched with it, so this is not a default that may
+drift: changing it changes every acquired byte.
+"""
+
+PAGEABLE_OUT_FORMATS: tuple[str, ...] = ("json", "geojson", "pjson")
+"""Output formats the walk in :func:`iter_features` is known to be able to page.
+
+The walk is not format-agnostic even though it hands the payload straight back. It reads
+two things out of the top level of every answer -- ``features``, to know what to yield and
+how far to step, and ``exceededTransferLimit``, to know whether to ask again -- and only a
+format that carries both can be walked at all.
+
+The refusal matters more than the list. A format the service accepts but that carries no
+top-level ``features`` (``f=html`` is refused earlier by the content-type check, but a
+service is free to add JSON-shaped formats that are not GeoServices) would leave the walk
+with nothing to yield on its first page, and a walk that ends on its first page is
+indistinguishable from a layer with no records in it. That is a wrong answer with no error
+attached, which is the one outcome this module is written to make impossible.
+"""
+
+
+class UnpageableFormatError(ValueError):
+    """The requested output format is not one this walk can page."""
+
+
 FRAP_FETCH_FIELDS: tuple[str, ...] = FRAP_REQUIRED_COLUMNS
 DINS_FETCH_FIELDS: tuple[str, ...] = (
     *DINS_REQUIRED_COLUMNS,
@@ -198,22 +226,43 @@ def iter_features(
     user_agent: str = USER_AGENT,
     return_geometry: bool = False,
     out_sr: int | None = None,
+    out_format: str = DEFAULT_OUT_FORMAT,
 ) -> Iterator[dict[str, Any]]:
-    """Page through a layer, yielding each GeoServices feature as the service sent it.
+    """Page through a layer, yielding each feature as the service sent it.
 
     This is the paged walk itself, exposed. A consuming project needed geometry, could
     not get it from :func:`fetch_layer` -- which discards everything but ``attributes``
     -- and so copied the offset loop, including the part of it that is subtle. The whole
     value of that loop is the offset rule below, and a copy of it drifts.
 
-    A feature is yielded whole: ``{"attributes": {...}}``, plus ``"geometry"`` when
-    ``return_geometry`` is set. Nothing is merged into the attributes, because a layer is
-    free to publish a field called ``geometry`` and a merge would silently overwrite it.
+    A feature is yielded whole: under ``f=json`` that is ``{"attributes": {...}}``, plus
+    ``"geometry"`` when ``return_geometry`` is set; under ``f=geojson`` it is the GeoJSON
+    ``Feature`` the service built, ``{"type", "geometry", "properties"}``. Nothing is
+    merged, converted or renamed on the way through, because a layer is free to publish a
+    field called ``geometry`` and a merge would silently overwrite it -- and because a
+    conversion here would be this project reprojecting somebody else's data on their
+    behalf, which is the one thing it does not do.
 
     ``out_sr`` is the spatial reference to project coordinates into (a WKID). It is sent
-    only when given, so the default request is byte-for-byte the request this project has
-    always made: the raw files pinned in ``sources.py`` must stay reproducible.
+    only when given, and ``out_format`` defaults to the format this project has always
+    asked for, so the default request is byte-for-byte the request behind the hashes
+    pinned in ``sources.py``.
+
+    ``out_format`` must be one of :data:`PAGEABLE_OUT_FORMATS`; anything else raises
+    :class:`UnpageableFormatError` before a single request is made. The walk reads
+    ``features`` and ``exceededTransferLimit`` out of every answer, and a format that
+    carries neither would walk zero records and stop, which reads exactly like an empty
+    layer.
     """
+    if out_format not in PAGEABLE_OUT_FORMATS:
+        supported = ", ".join(repr(name) for name in PAGEABLE_OUT_FORMATS)
+        raise UnpageableFormatError(
+            f"out_format={out_format!r} is not a format this walk can page. It reads "
+            "'features' and 'exceededTransferLimit' out of the top level of every "
+            f"answer, and only {supported} carry both. A format that carries neither "
+            "would yield nothing on the first page and stop, which is indistinguishable "
+            "from a layer holding no records."
+        )
     offset = 0
     while True:
         query: dict[str, Any] = {
@@ -223,14 +272,21 @@ def iter_features(
             "orderByFields": f"{IDENTIFIER_FIELD} ASC",
             "resultOffset": offset,
             "resultRecordCount": PAGE_SIZE,
-            "f": "json",
+            "f": out_format,
         }
         if out_sr is not None:
             query["outSR"] = out_sr
         payload = _get(
             f"{endpoint}?{urllib.parse.urlencode(query)}", user_agent=user_agent
         )
-        features = payload.get("features", [])
+        if "features" not in payload:
+            raise AcquisitionFailed(
+                f"{endpoint} answered a page with no 'features' key at offset {offset}: "
+                f"{sorted(payload)!r}. An answer the walk cannot read is not an answer "
+                "that the layer is exhausted, and treating it as one would end the walk "
+                "early and write a short file with a clean hash."
+            )
+        features = payload["features"]
         if not features:
             break
         yield from features
@@ -252,7 +308,14 @@ def fetch_layer(
     *,
     user_agent: str = USER_AGENT,
 ) -> list[dict[str, Any]]:
-    """Page through a layer's attributes, geometry excluded."""
+    """Page through a layer's attributes, geometry excluded.
+
+    This takes no ``out_format``, deliberately. It reads ``feature["attributes"]``, which
+    only the GeoServices formats carry: a GeoJSON ``Feature`` puts the same values under
+    ``properties``, so a format argument here would either raise ``KeyError`` on every
+    row or need a rename that made this function a converter. Callers who want another
+    format want the features themselves, which is :func:`iter_features`.
+    """
     return [
         feature["attributes"]
         for feature in iter_features(endpoint, fields, user_agent=user_agent)
