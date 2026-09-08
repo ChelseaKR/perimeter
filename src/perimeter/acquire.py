@@ -287,6 +287,15 @@ def iter_features(
                 "early and write a short file with a clean hash."
             )
         features = payload["features"]
+        if not isinstance(features, list):
+            raise AcquisitionFailed(
+                f"{endpoint} answered a page whose 'features' is a "
+                f"{type(features).__name__} rather than a list, at offset {offset}. "
+                "The walk yields from it and steps its offset by its length, and both "
+                "of those do something plausible to a mapping: it would yield the "
+                "field names and step by the number of them. A page shaped like that "
+                "is not a page of features."
+            )
         if not features:
             break
         yield from features

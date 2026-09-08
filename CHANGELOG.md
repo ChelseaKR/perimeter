@@ -39,6 +39,12 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project a
   reason to expose the walk at all is that the offset rule stops being copied, and a
   non-default format reaching the same records by an untested path would leave the
   consumer with a second implementation of the subtle part after all.
+- **A `features` value that is not a list is refused.** `yield from` over a mapping
+  yields its keys and `len()` of it counts them, so a page shaped that way made the walk
+  emit strings and step its offset by a number with nothing to do with any record, and
+  nothing raised. Found by the consuming project's own copy of this walk, which checked
+  the type: a compensation cannot be retired until the thing it compensates for is gone,
+  so the check belongs here.
 
 ### Added, a survey command that inventories a retrieval's candidate markers
 

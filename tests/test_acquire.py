@@ -774,6 +774,33 @@ def test_a_page_with_no_features_key_is_refused_rather_than_read_as_the_end(
     assert "features" in str(raised.value)
 
 
+def test_a_features_value_that_is_not_a_list_is_refused(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A mapping under `features` walks and produces nonsense, silently.
+
+    `yield from` over a dict yields its keys, and `len()` of it is the number of
+    them, so a page shaped that way makes the walk emit strings and step its
+    offset by a number that has nothing to do with any record. Nothing raises.
+
+    Found by a consuming project's own copy of this walk, which checked the type
+    and would have had to keep the check to move onto this one. That is the sort
+    of thing the audit in that repository exists to surface: a compensation
+    cannot be retired until the thing it compensates for is gone.
+    """
+
+    def fake_get(url: str, **_: object) -> dict[str, Any]:
+        return {
+            "features": {"OBJECTID": 1, "YEAR_": 2020},
+            "exceededTransferLimit": False,
+        }
+
+    monkeypatch.setattr(acquire_mod, "_get", fake_get)
+    with pytest.raises(AcquisitionFailed) as raised:
+        list(iter_features("https://example.invalid/query", ("OBJECTID",)))
+    assert "rather than a list" in str(raised.value)
+
+
 def test_a_layer_that_really_is_empty_is_still_walked_to_a_clean_stop(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
