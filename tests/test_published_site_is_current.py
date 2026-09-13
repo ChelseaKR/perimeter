@@ -150,7 +150,22 @@ def spine(payload: Mapping[str, Any]) -> dict[str, Any]:
         "measurement": payload["measurement"],
         "source_keys": sorted(payload["source"]),
         "fields": [
-            [field["name"], field["label"], field["marker_basis"], sorted(field)]
+            [
+                field["name"],
+                field["label"],
+                field["marker_basis"],
+                # The zero reading is a registry decision, not a measurement, so a fixture
+                # build and a real one must agree on it exactly as they do on the basis
+                # beside it. `sorted(field)` alone catches a field that stops carrying the
+                # key and misses the case that matters: a ruling silently changed or
+                # withdrawn in `schema.py` while the published artifact keeps the old word.
+                # Measured 2026-09-13: removing `NOOFCARSONPROPERTY`'s ruling left all 534
+                # tests in tests/test_schema.py green, because every gate there reads the
+                # committed artifact and `make site-check` -- the only thing that rebuilds
+                # it -- needs data/raw/ and cannot run in CI.
+                field.get("recorded_zero_reading"),
+                sorted(field),
+            ]
             for field in payload["fields"]
         ],
     }

@@ -22,8 +22,10 @@ from perimeter.coverage import (
     DinsReport,
     FieldCoverage,
     PerimeterReport,
+    ZeroReview,
     dins_report,
     perimeter_report,
+    zero_review,
 )
 from perimeter.dins import NOT_APPLICABLE_FIELD, AccessSplit, load_inspections
 from perimeter.perimeters import (
@@ -36,7 +38,7 @@ from perimeter.sources import DINS, FRAP, Source
 FIELD_STATE_ORDER = ("present", "explicit_unknown", "not_recorded")
 """The order of the three counts in every compact per-incident field triple."""
 
-ARTIFACT_SCHEMA_VERSION = 1
+ARTIFACT_SCHEMA_VERSION = 2
 """The version of the published artifact contract, carried in every artifact.
 
 Bump it when a consumer validating against the previous schema in ``site/data/schema/``
@@ -118,9 +120,28 @@ def _field_json(field: FieldCoverage) -> dict[str, Any]:
     }
     if field.zero_values is not None:
         payload["recorded_zero_values"] = field.zero_values
+    if field.zero_reading is not None:
+        # Published beside the count and never instead of it. The count says how many
+        # zeros there are; this says whether anybody has ruled on what one MEANS, which
+        # `marker_basis: "none"` could not distinguish from "reviewed and left as a
+        # measurement" (issue #83).
+        payload["recorded_zero_reading"] = field.zero_reading.value
     if field.note:
         payload["note"] = field.note
     return payload
+
+
+def _zero_review_json(review: ZeroReview) -> dict[str, Any]:
+    """The two numbers, and the unreviewed set named rather than counted away."""
+    return {
+        "fields_measured_as_numbers": review.examinable,
+        "fields_with_a_reviewed_zero_reading": review.reviewed,
+        "fields_without_one": list(review.unreviewed_fields),
+        "fields_publishing_a_recorded_zero": review.publishing_zeros,
+        "fields_publishing_a_recorded_zero_with_a_reviewed_reading": (
+            review.publishing_zeros_reviewed
+        ),
+    }
 
 
 def _signal_json(signal: DuplicateSignal) -> dict[str, Any]:
@@ -185,6 +206,7 @@ def perimeters_payload(report: PerimeterReport, *, is_fixture: bool) -> dict[str
         "records_without_year": report.records_without_year,
         "irwin_id_present": report.irwin_present,
         "fields": [_field_json(field) for field in report.fields],
+        "recorded_zero_review": _zero_review_json(zero_review(report.fields)),
         "irwin_id_present_tenths_pct": present_tenths_of_percent(
             report.irwin_present, report.records
         ),
@@ -241,6 +263,7 @@ def dins_payload(report: DinsReport, *, is_fixture: bool) -> dict[str, Any]:
             for value, count in report.damage.items()
         },
         "fields": [_field_json(field) for field in report.fields],
+        "recorded_zero_review": _zero_review_json(zero_review(report.fields)),
         "field_state_order": list(FIELD_STATE_ORDER),
         # Three cuts of the same records. Each is a partition of the file, so summing a
         # cut per field and per state returns the file totals; nothing is estimated and

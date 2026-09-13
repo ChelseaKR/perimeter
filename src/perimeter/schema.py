@@ -67,6 +67,67 @@ class Basis(Enum):
     """At least one declared value was read off the acquired file's own distribution."""
 
 
+class ZeroReading(Enum):
+    """What a recorded ``0`` in a field measured as a number means — or that nobody has said.
+
+    ADR-0006: a zero is a judgment call of exactly the same kind as a marker word. Until
+    this existed the code could not tell the two ends of that call apart. A field whose
+    zeros a reviewer had read the inspection form for and left as measurements, and a
+    field nobody had ever looked at, both carried :attr:`Basis.NONE` and published
+    ``marker_basis: "none"``, which is the defect this project is about committed by the
+    registry that describes it: *a zero nobody has ruled on, published as a measurement.*
+    ``docs/MARKERS.md`` section 7 said so in its own last sentence — "the gate that reads
+    this file has no way to tell a reviewed decision from an unexamined one."
+
+    Deliberately a second axis rather than more :class:`Basis` members. ``Basis`` answers
+    *where a declared vocabulary came from*; this answers *what a zero is*, and a field can
+    have any combination of the two. Folding them would be the same conflation one column
+    over.
+
+    The default is :attr:`UNREVIEWED` and it must stay the default: a field added tomorrow
+    has not been reviewed, and the honest state is the one a reader is warned about rather
+    than the one they are reassured by.
+    """
+
+    UNREVIEWED = "unreviewed"
+    """Nobody has ruled on this field's zeros.
+
+    A recorded ``0`` is published as a recorded value **and may be an absence**. A reader
+    must not take it as a measurement. `tests/test_schema.py` fails the build if a field in
+    this state ever publishes a recorded zero, so the state is a promise that there are
+    none rather than a shrug about the ones there are.
+    """
+
+    MEASUREMENT = "measurement"
+    """Reviewed: a recorded ``0`` here is a finding.
+
+    An inspector writing ``0`` damaged outbuildings observed no damaged outbuildings. The
+    zero is a value, it stays counted as present, and ``docs/MARKERS.md`` section 7 carries
+    the reading and the distribution it rests on.
+    """
+
+    UNDECIDABLE = "undecidable"
+    """Reviewed, and the published documentation does not settle it.
+
+    Both readings are live and the file cannot separate them, so the zero is **left
+    present** — declaring it a marker would move tens of thousands of records on a reading
+    nothing supports. A reader must not treat a ``0`` here as a measurement **or** as an
+    absence; ``recorded_zero_values`` is published so either reading can be applied, and
+    section 7 records what would settle it.
+
+    This is the third answer issue #83 asks for by name: "undecidable from the published
+    documentation, which is itself a finding worth a note."
+    """
+
+    MARKER = "marker"
+    """Reviewed and declared: ``0`` is this field's marker for a value that was not recorded.
+
+    The zeros leave ``recorded_zero_values`` and are counted as recorded-as-unknown, so the
+    zero gate stops applying to the field exactly as ADR-0006 says. ``YEARBUILT`` is the
+    one instance: no structure standing in a California wildfire was built in year 0.
+    """
+
+
 @dataclass(frozen=True)
 class FieldSpec:
     """One measured column and the vocabulary this project has reviewed for it."""
@@ -115,7 +176,29 @@ class FieldSpec:
     on the page, because the weakest declaration sets what a reader can rely on.
     """
 
+    zero_reading: ZeroReading = ZeroReading.UNREVIEWED
+    """What a recorded ``0`` in this field means, as a reviewer has ruled. See
+    :class:`ZeroReading`.
+
+    Meaningful only where ``numeric`` is true; a field that is not measured as a number has
+    no zeros to rule on and must leave this at :attr:`ZeroReading.UNREVIEWED`. Held to
+    ``docs/MARKERS.md`` section 7 in both directions by ``tests/test_schema.py``, so the
+    reading in the registry and the reading in the audit cannot drift apart.
+    """
+
     note: str = ""
+
+    @property
+    def zeros_are_reviewed(self) -> bool:
+        """True when somebody has ruled on what a ``0`` in this field means.
+
+        The two-number denominator's numerator. Deliberately phrased as "somebody has
+        ruled" and not "the zeros are values": :attr:`ZeroReading.UNDECIDABLE` is a review
+        that reached no verdict, and a review that reached no verdict is still a review --
+        it is the state issue #83 asks for, and collapsing it into either neighbour would
+        lose the finding.
+        """
+        return self.numeric and self.zero_reading is not ZeroReading.UNREVIEWED
 
     @property
     def declares_vocabulary(self) -> bool:
@@ -759,10 +842,30 @@ DINS_FIELDS: tuple[FieldSpec, ...] = (
             }
         ),
     ),
-    FieldSpec("NUMBEROFUNITPERSTRUCTURE", "Units in structure", numeric=True),
-    FieldSpec("NOOUTBUILDINGSDAMAGED", "Damaged outbuildings", numeric=True),
-    FieldSpec("NOOUTBUILDINGSNOTDAMAGED", "Undamaged outbuildings", numeric=True),
-    FieldSpec("NOOFCARSONPROPERTY", "Damaged or destroyed cars", numeric=True),
+    FieldSpec(
+        "NUMBEROFUNITPERSTRUCTURE",
+        "Units in structure",
+        numeric=True,
+        zero_reading=ZeroReading.UNDECIDABLE,
+    ),
+    FieldSpec(
+        "NOOUTBUILDINGSDAMAGED",
+        "Damaged outbuildings",
+        numeric=True,
+        zero_reading=ZeroReading.MEASUREMENT,
+    ),
+    FieldSpec(
+        "NOOUTBUILDINGSNOTDAMAGED",
+        "Undamaged outbuildings",
+        numeric=True,
+        zero_reading=ZeroReading.MEASUREMENT,
+    ),
+    FieldSpec(
+        "NOOFCARSONPROPERTY",
+        "Damaged or destroyed cars",
+        numeric=True,
+        zero_reading=ZeroReading.MEASUREMENT,
+    ),
     FieldSpec(
         "APN",
         "APN (parcel)",
@@ -793,6 +896,7 @@ DINS_FIELDS: tuple[FieldSpec, ...] = (
         unknown_markers=frozenset({"0"}),
         basis=Basis.INFERRED,
         numeric=True,
+        zero_reading=ZeroReading.MARKER,
         note="Added by the same post-collection spatial join as APN and SITEADDRESS. "
         "12,148 records hold the literal 0. No structure standing in a California "
         "wildfire was built in year 0, so a 0 here is the parcel record carrying no "
@@ -802,7 +906,10 @@ DINS_FIELDS: tuple[FieldSpec, ...] = (
         "docs/MARKERS.md holds the distribution it rests on.",
     ),
     FieldSpec(
-        "ASSESSEDIMPROVEDVALUE", "Assessed improved value (parcel)", numeric=True
+        "ASSESSEDIMPROVEDVALUE",
+        "Assessed improved value (parcel)",
+        numeric=True,
+        zero_reading=ZeroReading.UNDECIDABLE,
     ),
     FieldSpec(
         "STREETNAME",

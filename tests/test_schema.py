@@ -11,6 +11,8 @@ from typing import Any
 import pytest
 
 from perimeter.cells import Cell, CellState, SentinelDriftError
+from perimeter.coverage import FieldCoverage, field_coverage, zero_review
+from perimeter.records import Record
 from perimeter.schema import (
     DINS_FIELDS,
     DINS_FIELDS_BY_NAME,
@@ -19,6 +21,7 @@ from perimeter.schema import (
     Basis,
     FieldSpec,
     SchemaDriftError,
+    ZeroReading,
     require_columns,
 )
 
@@ -695,4 +698,265 @@ def test_the_gate_refuses_a_count_it_cannot_read() -> None:
     assert len(problems) == 1
     assert problems[0].startswith(
         "section 7 says 'Several' fields publish recorded zeros"
+    )
+
+
+# --------------------------------------------------------------------------------------
+# A zero nobody ruled on is not a measurement (ADR-0006, issue #83)
+# --------------------------------------------------------------------------------------
+
+#: The last column of section 7's table, where the registry's declared reading is repeated
+#: for a human. Matched as a backticked token so "reviewed" in prose cannot satisfy it.
+_ZERO_READING_IN_ROW = re.compile(
+    r"^\|\s*`(?P<name>[A-Z0-9_]+)`\s*\|[^|]*\|[^|]*\|(?P<declared>[^|]*)\|"
+)
+
+
+def _section_seven_readings(doc: str) -> dict[str, str]:
+    """Field name to the reading word section 7's table states for it."""
+    section = _zero_section(doc)
+    found: dict[str, str] = {}
+    for line in section.splitlines():
+        match = _ZERO_READING_IN_ROW.match(line)
+        if match is None:
+            continue
+        words = [
+            reading.value
+            for reading in ZeroReading
+            if f"`{reading.value}`" in match["declared"]
+        ]
+        if len(words) == 1:
+            found[match["name"]] = words[0]
+    return found
+
+
+@pytest.mark.parametrize("spec", ALL_FIELDS, ids=lambda s: s.name)
+def test_only_a_field_measured_as_a_number_rules_on_its_zeros(spec: FieldSpec) -> None:
+    """A field with no zeros to rule on has not ruled on any.
+
+    Without this, a free-text field could be marked `measurement` and would enter the
+    reviewed numerator of a question that does not apply to it -- a coverage figure made
+    to look better by widening it with rows nobody had to examine.
+    """
+    if spec.numeric:
+        return
+    assert spec.zero_reading is ZeroReading.UNREVIEWED, (
+        f"{spec.name} is not measured as a number, so it has no zeros to rule on, but it "
+        f"declares zero_reading={spec.zero_reading.value!r}"
+    )
+
+
+@pytest.mark.parametrize("spec", ALL_FIELDS, ids=lambda s: s.name)
+def test_a_marker_reading_and_a_declared_zero_marker_are_the_same_fact(
+    spec: FieldSpec,
+) -> None:
+    """`marker` in the registry and `0` in the marker set must travel together.
+
+    Either half alone is a lie in one direction: the word without the declaration says the
+    zeros are counted as unknown when they are still counted as values, and the
+    declaration without the word leaves the audit unable to see why the field publishes
+    none.
+    """
+    declared = "0" in spec.unknown_markers or "0" in spec.unknown_codes
+    says_marker = spec.zero_reading is ZeroReading.MARKER
+    assert declared == says_marker, (
+        f"{spec.name}: zero_reading is {spec.zero_reading.value!r} but `0` is "
+        f"{'' if declared else 'not '}declared as a marker for it"
+    )
+
+
+def unruled_published_zeros(payload: dict[str, Any]) -> list[tuple[str, int]]:
+    """Fields publishing a recorded zero while saying nobody has ruled on what one means.
+
+    THE gate for issue #83. `numeric_zeros_missing_from_the_audit` asks whether the field
+    is NAMED in docs/MARKERS.md, which a field can be while the document says nothing
+    about its zeros; and until `zero_reading` existed nothing could ask the stronger
+    question at all, because a reviewed decision and an unexamined field both published
+    `marker_basis: "none"`.
+    """
+    return [
+        (field["name"], field["recorded_zero_values"])
+        for field in payload["fields"]
+        if field.get("recorded_zero_values")
+        and field.get("recorded_zero_reading") == ZeroReading.UNREVIEWED.value
+    ]
+
+
+@pytest.mark.parametrize("name", NUMERIC_ARTIFACTS)
+def test_no_published_zero_is_one_nobody_ruled_on(name: str) -> None:
+    unruled = unruled_published_zeros(_published(name))
+    assert unruled == [], (
+        f"{name}: these fields publish a recorded zero while declaring that nobody has "
+        f"ruled on what a zero there means, so an absence may be being published as a "
+        f"measurement: {unruled}. Read the field's form and set `zero_reading` on it in "
+        f"src/perimeter/schema.py, then write the reading up in docs/MARKERS.md §7."
+    )
+
+
+def test_the_unruled_zero_gate_catches_the_shape_issue_83_found() -> None:
+    """The five fields as they stood when #83 was filed, run back through the gate.
+
+    A positive control: the gate above passes on the committed artifacts, and a passing
+    gate is worth nothing until it has been shown to fail on the thing it is for.
+    """
+    before = {
+        "fields": [
+            {
+                "name": "NOOFCARSONPROPERTY",
+                "recorded_zero_values": 55831,
+                "recorded_zero_reading": "unreviewed",
+            },
+            {
+                "name": "NUMBEROFUNITPERSTRUCTURE",
+                "recorded_zero_values": 58411,
+                "recorded_zero_reading": "unreviewed",
+            },
+            {
+                "name": "YEARBUILT",
+                "recorded_zero_values": 0,
+                "recorded_zero_reading": "marker",
+            },
+            {"name": "CITY", "markers": {"NA": 1}},
+        ]
+    }
+    assert unruled_published_zeros(before) == [
+        ("NOOFCARSONPROPERTY", 55831),
+        ("NUMBEROFUNITPERSTRUCTURE", 58411),
+    ]
+
+
+@pytest.mark.parametrize("spec", ALL_FIELDS, ids=lambda s: s.name)
+def test_every_ruling_on_a_zero_is_written_up_in_the_audit(spec: FieldSpec) -> None:
+    """A reading nobody wrote up is a judgment call nobody can inspect.
+
+    The sibling of `test_every_judgment_call_is_written_up_in_the_audit`, on the other
+    axis. `Basis.NONE` and `ZeroReading.UNREVIEWED` are different absences and a field can
+    be in one without being in the other -- which is the whole point of the second axis.
+    """
+    if spec.zero_reading is ZeroReading.UNREVIEWED:
+        return
+    assert f"`{spec.name}`" in MARKERS_DOC, (
+        f"{spec.name} declares zero_reading={spec.zero_reading.value!r} and "
+        f"docs/MARKERS.md never names it"
+    )
+
+
+def test_section_seven_states_the_reading_the_registry_carries() -> None:
+    """The document and the registry, held to each other by an exact token.
+
+    Both directions. A row whose word drifts from the registry is caught, and so is a row
+    that stops carrying a word at all -- because a row with no word parses as absent here
+    and the field it names is in the registry with one.
+    """
+    stated = _section_seven_readings(MARKERS_DOC)
+    published = {
+        field["name"]: field.get("recorded_zero_reading")
+        for name in NUMERIC_ARTIFACTS
+        for field in _published(name)["fields"]
+        if field.get("recorded_zero_values")
+    }
+    assert stated, (
+        "section 7's table no longer states a reading word for any field, so this gate "
+        "checks nothing"
+    )
+    assert stated == published, (
+        f"docs/MARKERS.md section 7 and the artifacts disagree about which reading each "
+        f"field's zeros carry: doc={stated}, artifacts={published}"
+    )
+
+
+def _coverage_of(spec: FieldSpec, values: Sequence[object]) -> FieldCoverage:
+    """One field's coverage over a handful of made-up cells."""
+    records = [
+        Record(identifier=str(index), cells={spec.name: spec.classify(raw, where="t")})
+        for index, raw in enumerate(values)
+    ]
+    return field_coverage(records, spec)
+
+
+def test_the_two_numbers_are_counted_separately() -> None:
+    """`reviewed` counts rulings; `examinable` counts questions. Never the same walk.
+
+    A control, not a restatement of :func:`zero_review`. Every other gate on this block
+    reads the committed artifact, where the two numbers happen to be 6 and 8 because six
+    fields have been ruled on -- so a build that counted every examinable field as
+    reviewed would publish `8 of 8` and every one of those gates would still pass, because
+    each of them recomputes the block from the same payload the block was written into.
+    Measured 2026-09-13: `reviewed=len(numeric)` in `zero_review` left all 1,158 tests
+    green. This is the one that reads the function's own answer over a field set whose two
+    numbers are known to differ.
+    """
+    ruled = FieldSpec(
+        "RULED", "Ruled", numeric=True, zero_reading=ZeroReading.MEASUREMENT
+    )
+    unruled = FieldSpec("UNRULED", "Unruled", numeric=True)
+    text = FieldSpec("TEXT", "Not a number")
+    review = zero_review(
+        [
+            _coverage_of(ruled, ["0", "1"]),
+            _coverage_of(unruled, ["0", "2"]),
+            _coverage_of(text, ["a", "b"]),
+        ]
+    )
+    assert review.examinable == 2, "the free-text field is not a zero question"
+    assert review.reviewed == 1
+    assert review.unreviewed_fields == ("UNRULED",)
+    assert review.unreviewed == 1
+    assert review.publishing_zeros == 2
+    assert review.publishing_zeros_reviewed == 1
+
+
+def test_a_field_with_no_zeros_still_counts_as_a_question() -> None:
+    """The reason `examinable` is not "fields publishing a zero".
+
+    `LATITUDE` and `LONGITUDE` hold no zeros in this retrieval and nobody has ruled on
+    them. A denominator of "fields publishing a zero today" would report 5 of 5 and be
+    true, and the first zero to arrive in either would be published as a measurement
+    nobody had ruled on -- the exact shape issue #83 reported.
+    """
+    unruled = FieldSpec("NOZEROS", "No zeros here", numeric=True)
+    review = zero_review([_coverage_of(unruled, ["1", "2"])])
+    assert review.examinable == 1
+    assert review.reviewed == 0
+    assert review.publishing_zeros == 0
+    assert review.publishing_zeros_reviewed == 0
+
+
+@pytest.mark.parametrize("name", NUMERIC_ARTIFACTS)
+def test_the_published_zero_review_re_derives_from_the_fields_beside_it(
+    name: str,
+) -> None:
+    """The two numbers, recomputed from the rows they describe.
+
+    A summary block is exactly the shape that goes stale silently: it is small, it reads
+    as a headline, and nothing else in the artifact contradicts it. Recomputing it here
+    from the same document means the published figure cannot be one the fields do not
+    support.
+    """
+    payload = _published(name)
+    numeric = [field for field in payload["fields"] if "recorded_zero_reading" in field]
+    review = payload["recorded_zero_review"]
+    assert review["fields_measured_as_numbers"] == len(numeric)
+    assert review["fields_with_a_reviewed_zero_reading"] == sum(
+        1
+        for field in numeric
+        if field["recorded_zero_reading"] != ZeroReading.UNREVIEWED.value
+    )
+    assert review["fields_without_one"] == [
+        field["name"]
+        for field in numeric
+        if field["recorded_zero_reading"] == ZeroReading.UNREVIEWED.value
+    ]
+    with_zeros = [field for field in numeric if field["recorded_zero_values"]]
+    assert review["fields_publishing_a_recorded_zero"] == len(with_zeros)
+    assert review["fields_publishing_a_recorded_zero_with_a_reviewed_reading"] == sum(
+        1
+        for field in with_zeros
+        if field["recorded_zero_reading"] != ZeroReading.UNREVIEWED.value
+    )
+    # The denominator and the numerator are not the same number, and a build where they
+    # are would make the gap this issue is about invisible again.
+    assert (
+        review["fields_with_a_reviewed_zero_reading"]
+        <= review["fields_measured_as_numbers"]
     )

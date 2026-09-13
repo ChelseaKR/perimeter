@@ -1,5 +1,5 @@
 {
-  "artifactSchemaVersion": 1,
+  "artifactSchemaVersion": 2,
   "description": "Counts of cells in three named states across CAL FIRE's historical fire perimeter record and its damage inspection record. Unofficial. Both publishers state in their own words that these files are incomplete; this measures how, in counts, with no estimation and no share over an empty denominator.",
   "fieldStateMeaning": "The three counts are in the order published as `field_state_order`: present is a recorded value, explicit_unknown is a value the publisher records to mean it could not be determined, and not_recorded is an empty cell. A recorded unknown is neither present nor missing, and folding it into either one is the error this project exists to refuse.",
   "fieldStateOrder": [

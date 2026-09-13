@@ -38,7 +38,7 @@ from perimeter.perimeters import (
     year_cohorts,
 )
 from perimeter.records import Record
-from perimeter.schema import DINS_FIELDS, FRAP_FIELDS, Basis, FieldSpec
+from perimeter.schema import DINS_FIELDS, FRAP_FIELDS, Basis, FieldSpec, ZeroReading
 
 OUTSIDE_DOMAIN_VALUE_CAP = 12
 """How many out-of-domain values to name per field.
@@ -75,6 +75,15 @@ class FieldCoverage:
     outside_domain_values: dict[str, int] | None
     outside_domain_values_listed: int | None
     zero_values: int | None
+    zero_reading: ZeroReading | None
+    """What a recorded ``0`` in this field means, as a reviewer has ruled (ADR-0006,
+    issue #83), or ``None`` for a field that is not measured as a number.
+
+    ``None`` together with ``zero_values`` for the same reason the four out-of-domain
+    measures are ``None`` together: a field with no zeros to rule on was never ruled on,
+    and publishing ``unreviewed`` for it would put every free-text column into the
+    denominator of a review that does not apply to it.
+    """
 
     @property
     def total(self) -> int:
@@ -132,6 +141,73 @@ def field_coverage(records: Sequence[Record], spec: FieldSpec) -> FieldCoverage:
         outside_domain_values=listed if has_domain else None,
         outside_domain_values_listed=len(listed) if has_domain else None,
         zero_values=zeros if spec.numeric else None,
+        zero_reading=spec.zero_reading if spec.numeric else None,
+    )
+
+
+@dataclass(frozen=True)
+class ZeroReview:
+    """How much of the zero question has been answered, and how much has not.
+
+    Two numbers, always, because one of them alone is the defect. "Five fields publish
+    recorded zeros and all five are reviewed" is a reassuring sentence that says nothing
+    about the fields measured as numbers that hold no zeros *today* -- and a zero arriving
+    in one of those tomorrow is exactly the case that used to be published as a
+    measurement nobody had ruled on. So: ``reviewed`` of ``examinable``, and the
+    unreviewed set named rather than counted away.
+    """
+
+    examinable: int
+    """Fields measured as numbers. Every one of them can have a zero, so every one of
+    them is a question this project either has or has not answered."""
+
+    reviewed: int
+    """Of those, how many carry a reading somebody made. See
+    :attr:`FieldSpec.zeros_are_reviewed`."""
+
+    unreviewed_fields: tuple[str, ...]
+    """The names of the rest, in registry order. Named rather than counted, because the
+    count alone cannot be acted on and this list is the work item."""
+
+    publishing_zeros: int
+    """Of the examinable fields, how many actually publish a recorded zero today."""
+
+    publishing_zeros_reviewed: int
+    """Of those, how many carry a reading. A build where this is smaller than
+    ``publishing_zeros`` is publishing a zero nobody has ruled on, and
+    ``tests/test_schema.py`` fails it."""
+
+    @property
+    def unreviewed(self) -> int:
+        return len(self.unreviewed_fields)
+
+
+def zero_review(fields: Sequence[FieldCoverage]) -> ZeroReview:
+    """Count the zero question over one artifact's fields, from the fields themselves.
+
+    Derived here rather than stated anywhere, so the pages and the artifact cannot carry a
+    figure that has fallen behind the registry. Every number a page prints about this
+    comes from this function via the artifact.
+    """
+    numeric = [field for field in fields if field.zero_reading is not None]
+    reviewed = [
+        field for field in numeric if field.zero_reading is not ZeroReading.UNREVIEWED
+    ]
+    with_zeros = [field for field in numeric if field.zero_values]
+    return ZeroReview(
+        examinable=len(numeric),
+        reviewed=len(reviewed),
+        unreviewed_fields=tuple(
+            field.name
+            for field in numeric
+            if field.zero_reading is ZeroReading.UNREVIEWED
+        ),
+        publishing_zeros=len(with_zeros),
+        publishing_zeros_reviewed=sum(
+            1
+            for field in with_zeros
+            if field.zero_reading is not ZeroReading.UNREVIEWED
+        ),
     )
 
 

@@ -275,11 +275,28 @@ as well: the count in the sentence above, the set of rows, and every number in t
 
 | Field | Recorded zeros | Reading | Declared? |
 |---|---|---|---|
-| `NOOUTBUILDINGSDAMAGED` | 59,628 | a count of no outbuildings damaged | no, a zero is the measurement |
-| `NOOUTBUILDINGSNOTDAMAGED` | 58,888 | a count of no undamaged outbuildings | no, a zero is the measurement |
-| `NOOFCARSONPROPERTY` | 55,831 | a count of no cars | no, a zero is the measurement |
-| `NUMBEROFUNITPERSTRUCTURE` | 58,411 | contested; see below | no, and the reason is recorded |
-| `ASSESSEDIMPROVEDVALUE` | 6,613 | contested; see below | no, and the reason is recorded |
+| `NOOUTBUILDINGSDAMAGED` | 59,628 | a count of no outbuildings damaged | `measurement` : no marker declared; a zero is the finding |
+| `NOOUTBUILDINGSNOTDAMAGED` | 58,888 | a count of no undamaged outbuildings | `measurement` : no marker declared; a zero is the finding |
+| `NOOFCARSONPROPERTY` | 55,831 | a count of no cars | `measurement` : no marker declared; a zero is the finding |
+| `NUMBEROFUNITPERSTRUCTURE` | 58,411 | contested; see below | `undecidable` : reviewed, no marker declared, and the reason is recorded |
+| `ASSESSEDIMPROVEDVALUE` | 6,613 | contested; see below | `undecidable` : reviewed, no marker declared, and the reason is recorded |
+
+The word in the last column is the one the registry carries in
+`FieldSpec.zero_reading` and the artifacts publish as `recorded_zero_reading`, and
+`tests/test_schema.py` holds the two to each other in both directions. Before it existed
+the registry had no way to say any of this: a field whose zeros a reviewer had read the
+form for and left as measurements, and a field nobody had ever opened, both carried
+`Basis.NONE` and published `marker_basis: "none"`. That is the last sentence of this
+section, and issue #83 is it being fixed.
+
+**What a reader should conclude from each word.**
+
+| Word | What it says | What a reader should do with a `0` |
+|---|---|---|
+| `measurement` | Somebody read the inspection form and the zeros' distribution, and a recorded `0` is a finding | Use it as a count of none |
+| `undecidable` | Somebody read them and the published documentation does not settle it. Both readings are live and the file cannot separate them, so the zero is **left present** : declaring it a marker would move tens of thousands of records on a reading nothing supports | Do not use it as a finding, and do not use it as an absence. `recorded_zero_values` is published so either reading can be applied |
+| `marker` | Declared: `0` stands in for a value that was not recorded, so the zeros are counted as recorded-as-unknown and this field publishes none | There is no `0` to read; it is already counted as an absence |
+| `unreviewed` | **Nobody has ruled.** A recorded `0` would be published as a value and might be an absence | Nothing : and nothing can be, which is why the build fails if a field in this state ever publishes one |
 
 `YEARBUILT` was the sixth row of that table, and it is the reason the checking above
 exists. Declaring `0` a marker for it moved all 12,148 of its zeros out of
@@ -391,5 +408,20 @@ from scratch.
 and a count of zero is what an inspector writes when there were none. Their positive
 values run from 1 upward in the shape a real count has. Nothing is declared and nothing
 moves; they are listed here because "we looked and a zero is a measurement" is a finding a
-reader is entitled to, and because the gate that reads this file has no way to tell a
-reviewed decision from an unexamined one.
+reader is entitled to.
+
+`NOOFCARSONPROPERTY` is the hardest of the three and is recorded as such: 55,831 zeros
+against 357 positives is 99.4% of everything the field records, which on the measurement
+reading means 357 of the 56,188 inspections that wrote anything at all found a car. It is
+left as a measurement because that is what the distribution of the positives supports and
+because no published documentation offers a placeholder convention to read instead : not
+because the share is comfortable. **This is the second entry to revisit**, after
+`ASSESSEDIMPROVEDVALUE`, and the reading is now carried in the registry rather than only
+here, so changing it is a one-line change with a gate on both sides of it.
+
+The last sentence of this section used to read *"and because the gate that reads this file
+has no way to tell a reviewed decision from an unexamined one."* It now has one:
+`FieldSpec.zero_reading`, published per field as `recorded_zero_reading`, summarised in
+each artifact's `recorded_zero_review` block as two numbers, and stated on the page above
+each field table. A field measured as a number that publishes a recorded zero while
+carrying `unreviewed` fails the build.

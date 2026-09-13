@@ -169,7 +169,7 @@
       300
     ]
   },
-  "artifact_schema_version": 1,
+  "artifact_schema_version": 2,
   "duplicate_signals": [
     {
       "description": "Records sharing one IRWIN ID. IRWIN is the federal incident identifier, so a repeat means two perimeter records point at one federal incident.",
@@ -427,6 +427,7 @@
       "outside_published_domain_values_listed": null,
       "present": 23334,
       "present_tenths_pct": 1000,
+      "recorded_zero_reading": "unreviewed",
       "recorded_zero_values": 0,
       "total": 23334
     },
@@ -494,6 +495,15 @@
     }
   ],
   "measurement": "Completeness of the FRAP historical fire perimeter record",
+  "recorded_zero_review": {
+    "fields_measured_as_numbers": 1,
+    "fields_publishing_a_recorded_zero": 0,
+    "fields_publishing_a_recorded_zero_with_a_reviewed_reading": 0,
+    "fields_with_a_reviewed_zero_reading": 0,
+    "fields_without_one": [
+      "GIS_ACRES"
+    ]
+  },
   "records": 23334,
   "records_without_year": 77,
   "source": {

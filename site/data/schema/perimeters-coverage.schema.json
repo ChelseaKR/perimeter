@@ -72,7 +72,7 @@
       "type": "object"
     },
     "artifact_schema_version": {
-      "const": 1,
+      "const": 2,
       "description": "The version of this contract. Bumped when a consumer validating against the previous schema would reject the new artifact or would read an existing key as meaning something else.",
       "type": "integer"
     },
@@ -205,6 +205,16 @@
               "null"
             ]
           },
+          "recorded_zero_reading": {
+            "description": "What a recorded zero in this field MEANS, as a reviewer has ruled. `measurement`: a zero is a finding. `undecidable`: reviewed, and the published documentation does not settle it, so the zero is left present and must not be read as a finding OR as an absence. `marker`: declared as a marker, so this field's zeros are counted in `explicit_unknown` and `recorded_zero_values` is 0. `unreviewed`: NOBODY HAS RULED -- a zero here may be an absence, and the build fails if such a field ever publishes one. Read beside `recorded_zero_values`, never instead of it, and see docs/MARKERS.md section 7. Absent for a field that is not numeric.",
+            "enum": [
+              "unreviewed",
+              "measurement",
+              "undecidable",
+              "marker"
+            ],
+            "type": "string"
+          },
           "recorded_zero_values": {
             "description": "Cells recording a literal zero, for a field measured as a number. A zero is a judgment call (ADR 0006) and is published separately rather than folded into either presence or absence. Absent for a field that is not numeric.",
             "type": "integer"
@@ -301,6 +311,43 @@
     "measurement": {
       "description": "What this artifact measures, in one sentence.",
       "type": "string"
+    },
+    "recorded_zero_review": {
+      "additionalProperties": false,
+      "description": "Coverage of the zero question over this artifact's fields. Every figure is derived from the fields beside it; none is stated anywhere.",
+      "properties": {
+        "fields_measured_as_numbers": {
+          "description": "The denominator: every field that can carry a zero, and so every field this project either has or has not ruled on.",
+          "type": "integer"
+        },
+        "fields_publishing_a_recorded_zero": {
+          "description": "Of the fields measured as numbers, how many actually carry a zero in this retrieval.",
+          "type": "integer"
+        },
+        "fields_publishing_a_recorded_zero_with_a_reviewed_reading": {
+          "description": "Of those, how many carry a reading. Smaller than the figure above means a zero nobody has ruled on is being published as a value, which is the condition `tests/test_schema.py` fails the build on.",
+          "type": "integer"
+        },
+        "fields_with_a_reviewed_zero_reading": {
+          "description": "Of those, how many carry a `recorded_zero_reading` other than `unreviewed`. `undecidable` counts as reviewed: a review that reached no verdict is still a review, and it is a finding rather than a gap.",
+          "type": "integer"
+        },
+        "fields_without_one": {
+          "description": "The rest, named rather than counted away. A zero appearing in any of these fails the build until somebody rules on it.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "fields_measured_as_numbers",
+        "fields_publishing_a_recorded_zero",
+        "fields_publishing_a_recorded_zero_with_a_reviewed_reading",
+        "fields_with_a_reviewed_zero_reading",
+        "fields_without_one"
+      ],
+      "type": "object"
     },
     "records": {
       "description": "Records measured.",
@@ -510,6 +557,7 @@
     "latest_year",
     "marker_counterfactuals",
     "measurement",
+    "recorded_zero_review",
     "records",
     "records_without_year",
     "source",
