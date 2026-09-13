@@ -1,0 +1,147 @@
+# Does the site at chelseakr.github.io/perimeter hold the bytes this repository holds?
+#
+# Nothing here has ever asked. ci.yml reads the working tree, codeql.yml reads the source,
+# pages.yml publishes -- and none of them looks at what a visitor receives. Unlike its
+# siblings this repository carries no live-integrity.yml either, so the published site has
+# no reader at all.
+#
+# The trigger is not the problem and this file does not change it: pages.yml fires on every
+# push to main with no path filter, which is correct. What is missing is anything that
+# notices a firing that did not land. Measured 2026-09-13 over the 75 commits on main since
+# pages.yml was added: 23 produced no github-pages deployment. Thirteen had their
+# publish-site run cancelled -- the `pages` concurrency group holds one pending run, so a
+# second push evicts the first -- and ten arrived inside a push whose tip was another
+# commit. Two of the 23, 4385957b9 and edbfb9bd7, changed files under site/. Every gate was
+# green throughout, because a cancelled run is not a failed one.
+#
+# This workflow publishes NOTHING and cannot: it holds no `pages: write`, no
+# `id-token: write` and no deploy credential of any kind, and it dispatches nothing.
+# Whether and when the site is republished is unchanged by this file; it only reports the
+# distance.
+#
+# The output is an issue, not a red run. A scheduled workflow that failed whenever a
+# republish were overdue would sit red for as long as the data refresh took, and a check
+# that is permanently red is a check nobody reads. This run goes red only when the
+# comparison cannot be made at all: no github-pages deployment in the history, none that
+# reports a successful status, a deployed commit this clone does not contain, a history
+# that has diverged, or a site/ directory that is not where pages.yml says it is. A
+# detector that cannot tell must look broken rather than report a comfortable zero.
+#
+# Every action is pinned to the full 40-char commit SHA already in use in ci.yml and
+# pages.yml, per SECURITY-AND-SUPPLY-CHAIN-STANDARD §6.
+name: deploy-staleness
+
+on:
+  schedule:
+    # Mondays 06:29 UTC. site/ moves only on a data refresh, which is a manual and
+    # occasional act, so the useful question is asked weekly; asking hourly would produce
+    # the same answer 168 times. Minute and hour are off the hour and unshared with any
+    # other schedule in this portfolio.
+    - cron: "29 6 * * 1"
+  workflow_dispatch:
+    inputs:
+      max_age_days:
+        description: "Days an unpublished change to site/ may wait before this reports"
+        required: false
+        default: "14"
+        type: string
+
+# Least privilege at the workflow level; the one job grants itself what it needs.
+permissions: {}
+
+# This job writes -- it files or updates one issue -- so a run is never cancelled mid-write,
+# and a manual dispatch never races the Monday schedule onto the same issue. Unlike ci.yml
+# there is nothing to key per commit here: the question is about the repository, not about
+# a particular push, so one shared group is right and the pending-slot eviction that costs
+# ci.yml a verdict costs this nothing.
+concurrency:
+  group: deploy-staleness
+  cancel-in-progress: false
+
+jobs:
+  report:
+    name: measure how far the published site is behind main
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read # the checkout, and the history the comparison walks
+      deployments: read # which commit the published bytes came from
+      issues: write # the report itself; nothing here writes anywhere else
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Required, not incidental. On a shallow clone the deployed commit is simply
+          # absent, every comparison against it comes back empty, and the site reads as up
+          # to date. tools/deploy_staleness.py refuses that case rather than reporting it
+          # as zero -- which is what keeps this line from having to be trusted.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Measure the distance
+        id: measure
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MAX_AGE_DAYS: ${{ inputs.max_age_days || '14' }}
+          REPOSITORY: ${{ github.repository }}
+        # Deliberately a bare `python3` and no `uv sync`: tools/deploy_staleness.py imports
+        # only the standard library and nothing from src/perimeter, so the sentinel needs
+        # no dependency resolution and cannot be broken by one. `|| true` so a refusal
+        # reaches the reporting step, which turns it into the red run, rather than ending
+        # the job here with no explanation attached.
+        run: |
+          set -euo pipefail
+          python3 tools/deploy_staleness.py \
+            --repo "$REPOSITORY" \
+            --head origin/main \
+            --max-age-days "$MAX_AGE_DAYS" \
+            > "$RUNNER_TEMP/report.txt" 2> "$RUNNER_TEMP/error.txt" || true
+          cat "$RUNNER_TEMP/report.txt" "$RUNNER_TEMP/error.txt"
+
+      - name: File, update or close the report
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          MEASURED: ${{ steps.measure.outputs.measured }}
+          OVERDUE: ${{ steps.measure.outputs.overdue }}
+          TITLE: "The published site is behind main"
+        run: |
+          set -euo pipefail
+
+          existing=$(gh issue list --repo "$REPOSITORY" --state open \
+            --json number,title --jq "[.[] | select(.title == env.TITLE)] | .[0].number // empty")
+
+          if [ "$MEASURED" != "true" ]; then
+            echo "::error::the staleness comparison could not be made; see the report above"
+            exit 1
+          fi
+
+          if [ "$OVERDUE" != "true" ]; then
+            if [ -n "$existing" ]; then
+              gh issue close "$existing" --repo "$REPOSITORY" --reason completed \
+                --comment "The published site is no longer behind main. ${RUN_URL}"
+              echo "closed #$existing"
+            else
+              echo "not overdue; no open report to close"
+            fi
+            exit 0
+          fi
+
+          {
+            echo '```'
+            cat "$RUNNER_TEMP/report.txt"
+            echo '```'
+            echo
+            echo "site/ is built from CAL FIRE's acquired files, which are never in git and"
+            echo "never in CI, so republishing means a local \`make site\` and a commit."
+            echo "This sentinel does not deploy and does not dispatch pages.yml."
+            echo "Measured by \`tools/deploy_staleness.py\` in ${RUN_URL}."
+          } > "$RUNNER_TEMP/body.md"
+
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --repo "$REPOSITORY" --body-file "$RUNNER_TEMP/body.md"
+            echo "updated #$existing"
+          else
+            gh issue create --repo "$REPOSITORY" --title "$TITLE" \
+              --body-file "$RUNNER_TEMP/body.md"
+          fi
