@@ -6,6 +6,69 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project a
 
 ## [Unreleased]
 
+### Fixed, five fields published a zero nobody had ruled on, and the registry could not say so
+
+- **A reviewed decision and an unexamined field published the same thing.** `NOOFCARSONPROPERTY`,
+  `NOOUTBUILDINGSDAMAGED`, `NOOUTBUILDINGSNOTDAMAGED`, `NUMBEROFUNITPERSTRUCTURE` and
+  `ASSESSEDIMPROVEDVALUE` are each `FieldSpec(..., numeric=True)` with no declared
+  vocabulary, so each carried `Basis.NONE` and published `marker_basis: "none"`. So does a
+  field nobody has ever opened. `docs/MARKERS.md` section 7 named the problem in its own
+  last sentence: *"the gate that reads this file has no way to tell a reviewed decision
+  from an unexamined one."* Four of the five record a zero in over 94% of the cells they
+  record anything in, and on the measurement reading `NOOFCARSONPROPERTY` says 357 of
+  56,188 inspections found a car.
+
+- **`FieldSpec.zero_reading` is the second axis.** `ZeroReading` has four members and the
+  default is `UNREVIEWED`: `measurement` (a zero is a finding), `undecidable` (reviewed,
+  and the published documentation does not settle it, so the zero is left present and must
+  not be read either way), `marker` (declared, so the zeros are counted as
+  recorded-as-unknown and the field publishes none), and `unreviewed` (nobody has ruled).
+  It is a second axis rather than more `Basis` members because `Basis` answers *where a
+  declared vocabulary came from* and this answers *what a zero is*; a field can be in any
+  combination of the two, and folding them is the same conflation one column over.
+
+- **The readings are the ones section 7 already recorded**, transcribed into the registry
+  rather than invented: three counts are `measurement`, the two contested fields are
+  `undecidable`, and `YEARBUILT` is `marker`. Section 7 now states the word beside each
+  row, and `tests/test_schema.py` holds the document and the registry to each other in
+  both directions by an exact token.
+
+- **Two numbers on every surface, derived from the rows they describe.** Each artifact
+  carries a `recorded_zero_review` block: fields measured as numbers, how many carry a
+  reviewed reading, which ones do not (named, not counted away), and the same pair
+  restricted to the fields actually publishing a zero. `dins.html` and `perimeters.html`
+  state it above each field table, and every field's row carries its own reading beside
+  its zero count. Measured on this retrieval: **6 of 8** DINS fields measured as numbers
+  carry a reading and **5 of 5** of those publishing a zero do; on the FRAP side **0 of
+  1**, and `GIS_ACRES` publishes no zero. `LATITUDE` and `LONGITUDE` are the DINS pair
+  with no reading, and they publish none either.
+
+- **The gate.** A field publishing a recorded zero while declaring `unreviewed` fails the
+  build, with a message naming the two files to change. The older gate asked only whether
+  a field was *named* somewhere in `docs/MARKERS.md`, which a field can be while the
+  document says nothing about its zeros. Both are kept: they catch different things, and
+  the new one is exercised by a positive control built from the five fields exactly as
+  they stood when issue #83 was filed.
+
+- **Two gates that would have passed over the change being made.** Both were found by
+  sabotaging the tree and watching nothing go red. Withdrawing `NOOFCARSONPROPERTY`'s
+  ruling in `src/perimeter/schema.py`, so the field publishes 55,831 zeros while declaring
+  that nobody ruled on them, left all 534 tests in `tests/test_schema.py` green: every gate
+  there reads the *committed* artifact, and the only thing that rebuilds it — `make
+  site-check` — needs `data/raw/` and cannot run in CI. The published artifact's spine
+  comparison, which already holds `marker_basis` between a fixture build and the committed
+  copy, now holds `recorded_zero_reading` beside it. And counting every examinable field as
+  reviewed, so the block publishes `8 of 8`, left all 1,158 tests green, because every gate
+  on that block recomputes it from the same payload it was written into;
+  `zero_review` now has two tests that read its own answer over a field set whose two
+  numbers are known to differ.
+
+- **`artifact_schema_version` is now 2.** `recorded_zero_review` is a new required
+  top-level key and `recorded_zero_reading` a new optional per-field one, so a consumer
+  validating against version 1 — whose schema closes with `additionalProperties: false` —
+  would reject the new artifact. That is the stated rule for a bump, and it is stated here
+  and in `src/perimeter/artifacts.py` so neither can be edited alone.
+
 ### Fixed, the secret scan read one of `main`'s eighty-one commits and reported success
 
 - **`secret-scan` was `gitleaks/gitleaks-action`, which picks its scan range from the

@@ -6,7 +6,7 @@
     "inaccessible": 591,
     "total": 132522
   },
-  "artifact_schema_version": 1,
+  "artifact_schema_version": 2,
   "completeness_by_access": [
     {
       "assessed_present": 131931,
@@ -53497,6 +53497,7 @@
       "outside_published_domain_values_listed": null,
       "present": 61929,
       "present_tenths_pct": 467,
+      "recorded_zero_reading": "undecidable",
       "recorded_zero_values": 58411,
       "total": 132522
     },
@@ -53513,6 +53514,7 @@
       "outside_published_domain_values_listed": null,
       "present": 61939,
       "present_tenths_pct": 467,
+      "recorded_zero_reading": "measurement",
       "recorded_zero_values": 59628,
       "total": 132522
     },
@@ -53529,6 +53531,7 @@
       "outside_published_domain_values_listed": null,
       "present": 61958,
       "present_tenths_pct": 468,
+      "recorded_zero_reading": "measurement",
       "recorded_zero_values": 58888,
       "total": 132522
     },
@@ -53545,6 +53548,7 @@
       "outside_published_domain_values_listed": null,
       "present": 56188,
       "present_tenths_pct": 424,
+      "recorded_zero_reading": "measurement",
       "recorded_zero_values": 55831,
       "total": 132522
     },
@@ -53604,6 +53608,7 @@
       "outside_published_domain_values_listed": null,
       "present": 89943,
       "present_tenths_pct": 679,
+      "recorded_zero_reading": "marker",
       "recorded_zero_values": 0,
       "total": 132522
     },
@@ -53620,6 +53625,7 @@
       "outside_published_domain_values_listed": null,
       "present": 126482,
       "present_tenths_pct": 954,
+      "recorded_zero_reading": "undecidable",
       "recorded_zero_values": 6613,
       "total": 132522
     },
@@ -53686,6 +53692,7 @@
       "outside_published_domain_values_listed": null,
       "present": 132522,
       "present_tenths_pct": 1000,
+      "recorded_zero_reading": "unreviewed",
       "recorded_zero_values": 0,
       "total": 132522
     },
@@ -53702,6 +53709,7 @@
       "outside_published_domain_values_listed": null,
       "present": 132522,
       "present_tenths_pct": 1000,
+      "recorded_zero_reading": "unreviewed",
       "recorded_zero_values": 0,
       "total": 132522
     }
@@ -146014,6 +146022,16 @@
     ],
     "field": "UTILITYMISCSTRUCTUREDISTANCE",
     "note": "How often each declared spelling of this field's Not Applicable value was written, per incident-start year. Both spellings are counted as the publisher's finding rather than one being read as missing data; docs/MARKERS.md section 2 sets out the evidence and the confidence."
+  },
+  "recorded_zero_review": {
+    "fields_measured_as_numbers": 8,
+    "fields_publishing_a_recorded_zero": 5,
+    "fields_publishing_a_recorded_zero_with_a_reviewed_reading": 5,
+    "fields_with_a_reviewed_zero_reading": 6,
+    "fields_without_one": [
+      "LATITUDE",
+      "LONGITUDE"
+    ]
   },
   "records": 132522,
   "records_not_attributable_to_an_incident": 0,

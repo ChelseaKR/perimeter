@@ -62,7 +62,7 @@ CONTRACTS = {
 
 #: The keys `perimeter.artifacts._field_json` writes conditionally, and nothing else.
 #: Every other key in every object of both artifacts is required.
-OPTIONAL_FIELD_KEYS = {"recorded_zero_values", "note"}
+OPTIONAL_FIELD_KEYS = {"recorded_zero_values", "recorded_zero_reading", "note"}
 
 
 @pytest.fixture(scope="module")

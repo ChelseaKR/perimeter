@@ -26,8 +26,9 @@ from perimeter.coverage import (
     FieldCoverage,
     PerimeterReport,
     SpellingCohort,
+    zero_review,
 )
-from perimeter.schema import Basis
+from perimeter.schema import Basis, ZeroReading
 from perimeter.sources import DINS, FRAP, Source
 
 # Where these pages are served. The path segment is load-bearing: this is one of six project
@@ -63,6 +64,31 @@ DISCLAIMER = (
     "Unofficial. Not affiliated with or endorsed by CAL FIRE, FRAP, or any California "
     "state agency."
 )
+
+ZERO_READING_NOTE: dict[ZeroReading, str] = {
+    ZeroReading.MEASUREMENT: (
+        "reviewed: a zero here is a measurement. An inspector writing 0 observed none, "
+        "and the zeros stay counted as recorded values"
+    ),
+    ZeroReading.UNDECIDABLE: (
+        "reviewed, and undecidable from the published documentation: both readings are "
+        "live and the file cannot separate them, so the zeros are left as recorded "
+        "values. Do not read a zero here as a finding, and do not read it as an absence"
+    ),
+    ZeroReading.MARKER: (
+        "reviewed and declared a marker: the zeros are counted as recorded-as-unknown "
+        "above, not as values, so this field publishes none"
+    ),
+    ZeroReading.UNREVIEWED: (
+        "NOT REVIEWED. Nobody has read the inspection form for this field, so a zero "
+        "here is published as a recorded value and may be an absence"
+    ),
+}
+"""What a recorded zero in a field means, for a reader. See docs/MARKERS.md section 7.
+
+`UNREVIEWED` carries a sentence like the other three rather than rendering nothing,
+because rendering nothing is precisely what made an unexamined field and a reviewed one
+look identical on this page (issue #83)."""
 
 BASIS_NOTE: dict[Basis, str] = {
     Basis.PUBLISHED: (
@@ -454,6 +480,40 @@ def scroll_region(caption_id: str, *, tall: bool = False) -> str:
     return f'<section class="{classes}" tabindex="0" aria-labelledby="{caption_id}">'
 
 
+def zero_review_note(fields: Sequence[FieldCoverage]) -> str:
+    """The two numbers: how many of the fields that can carry a zero have been ruled on.
+
+    One number would be the defect. "Every field publishing a zero has been reviewed" is
+    true of this build and says nothing about the fields measured as numbers that hold no
+    zero today -- and a zero arriving in one of those is exactly the case that used to be
+    published as a measurement nobody had ruled on. So the denominator is every field that
+    CAN carry one, the unreviewed ones are named, and the sentence says what happens if a
+    zero turns up in one.
+
+    Both figures are computed here from the fields the table below draws, so the page
+    cannot state a coverage it does not have.
+    """
+    review = zero_review(fields)
+    named = (
+        " None of them is: "
+        + ", ".join(f"<code>{esc(name)}</code>" for name in review.unreviewed_fields)
+        + ", which publish no recorded zero in this retrieval. A zero appearing in any of "
+        "them stops the build until somebody rules on it."
+        if review.unreviewed_fields
+        else " There is none left unreviewed."
+    )
+    return (
+        f'<p class="measured"><strong>A zero is a judgment call, and this says who made '
+        f"it.</strong> {num(review.reviewed)} of the {num(review.examinable)} fields "
+        f"measured as numbers carry a reviewed reading of what a recorded zero means; "
+        f"{num(review.unreviewed)} do not.{named} Of the "
+        f"{num(review.publishing_zeros)} that publish a recorded zero today, "
+        f"{num(review.publishing_zeros_reviewed)} carry a reading. Each field's own "
+        f"reading is on its row below, and the evidence is in "
+        f"<code>docs/MARKERS.md</code> section 7.</p>"
+    )
+
+
 def field_table(
     fields: Sequence[FieldCoverage], *, caption_id: str, caption: str
 ) -> str:
@@ -473,6 +533,18 @@ def field_table(
             # The basis still belongs on the page, because the finding is a judgment.
             marker_note = (
                 f'<div class="absent-note">Basis: {esc(BASIS_NOTE[field.basis])}</div>'
+            )
+        # A zero is a judgment call of the same kind as a marker word (ADR-0006), and
+        # until this line existed the page published the judgment's RESULT -- the count of
+        # recorded values -- with no way to see whether anybody had made it. The count
+        # reached the artifact and never the page.
+        zeros = ""
+        if field.zero_reading is not None:
+            reading = ZERO_READING_NOTE[field.zero_reading]
+            recorded = field.zero_values or 0
+            zeros = (
+                f'<div class="absent-note">{num(recorded)} recorded zero'
+                f"{'' if recorded == 1 else 's'}; {esc(reading)}</div>"
             )
         count, distinct = field.outside_domain, field.outside_domain_distinct
         outside = ""
@@ -494,7 +566,7 @@ def field_table(
             )
         rows.append(
             "<tr>"
-            f'<th scope="row" class="name">{esc(field.label)}{marker_note}{outside}'
+            f'<th scope="row" class="name">{esc(field.label)}{marker_note}{zeros}{outside}'
             f'<div class="field">{esc(field.name)}</div></th>'
             f'<td class="num">{num(field.present)}</td>'
             f'<td class="num">{num(field.explicit_unknown)}</td>'
@@ -701,6 +773,7 @@ here look complete when they are not. Cause is the clearest case: no cause cell 
 and a large share of them carry the published code for
 <em>Unknown / Unidentified</em>. Collection method behaves the same way, which is what
 FRAP's release note about editing null collection methods to Unknown describes.</p>
+{zero_review_note(report.fields)}
 {
         field_table(
             report.fields,
@@ -1082,6 +1155,7 @@ absence such as <em>No Eaves</em> or <em>No Fence</em>, which are observations r
 missing data. A recorded unknown is a published code or a marker word standing where a
 value would go. An empty cell is what CAL FIRE describes as an attribute that could not be
 determined.</p>
+{zero_review_note(report.fields)}
 {
         field_table(
             report.fields,

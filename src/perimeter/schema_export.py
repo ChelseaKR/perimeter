@@ -45,6 +45,7 @@ from pathlib import Path
 from typing import Any
 
 from perimeter.artifacts import ARTIFACT_SCHEMA_VERSION, FIELD_STATE_ORDER
+from perimeter.schema import ZeroReading
 from perimeter.sources import DINS, FRAP, Source
 
 SCHEMA_DIALECT = "https://json-schema.org/draft/2020-12/schema"
@@ -241,13 +242,29 @@ def _field_schema() -> dict[str, Any]:
                 "than folded into either presence or absence. Absent for a field that is "
                 "not numeric."
             ),
+            "recorded_zero_reading": {
+                "type": "string",
+                "enum": [reading.value for reading in ZeroReading],
+                "description": (
+                    "What a recorded zero in this field MEANS, as a reviewer has ruled. "
+                    "`measurement`: a zero is a finding. `undecidable`: reviewed, and the "
+                    "published documentation does not settle it, so the zero is left "
+                    "present and must not be read as a finding OR as an absence. "
+                    "`marker`: declared as a marker, so this field's zeros are counted in "
+                    "`explicit_unknown` and `recorded_zero_values` is 0. `unreviewed`: "
+                    "NOBODY HAS RULED -- a zero here may be an absence, and the build "
+                    "fails if such a field ever publishes one. Read beside "
+                    "`recorded_zero_values`, never instead of it, and see "
+                    "docs/MARKERS.md section 7. Absent for a field that is not numeric."
+                ),
+            },
             "note": _string(
                 "The field registry's note on this field. Absent where the registry "
                 "carries none."
             ),
         },
     )
-    optional = {"recorded_zero_values", "note"}
+    optional = {"recorded_zero_values", "recorded_zero_reading", "note"}
     schema["required"] = sorted(set(schema["required"]) - optional)
     return schema
 
@@ -287,6 +304,48 @@ def _access_schema() -> dict[str, Any]:
     )
 
 
+def _zero_review_schema() -> dict[str, Any]:
+    """How much of the zero question has been answered, and how much has not.
+
+    Two numbers on purpose (issue #83). "Every field publishing a zero has been reviewed"
+    is a true and reassuring sentence that says nothing about the fields measured as
+    numbers holding no zero *today* -- and a zero arriving in one of those is exactly the
+    case that used to be published as a measurement nobody had ruled on.
+    """
+    return _object(
+        "Coverage of the zero question over this artifact's fields. Every figure is "
+        "derived from the fields beside it; none is stated anywhere.",
+        {
+            "fields_measured_as_numbers": _integer(
+                "The denominator: every field that can carry a zero, and so every field "
+                "this project either has or has not ruled on."
+            ),
+            "fields_with_a_reviewed_zero_reading": _integer(
+                "Of those, how many carry a `recorded_zero_reading` other than "
+                "`unreviewed`. `undecidable` counts as reviewed: a review that reached no "
+                "verdict is still a review, and it is a finding rather than a gap."
+            ),
+            "fields_without_one": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": (
+                    "The rest, named rather than counted away. A zero appearing in any of "
+                    "these fails the build until somebody rules on it."
+                ),
+            },
+            "fields_publishing_a_recorded_zero": _integer(
+                "Of the fields measured as numbers, how many actually carry a zero in "
+                "this retrieval."
+            ),
+            "fields_publishing_a_recorded_zero_with_a_reviewed_reading": _integer(
+                "Of those, how many carry a reading. Smaller than the figure above means "
+                "a zero nobody has ruled on is being published as a value, which is the "
+                "condition `tests/test_schema.py` fails the build on."
+            ),
+        },
+    )
+
+
 def _envelope(properties: dict[str, Any], *, measurement: str) -> dict[str, Any]:
     """The keys both artifacts share, plus this artifact's own."""
     shared = {
@@ -310,6 +369,7 @@ def _envelope(properties: dict[str, Any], *, measurement: str) -> dict[str, Any]
         "measurement": _string("What this artifact measures, in one sentence."),
         "source": _source_schema(),
         "records": _integer("Records measured."),
+        "recorded_zero_review": _zero_review_schema(),
     }
     return {**shared, **properties}
 
