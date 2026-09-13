@@ -6,6 +6,52 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project a
 
 ## [Unreleased]
 
+### Fixed, the secret scan read one of `main`'s eighty-one commits and reported success
+
+- **`secret-scan` was `gitleaks/gitleaks-action`, which picks its scan range from the
+  triggering event rather than scanning the repository.** Read at the pinned SHA
+  (`e0c47f4`), it runs `gitleaks detect --log-opts=--no-merges --first-parent BASE^..HEAD`
+  on a push, and `--log-opts=-1` — exactly one commit — when the push carries a single
+  commit. It drops `--log-opts` altogether, and so reads the whole history, only on
+  `schedule` and `workflow_dispatch`. `ci.yml` fires on `push` and `pull_request` and
+  nothing else, so neither of those lanes has ever existed here. Every merge into `main`
+  in this repository is a squash merge, which is a one-commit push: the job read 1 of
+  `main`'s 81 commits, and a credential added in one commit and deleted in the next was
+  invisible to it.
+
+- **`fetch-depth: 0` did not prevent that and could not.** It decides how much history
+  `actions/checkout` puts on disk; what the scanner reads is decided by how it is invoked.
+  A checkout deep enough to scan and an invocation that declines to is exactly the state
+  this job was in, and the comment above the step did not say so. The step is now a
+  pinned, checksum-verified gitleaks 8.30.1 binary invoked as
+  `gitleaks git . --no-banner --redact --exit-code 1` — no `--log-opts`, so it walks every
+  commit reachable from HEAD on every event, and the range no longer depends on how the
+  run was triggered. `fetch-depth: 0` stays, relabelled as the necessary precondition it
+  is. `pull-requests: read` and the `GITHUB_TOKEN` handed to the action are gone with it:
+  both existed so the action could list a pull request's commits in order to scope the
+  scan, and nothing is scoped now.
+
+- **Measured, not assumed.** On a throwaway clone of this repository with its remote
+  removed, a random real-shaped AWS key was committed and then deleted in the next
+  commit, leaving the working tree byte-identical to the baseline
+  (`82f4a65c55bc2a211466b254ca5e3e8a8470ed4e`, restored and re-checked afterwards) with
+  the key reachable only from history — `git log -S` names the two commits that introduce
+  and remove it, and it appears zero times in the checkout. The old invocation
+  (`--log-opts=-1`) exited 0. The new one exited non-zero and named the finding. On this
+  repository's real history the new invocation passes over all 81 commits, so the fix
+  does not turn the check red.
+
+- **The job id and display name are unchanged**, because `secret-scan` is one of the five
+  required contexts in `.github/rulesets/main.json` and a rename would empty that
+  requirement on the day the profile is applied. The profile is still not applied: `main`
+  carries no ruleset and no branch protection today, so this check blocks nothing and
+  never has. Per ADR-0004 that is the reason to fix it rather than a reason not to — it
+  is the only secret scan this repository has, and a report nobody can act on is still
+  read as a pass. `tests/test_secret_scan_reads_history.py` holds the invocation, reading
+  `ci.yml` with comments stripped: the comment above the step names both the action that
+  was removed and the flag that must not return, and four conformance checks elsewhere in
+  this portfolio passed on exactly that kind of match.
+
 ### Added, the shared walk can be asked for an output format, which closes the consumer's last acquisition gap
 
 - **`iter_features` takes `out_format`, defaulting to `"json"`.** `return_geometry` and
