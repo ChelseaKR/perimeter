@@ -6,7 +6,7 @@ somebody else's server: HTTPS only, an honest User-Agent, geometry left behind, 
 between pages, and a hard stop rather than a workaround when an endpoint declines.
 
 None of that needs a network to test. Every test here substitutes the one function that
-opens a socket, so the refusals are checked as behaviour rather than described in a
+opens a socket, so the refusals are checked as behavior rather than described in a
 docstring. The real endpoints are never contacted, from here or from any other test.
 """
 
@@ -330,7 +330,7 @@ def capped_layer(total: int, cap: int) -> Callable[..., dict[str, Any]]:
     and sets `exceededTransferLimit`. Measured against the live POSTFIRE layer on
     2026-08-16, a request for 3,000 records came back with 2,000 and the flag set.
 
-    The fake honours `resultOffset` the way the real service does, so a walk that steps
+    The fake honors `resultOffset` the way the real service does, so a walk that steps
     its offset by more than the page it was handed steps over real records.
     """
 
@@ -536,7 +536,7 @@ def test_the_default_user_agent_still_names_this_project(
 def test_a_blank_user_agent_is_refused_rather_than_passed_through(blank: str) -> None:
     """urllib would substitute `Python-urllib/3.x`, which identifies nobody.
 
-    A caller that passes nothing is not anonymous, it is mislabelled: the request still
+    A caller that passes nothing is not anonymous, it is mislabeled: the request still
     goes out, under a header that names no project at all. That is an absent identity
     sent as though it were one, so it is refused before a socket opens.
     """
@@ -576,7 +576,7 @@ def test_geometry_requested_through_the_library_round_trips_unchanged(
 ) -> None:
     """The coordinates that come back are the coordinates the service sent.
 
-    Nothing rounds, reprojects, or normalises them on the way through. A consumer that
+    Nothing rounds, reprojects, or normalizes them on the way through. A consumer that
     copied the offset loop to get at geometry can now ask for it here instead, and the
     thing it gets is the service's own feature.
     """
@@ -1006,7 +1006,7 @@ def test_a_strict_consumer_needs_no_override_to_import_this_package(
     """The fourth gap in the consumer's audit: no `py.typed`, so two mypy overrides.
 
     This runs mypy over a minimal consumer rather than asserting the marker file exists,
-    because the marker existing and the marker being *shipped and honoured* are different
+    because the marker existing and the marker being *shipped and honored* are different
     facts, and only the second one deletes the consumer's overrides.
     """
     consumer = tmp_path / "consumer.py"

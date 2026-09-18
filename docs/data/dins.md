@@ -7,7 +7,7 @@ disagree, the same way `tests/test_provenance.py` holds `PROVENANCE.md` to it.
 | Field | |
 |---|---|
 | Source | CAL FIRE Damage Inspection (DINS) Data, published by California Department of Forestry and Fire Protection. Landing page: https://data.ca.gov/dataset/cal-fire-damage-inspection-dins-data. Read from the GeoServices endpoint `https://services1.arcgis.com/jUJYIo9tSA7EHvfZ/arcgis/rest/services/POSTFIRE_MASTER_DATA_SHARE/FeatureServer/0/query`, layer "POSTFIRE" |
-| Licence | Creative Commons Attribution (http://www.opendefinition.org/licenses/cc-by). No SPDX identifier is published by the source; this is the licence string the dataset itself carries |
+| License | Creative Commons Attribution (http://www.opendefinition.org/licenses/cc-by). No SPDX identifier is published by the source; this is the license string the dataset itself carries |
 | Fetch and refresh cadence | After each fire season. The layer carries no version string and is appended to as inspections complete, so there is no release to wait for. Staleness SLA: **180 days** after the retrieval date, after which `tests/test_data_cards.py` fails |
 | Fetch timestamp | `2026-08-07`, machine-readable in `src/perimeter/sources.py` as `retrieved`, in `data/raw/acquisition.json` per run, and in every published artifact under `source.retrieved` |
 | Tier | L1: openly licensed public reference data, republished here only as counts |

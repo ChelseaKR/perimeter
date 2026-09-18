@@ -95,7 +95,7 @@ def test_the_newest_deployment_wins_over_an_older_one() -> None:
     assert record.sha == "c" * 40
 
 
-def test_a_cancelled_publish_creates_no_deployment_and_moves_nothing() -> None:
+def test_a_canceled_publish_creates_no_deployment_and_moves_nothing() -> None:
     """The trap this file exists for, in this repository's own numbers.
 
     Thirteen of `publish-site`'s runs on `main` finished `cancelled` -- the `pages`
@@ -105,9 +105,9 @@ def test_a_cancelled_publish_creates_no_deployment_and_moves_nothing() -> None:
     that commit rather than "published an hour ago". Asserting the absence directly,
     because the bug would be a silent extra row, not an exception.
     """
-    cancelled_runs_create_no_deployments: list[Mapping[str, Any]] = [_deployment()]
+    canceled_runs_create_no_deployments: list[Mapping[str, Any]] = [_deployment()]
     record = staleness.newest_successful_deployment(
-        cancelled_runs_create_no_deployments, _succeeded
+        canceled_runs_create_no_deployments, _succeeded
     )
     assert record.sha == "c" * 40
 

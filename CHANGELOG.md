@@ -16,7 +16,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project a
 - **Guarded the same way on every page.** The loader does nothing off
   `chelseakr.github.io` under `/perimeter/`, under Global Privacy Control or Do Not Track,
   or after an opt-out (localStorage `perimeter:analytics-opt-out`). Google signals and ad
-  personalisation are off, and Consent Mode v2 denies the advertising signals everywhere
+  personalization are off, and Consent Mode v2 denies the advertising signals everywhere
   and analytics storage in the EEA, the UK and Switzerland.
 - **Claims changed to match.** The README's Observability row said the pages ship no
   script and the project takes no telemetry, and its Performance row said no script is
@@ -106,7 +106,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project a
   pinned, checksum-verified gitleaks 8.30.1 binary invoked as
   `gitleaks git . --no-banner --redact --exit-code 1` — no `--log-opts`, so it walks every
   commit reachable from HEAD on every event, and the range no longer depends on how the
-  run was triggered. `fetch-depth: 0` stays, relabelled as the necessary precondition it
+  run was triggered. `fetch-depth: 0` stays, relabeled as the necessary precondition it
   is. `pull-requests: read` and the `GITHUB_TOKEN` handed to the action are gone with it:
   both existed so the action could list a pull request's commits in order to scope the
   scan, and nothing is scoped now.
@@ -296,7 +296,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project a
   and say why a share is null rather than zero over an empty denominator.
 
 - **`site/data/datapackage.json`** is a Frictionless Data Package naming both resources
-  with the licence, the endpoint, the layer, the retrieval date, the byte count, the
+  with the license, the endpoint, the layer, the retrieval date, the byte count, the
   record count and the SHA-256 of the file each was measured from. Those facts come from
   `perimeter.sources`, the single reviewed provenance record, so a descriptor cannot
   state a hash the artifacts do not; `tests/test_artifact_schemas.py` holds it there the
@@ -501,7 +501,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project a
   different claim from a file that did not.
 - **`src/perimeter/py.typed`.** A strict consumer had to carry two mypy overrides. The
   test runs `mypy --strict` over a minimal consumer rather than asserting the marker file
-  exists, because the marker existing and the marker being shipped and honoured are
+  exists, because the marker existing and the marker being shipped and honored are
   different facts, and only the second one deletes an override. This makes the annotations
   a published interface: a later signature change is a breaking change for the consumer.
 
@@ -618,7 +618,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project a
 - **The recurrence, not just this week's instance.** `.github/dependabot.yml` now groups
   `github/codeql-action*` into a single pull request, so next month's patch bump is one
   branch that is either wholly applied or not applied at all. This is the mechanical fix;
-  nothing about the workflow's behaviour changes, and the pins stay full 40-character
+  nothing about the workflow's behavior changes, and the pins stay full 40-character
   SHAs with the tag in a trailing comment, which is what `zizmor` checks.
 
 ### Fixed, the audit gate was red on a lockfile pin that no dependency bump would move
@@ -664,7 +664,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project a
   field leaving `DINS_FIELDS` would have dropped its cell from every row and left all five
   headers standing, which does not blank a column. Every cell after the missing one moves
   left: the vent-screen share published under Eaves, correctly counted and wrongly
-  labelled, on a page whose subject is not misreading a number. Nothing was wrong in the
+  labeled, on a page whose subject is not misreading a number. Nothing was wrong in the
   acquired file, and nothing is wrong on the page today; all five fields are in
   `DINS_FIELDS`, so this is a defect the code could produce rather than one it had
   produced. The header and the body now read one paired list,
@@ -1143,14 +1143,14 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project a
   marker net matches single tokens, so `No Address Available` (513 records) and a composed
   placeholder reading `NULL NULL UNKNOWN CA 00000` (160) were passing through it as
   recorded addresses. Recorded value moves from 124,811 (94.2%) to 124,138 (93.7%).
-- **The all-zeros local incident number is endorsed, and relabelled.** The treatment is
+- **The all-zeros local incident number is endorsed, and relabeled.** The treatment is
   unchanged and no figure moves. Its basis is corrected from published to inferred: FRAP
   publishes no domain for `INC_NUM`, and the reading rests on the field's published
   definition, "Number assigned by the Emergency Command Center of the responsible agency
   for the fire", together with the distribution of the file.
 - Pages gained a `main` landmark and a skip link, a caption and scoped headers on every
   table with a row header on every row, and the heading level the index page was skipping.
-  The light-theme green moved from `#1baf7a` to `#189a6b` so the three state colours clear
+  The light-theme green moved from `#1baf7a` to `#189a6b` so the three state colors clear
   3:1 against both surfaces.
 - `irwin_present_tenths_pct` per year and `damage_values_tenths_pct` are now published in
   the JSON artifacts, so every share a page prints is a share the pipeline published.
@@ -1191,7 +1191,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project a
   case: a genuine zero, an empty cell, a published unknown code, a marker word, a finding
   of absence, a value outside the published domain, a structure that could not be reached,
   and a record with no year.
-- `PROVENANCE.md` with per-source endpoint, licence, version, retrieval date, record count,
+- `PROVENANCE.md` with per-source endpoint, license, version, retrieval date, record count,
   byte count and SHA-256, the publishers' own caveats quoted, and an explicit list of what
   is excluded and why. `tests/test_provenance.py` fails if it drifts from `sources.py`.
 

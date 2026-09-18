@@ -57,7 +57,7 @@ and the page still adds up. The cost is a sentence under a table that will, on
 current data, always say the same thing, and one more field in every
 `completeness_by_access` row of a 1.5 MB artifact.
 
-What this does not do is generalise. `field_coverage` already counts every record
+What this does not do is generalize. `field_coverage` already counts every record
 it is handed and `dins_report` hands it all of them, which is now asserted by
 `tests/test_field_notes.py`. The per-incident blocks partition the file, with the
 records attributable to no incident counted separately. Those were checked while

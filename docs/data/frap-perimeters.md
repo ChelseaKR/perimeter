@@ -7,7 +7,7 @@ disagree, the same way `tests/test_provenance.py` holds `PROVENANCE.md` to it.
 | Field | |
 |---|---|
 | Source | California Historical Fire Perimeters, published by California Department of Forestry and Fire Protection, Fire and Resource Assessment Program. Landing page: https://data.cnra.ca.gov/dataset/california-historical-fire-perimeters. Read from the GeoServices endpoint `https://services1.arcgis.com/jUJYIo9tSA7EHvfZ/arcgis/rest/services/California_Historic_Fire_Perimeters/FeatureServer/0/query`, layer "California Fire Perimeters (all)" |
-| Licence | Creative Commons Attribution (http://www.opendefinition.org/licenses/cc-by). No SPDX identifier is published by the source; this is the licence string the dataset itself carries |
+| License | Creative Commons Attribution (http://www.opendefinition.org/licenses/cc-by). No SPDX identifier is published by the source; this is the license string the dataset itself carries |
 | Fetch and refresh cadence | On each published FRAP version. The layer is released as a versioned annual product and the acquired file is firep25_1. Staleness SLA: **400 days** after the retrieval date, after which `tests/test_data_cards.py` fails |
 | Fetch timestamp | `2026-08-07`, machine-readable in `src/perimeter/sources.py` as `retrieved`, in `data/raw/acquisition.json` per run, and in every published artifact under `source.retrieved` |
 | Tier | L1: openly licensed public reference data, republished here only as counts |

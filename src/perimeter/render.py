@@ -58,7 +58,7 @@ SOCIAL_CARD_ALT = (
 
 # Keyed by `active`, the value each page already uses to mark its own nav entry, so a
 # canonical and the highlighted tab cannot disagree about which page this is. The index
-# canonicalises to the directory form, which is the URL Pages serves it at.
+# canonicalizes to the directory form, which is the URL Pages serves it at.
 CANONICAL_PATH = {
     "index": "",
     "perimeters": "perimeters.html",
@@ -367,7 +367,7 @@ def state_bar(present: int, unknown: int, absent: int) -> str:
     """A stacked proportion bar for the three states, in fixed order.
 
     Every bar sits in a row beside the three counts it draws, so identity is never
-    carried by colour alone and a reader who cannot separate the hues still has the
+    carried by color alone and a reader who cannot separate the hues still has the
     numbers.
     """
     total = present + unknown + absent
@@ -389,7 +389,7 @@ def legend() -> str:
 
     The swatches are hidden from assistive technology because the words beside them say
     the same thing, and every table that uses this key prints all three counts as
-    numbers in the same row as the bar they colour.
+    numbers in the same row as the bar they color.
     """
     items = (
         ("sw-present", "Recorded value"),
@@ -454,7 +454,7 @@ def provenance_block(source: Source, *, is_fixture: bool) -> str:
         f'<dt>Landing page</dt><dd><a href="{esc(source.landing_page)}">{esc(source.landing_page)}</a></dd>'
         f"<dt>Layer read</dt><dd>{esc(source.layer)}</dd>"
         f"<dt>Endpoint</dt><dd>{esc(source.endpoint)}</dd>"
-        f"<dt>Licence</dt><dd>{esc(source.licence)}</dd>"
+        f"<dt>License</dt><dd>{esc(source.license)}</dd>"
         f"<dt>Version</dt><dd>{esc(version)}</dd>"
         f"<dt>Retrieved</dt><dd>{esc(retrieved)}</dd>"
         f"<dt>Acquired</dt><dd>{esc(acquired)}</dd>"
@@ -481,7 +481,7 @@ def scroll_region(caption_id: str, *, tall: bool = False) -> str:
     ``div`` is a tab stop a screen reader announces as nothing at all, while a named
     section is a region landmark natively, with no ARIA attribute to go stale. The name
     comes from the table's own caption, which every table here already carries.
-    html-validate refuses the ARIA spelling of this in favour of the element.
+    html-validate refuses the ARIA spelling of this in favor of the element.
     """
     classes = "scroll tall" if tall else "scroll"
     return f'<section class="{classes}" tabindex="0" aria-labelledby="{caption_id}">'
@@ -661,7 +661,7 @@ def page(
 <footer class="page">
 <p>{esc(DISCLAIMER)}</p>
 <p>Source data is published by the California Department of Forestry and Fire Protection
-under a Creative Commons Attribution licence and is reproduced here only as counts.
+under a Creative Commons Attribution license and is reproduced here only as counts.
 This project holds no view on how any agency collects or manages its data. It counts what
 the published files contain, in the terms the publishers use to describe them.</p>
 <p>Every number on these pages is produced by a build that is public. The source, the
@@ -669,7 +669,7 @@ field registry the markers come from, and the acquisition notes are at
 <a href="{esc(REPO_URL)}">github.com/ChelseaKR/perimeter</a>.</p>
 <p>These pages are one rendering of two JSON artifacts, and the artifacts are the
 product. Their shape is published as a contract rather than left to be read out of the
-source: <a href="data/datapackage.json">the data package</a> carries the licence, the
+source: <a href="data/datapackage.json">the data package</a> carries the license, the
 endpoint, the retrieval date and the checksum of each file measured, and the JSON
 Schemas it names
 (<a href="data/schema/perimeters-coverage.schema.json">perimeters</a>,
@@ -1070,7 +1070,7 @@ def dins_page(report: DinsReport, *, is_fixture: bool) -> str:
     # field leaving DINS_FIELDS dropped its cell from every row and left all five headers
     # standing, which does not blank a column, it shifts every later one left. The vent
     # screen share would have been published under Eaves, correctly counted and wrongly
-    # labelled, and nothing on the page would have looked wrong.
+    # labeled, and nothing on the page would have looked wrong.
     columns = [
         (name, label)
         for name, label in INCIDENT_FIELD_COLUMNS
@@ -1403,7 +1403,7 @@ in <code>docs/MARKERS.md</code>.</p>
 
 <h2>Sources</h2>
 <p>Both datasets are published by the California Department of Forestry and Fire
-Protection under a Creative Commons Attribution licence, and both were read from the
+Protection under a Creative Commons Attribution license, and both were read from the
 GeoServices endpoint listed among the dataset's own published resources. Geometry was not
 requested, because no measurement here needs it. Full detail, including byte counts and
 file hashes, is in <code>PROVENANCE.md</code> and repeated on each page.</p>
@@ -1451,8 +1451,8 @@ it tell a returning browser from a new one, and last up to two years. In the Eur
 Economic Area, the United Kingdom and Switzerland it sets no analytics cookies. There,
 Google still receives a cookieless ping for each page.</p>
 <h2>Advertising features are off</h2>
-<p>Google signals and ad personalisation are both turned off, and the advertising storage,
-ad user data and ad personalisation consent signals are denied everywhere. Google keeps the
+<p>Google signals and ad personalization are both turned off, and the advertising storage,
+ad user data and ad personalization consent signals are denied everywhere. Google keeps the
 event data for {esc(analytics.GA4_DATA_RETENTION)}. See
 <a href="https://policies.google.com/privacy">Google's privacy policy</a>.</p>
 <h2 id="opt-out">Opting out</h2>

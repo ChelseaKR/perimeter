@@ -7,7 +7,7 @@ import { join, resolve } from "node:path";
  *
  * A gate that can find nothing to examine fails rather than passing (ADR-0004), so
  * both of these throw rather than returning an empty list. Playwright reports a throw
- * at collection time as an error and exits non-zero, which is the behaviour wanted:
+ * at collection time as an error and exits non-zero, which is the behavior wanted:
  * "no pages were checked" must never read as "no problems were found".
  */
 export const SITE_DIR = resolve(

@@ -234,7 +234,7 @@ def test_the_page_names_itself_and_not_the_shared_origin(
 
     canonical = doc.links.get("canonical", "")
     assert canonical, f"{name} has no canonical URL"
-    assert canonical.startswith(SITE_URL), f"{name} canonicalises to {canonical!r}"
+    assert canonical.startswith(SITE_URL), f"{name} canonicalizes to {canonical!r}"
     assert canonical.rstrip("/") != "https://chelseakr.github.io", (
         f"{name} points at the shared origin, which is a different site"
     )
@@ -363,9 +363,9 @@ def test_the_page_carries_no_em_dashes(built: Path, name: str) -> None:
 # --------------------------------------------------------------------------------------
 
 
-def relative_luminance(colour: str) -> float:
-    """WCAG relative luminance of an sRGB hex colour."""
-    raw = colour.lstrip("#")
+def relative_luminance(color: str) -> float:
+    """WCAG relative luminance of an sRGB hex color."""
+    raw = color.lstrip("#")
     channels = [int(raw[i : i + 2], 16) / 255 for i in (0, 2, 4)]
     linear = [
         c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4 for c in channels
@@ -405,8 +405,8 @@ GRAPHIC_PAIRS: tuple[tuple[str, str, str], ...] = (
     ("unknown", "surface", "the same swatch in the legend above a table"),
     ("absent", "surface", "the same swatch in the legend above a table"),
 )
-"""The three state colours against both surfaces. Every bar sits in a row beside the
-three counts it draws and the legend names each colour in words, so no information
+"""The three state colors against both surfaces. Every bar sits in a row beside the
+three counts it draws and the legend names each color in words, so no information
 depends on telling them apart. They are held to 1.4.11's 3:1 anyway."""
 
 TEXT_MINIMUM = 4.5
@@ -439,12 +439,12 @@ def test_graphics_meet_wcag_non_text_contrast(
 
 
 def test_both_palettes_define_exactly_the_same_tokens() -> None:
-    """A token defined in one theme only would leave a colour inherited from the host."""
+    """A token defined in one theme only would leave a color inherited from the host."""
     assert set(LIGHT) == set(DARK)
 
 
 def test_a_known_contrast_is_computed_correctly() -> None:
-    """Anchor the arithmetic: black on white is 21:1, and a colour on itself is 1:1."""
+    """Anchor the arithmetic: black on white is 21:1, and a color on itself is 1:1."""
     assert round(contrast("#000000", "#ffffff"), 2) == 21.0
     assert round(contrast("#1c5cab", "#1c5cab"), 2) == 1.0
 

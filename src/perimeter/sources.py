@@ -1,4 +1,4 @@
-"""What was downloaded, from where, under what licence, and what its publisher says about it.
+"""What was downloaded, from where, under what license, and what its publisher says about it.
 
 This module is the single reviewed record of provenance. PROVENANCE.md restates it for
 a reader and a test asserts the two agree, so the document cannot drift away from the
@@ -37,8 +37,8 @@ class Source:
     landing_page: str
     endpoint: str
     layer: str
-    licence: str
-    licence_url: str
+    license: str
+    license_url: str
     version: str
     retrieved: str
     record_count: int
@@ -78,8 +78,8 @@ FRAP = Source(
         "California_Historic_Fire_Perimeters/FeatureServer/0/query"
     ),
     layer="California Fire Perimeters (all)",
-    licence="Creative Commons Attribution",
-    licence_url="http://www.opendefinition.org/licenses/cc-by",
+    license="Creative Commons Attribution",
+    license_url="http://www.opendefinition.org/licenses/cc-by",
     version="firep25_1",
     retrieved=RETRIEVED,
     record_count=23334,
@@ -126,7 +126,7 @@ FRAP = Source(
                 "≥1 fatality. All cooperating agencies submit perimeters ≥10 acres."
             ),
             measured_as="The 10, 50 and 300 acre thresholds are the ones counted against, "
-            "and they are labelled as the current criteria rather than applied backwards "
+            "and they are labeled as the current criteria rather than applied backwards "
             "to eras whose cutoffs this project has not established.",
         ),
         Caveat(
@@ -173,8 +173,8 @@ DINS = Source(
         "POSTFIRE_MASTER_DATA_SHARE/FeatureServer/0/query"
     ),
     layer="POSTFIRE",
-    licence="Creative Commons Attribution",
-    licence_url="http://www.opendefinition.org/licenses/cc-by",
+    license="Creative Commons Attribution",
+    license_url="http://www.opendefinition.org/licenses/cc-by",
     version="POSTFIRE_MASTER_DATA_SHARE",
     retrieved=RETRIEVED,
     record_count=132522,

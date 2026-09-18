@@ -21,7 +21,7 @@ Every part of a page that does not depend on how many records were counted. Two 
 * **Chrome.** Everything before ``<main id="content">`` and everything from ``</main>``: the
   doctype, the head, the title, the description, the canonical and Open Graph block, the
   whole stylesheet with both palettes inline, the skip link, the nav, and the footer with the
-  disclaimer and the licence note. This is compared against a build from the committed
+  disclaimer and the license note. This is compared against a build from the committed
   fixtures, into a temporary directory, byte for byte. A fixture build and a real build
   differ inside ``<main>`` and nowhere else, which is why the split is where it is.
 * **Blocks the renderer writes from committed constants.** ``render.legend()``,

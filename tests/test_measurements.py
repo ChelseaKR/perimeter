@@ -70,7 +70,7 @@ def dins(inspections: list[Record]) -> DinsReport:
 
 
 def test_records_without_a_year_are_their_own_cohort(frap: PerimeterReport) -> None:
-    """Never attached to a neighbouring year, never dropped."""
+    """Never attached to a neighboring year, never dropped."""
     assert frap.records == 10
     assert frap.records_without_year == 1
     no_year = [cohort for cohort in frap.years if cohort.year is None]
@@ -453,7 +453,7 @@ def test_the_access_table_accounts_for_every_record_it_was_handed() -> None:
         assert row.counted_records == len(records), row.name
 
 
-def test_the_third_population_is_counted_field_by_field_and_not_only_totalled() -> None:
+def test_the_third_population_is_counted_field_by_field_and_not_only_totaled() -> None:
     """A blank on a record nobody could place is still a blank somebody may want."""
     spec = FieldSpec("X", "X")
     unplaceable = _damage_record(Cell.not_recorded())
