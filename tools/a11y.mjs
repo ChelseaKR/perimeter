@@ -94,8 +94,9 @@ const UNDECIDABLE_HERE = new Map([
 async function checkPage(path) {
   const html = readFileSync(path, "utf8");
   // "outside-only" gives us an eval to inject axe with, without ever running a script
-  // that came out of the page. These pages ship no script, and the checker should not
-  // start executing one if that ever changes.
+  // that came out of the page. The pages' one script is the Google Analytics 4 loader,
+  // and the checker should not execute it: the Chromium gate runs it, off the production
+  // host, where it loads nothing and only reveals the footer's opt-out button.
   // axe probes for a canvas to decide whether it can sample colours. jsdom has none, so
   // it reports that once per page. Everything else the page or axe says is forwarded.
   const console_ = new VirtualConsole();

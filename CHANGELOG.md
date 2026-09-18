@@ -6,6 +6,23 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project a
 
 ## [Unreleased]
 
+### Added, Google Analytics 4 on the pages, with a privacy page
+
+- **Owner decision 2026-09-17: GA4 on every public site, with privacy copy changed to
+  match.** `src/perimeter/analytics.py` holds the measurement ID (`GA4_MEASUREMENT_ID`,
+  `G-8PD9WL8LN0`) and the loader, and `render.page` puts both the loader and a footer
+  "Opt out of analytics" control on every page. The build now also writes
+  `privacy.html`. An empty ID removes all of it, and the JSON artifacts never carry any.
+- **Guarded the same way on every page.** The loader does nothing off
+  `chelseakr.github.io` under `/perimeter/`, under Global Privacy Control or Do Not Track,
+  or after an opt-out (localStorage `perimeter:analytics-opt-out`). Google signals and ad
+  personalisation are off, and Consent Mode v2 denies the advertising signals everywhere
+  and analytics storage in the EEA, the UK and Switzerland.
+- **Claims changed to match.** The README's Observability row said the pages ship no
+  script and the project takes no telemetry, and its Performance row said no script is
+  shipped; both now describe the loader. `tests/test_analytics.py` executes the loader in
+  Node and deletes each guard as a negative control, asserting the deletion landed.
+
 ### Fixed, five fields published a zero nobody had ruled on, and the registry could not say so
 
 - **A reviewed decision and an unexamined field published the same thing.** `NOOFCARSONPROPERTY`,

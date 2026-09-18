@@ -8,7 +8,7 @@ and [damage inspection coverage](https://chelseakr.github.io/perimeter/dins.html
 `.github/workflows/pages.yml` publishes `site/` from `main`, running `html-validate` and
 axe-core over the exact bytes it is about to serve rather than over a rebuild of them.
 
-Or run it yourself. This builds the same three pages from the committed fixtures, needs no
+Or run it yourself. This builds the same pages from the committed fixtures, needs no
 network and no CAL FIRE download, and takes about a minute:
 
 ```sh
@@ -246,7 +246,7 @@ Gated, in CI:
   pass: `tools/a11y.mjs` fails on any undecided rule that is not declared in it with a
   reason and with where the rule's subject is checked instead, and it prints every
   undecided rule on every run, passing or failing. Three are declared and land on all
-  three pages (`color-contrast`, `landmark-one-main`, `page-has-heading-one`); the latter
+  four pages (`color-contrast`, `landmark-one-main`, `page-has-heading-one`); the latter
   two are decided from the markup in `tests/test_pages_html.py` instead.
   `tests/test_a11y_gate.py` runs the gate against pages that should fail it.
 - The same rule sets again, in Chromium, where nothing is undecidable. That run declares
@@ -304,6 +304,25 @@ should fail it, so the gate is known to be able to fail.
 `is_fixture: true` and publishes `null` for every acquisition fact, so fixture output
 cannot pass itself off as a measurement of the real files.
 
+### Analytics on the pages
+
+The pages run Google Analytics 4 (owner decision 2026-09-17: GA4 on every public site,
+with privacy copy changed to match), and `privacy.html`, linked from every footer, says
+what that means for a visitor. The measurement ID is `GA4_MEASUREMENT_ID` in
+`src/perimeter/analytics.py`; setting it to `""` and rebuilding removes the loader, the
+footer's opt-out control and every reference to Google from every page. The JSON artifacts
+never carry any of it. The loader loads nothing unless the page is served from
+`chelseakr.github.io` under `/perimeter/`, so a local build, the `file://` pages the
+accessibility gates read, and CI never report to the property. It also loads nothing when
+the browser sends Global Privacy Control or Do Not Track, or after the visitor uses the
+footer's "Opt out of analytics" button, remembered in local storage as
+`perimeter:analytics-opt-out` (a key that names this project, because every
+`chelseakr.github.io` site shares one origin). Google signals and ad personalisation are
+off, the advertising consent signals are denied everywhere, and analytics cookies are
+denied in the EEA, the UK and Switzerland. `tests/test_analytics.py` runs the committed
+loader in Node against each of those cases and deletes each guard in turn to prove the test
+notices.
+
 ## Scope
 
 Coverage measurement only. This project does not model fire risk, does not track
@@ -323,6 +342,7 @@ here is how much of each published field is actually filled in, and what the bla
 | `src/perimeter/coverage.py` | The two reports |
 | `src/perimeter/artifacts.py` | Deterministic JSON |
 | `src/perimeter/render.py` | The static pages |
+| `src/perimeter/analytics.py` | The Google Analytics 4 loader and the footer's opt-out, and the one place the measurement ID goes |
 | `src/perimeter/acquire.py` | The only code that touches the network. Run by hand, never in CI |
 | `src/perimeter/survey.py` | Inventory a retrieval's candidate markers before a build refuses one. Declares nothing |
 | `tools/a11y.mjs` | axe-core over the built pages in a headless DOM; an undecided rule is not a pass |
@@ -364,7 +384,7 @@ build time. Nothing in CI can check it against the source.
 | Code Quality | Applies: uv, ruff, mypy `--strict`, pytest with branch coverage at 100% over `src/` with nothing omitted, against a 90% floor. `make lock-check` runs `uv lock --check`, because CQ-09's prescribed `uv sync --frozen` exits 0 on lockfile drift (measured 2026-08-15) |
 | Security & Supply-Chain | Applies: semgrep, gitleaks, pip-audit, `npm audit`, CodeQL over actions/python/javascript, every action SHA-pinned, `permissions: contents: read` at the top of every workflow, `persist-credentials: false` on every checkout. Not met: no SBOM, no OpenSSF Scorecard workflow, no `osv-scanner` alongside pip-audit (SEC-11, SEC-13), no scheduled trufflehog run (SEC-19), and Dependabot **security updates** are disabled, so an advisory raises an alert and opens no pull request: the four `fast-uri` advisories that had `verify` red from 2026-09-03 were all raised as alerts and all cleared by a hand-resolved lockfile bump. Alerts themselves are on, and were enabled 2026-09-05; this row said they were disabled until 2026-09-06 |
 | CI/CD | Applies (not met). `main` has no ruleset and no branch protection, so the gates report and block nothing. The `protect-main` profile is committed at `.github/rulesets/main.json` and deliberately not applied; applying it is a live repository setting |
-| Observability | Applies (Tier B+C), which is what the manifest records and what OBS section 0 asks a repo with two surfaces to state. Tier C is the library and CLI writing to stdout: OTel is out of scope with no network surface, which section 10 allows a Tier C surface to declare. Tier B is the published Pages site. Not met, and the B half is the larger gap: section 8 asks a Tier B frontend for a Core Web Vitals RUM beacon, which means shipping a script that reports readers of a civic-data page back to somebody, and these pages ship no script and this project takes no telemetry; that refusal is a position, not an oversight, and the standard has no N/A for it. Also not met: the Lighthouse-CI lab gate on LCP, INP and CLS, which does not need a beacon and is the half that could be built; no `docs/ROADMAP.md` carrying the tier declaration section 0 requires; and no operations runbook |
+| Observability | Applies (Tier B+C), which is what the manifest records and what OBS section 0 asks a repo with two surfaces to state. Tier C is the library and CLI writing to stdout: OTel is out of scope with no network surface, which section 10 allows a Tier C surface to declare. Tier B is the published Pages site. Not met, and the B half is the larger gap: section 8 asks a Tier B frontend for a Core Web Vitals RUM beacon, and none is built. The pages do now run Google Analytics 4 (owner decision 2026-09-17: GA4 on every public site), which counts visits and is described on `privacy.html`; it is not configured as a RUM beacon, nothing here reads Web Vitals out of it, and nothing is gated on it. Also not met: the Lighthouse-CI lab gate on LCP, INP and CLS, which does not need a beacon and is the half that could be built; no `docs/ROADMAP.md` carrying the tier declaration section 0 requires; and no operations runbook |
 | Accessibility | Applies: html-validate and axe-core over the built pages in CI, in jsdom and again in Chromium, plus SC 1.4.10 Reflow at 320 by 256, contrast measured arithmetically over both palettes, and the same structural floor asserted from Python. An axe rule that comes back undecided fails the jsdom gate unless it is declared with a reason and with where it is checked instead; the browser run declares nothing and fails on any undecided rule. Nothing is suppressed anywhere, so there is no `waivers.yml` and A11Y-06 and A11Y-09 are met rather than waived. Not met: no ACR, and the manual checks README names under "What still needs a person" are unverified. Measured 2026-08-27: the browser run found `scrollable-region-focusable`, serious, on both measurement pages, which the jsdom run cannot see; the scroll containers are now named sections with `tabindex="0"` |
 | Internationalization | Applies (not met). Civic data presented to the public is in scope per I18N section 1, and these pages are English only with no catalog and no `docs/I18N.md` declaration |
 | AI Evaluation | N/A (no model, no LLM, no generated text anywhere in the pipeline or the pages) |
@@ -372,7 +392,7 @@ build time. Nothing in CI can check it against the source.
 | Documentation | Applies: README, `PROVENANCE.md`, `docs/MARKERS.md`, `CONTRIBUTING.md`, `SECURITY.md`, `CHANGELOG.md`, `CITATION.cff`, a `docs/adr/` log, this table, and a `.standards-version` pin that `tests/test_standards_conformance.py` reads |
 | Release & Versioning | Applies (not met). Version `0.1.0` in `pyproject.toml` and `CITATION.cff`, no tag cut, no signed tag, no release workflow, no published artifact. The distribution name is `perimeter-wildfire` rather than `perimeter`: the bare name on PyPI belongs to YunoJuno's Django access-control middleware, so a release under it was never possible, and the repository carried a name that could not have accepted an upload. `perimeter-wildfire` was free when chosen (2026-09-07); free is not reserved, and nothing has been uploaded. That is now a gate rather than a sentence: `tests/test_release_claims.py` reads `git tag --list` and fails if the declared version is neither tagged nor disclosed as untagged in this row or the status line, if `CITATION.cff` restates a different version, or if `date-released` appears without a tag naming it. `CITATION.cff` carried `date-released: 2026-08-07` against no release until this row was made enforceable |
 | Responsible-Tech Framework | Applies: unofficial framing on every served page, no claim about any agency's infrastructure or security posture, no address, parcel number or assessed value republished, and an acquisition path that stops rather than routing around an access control. Not met: no dated ethics, transparency or residual-risk artifacts |
-| Performance | Applies (not met). Three static pages, no script shipped, no web font; that is a good starting position and it is not a measurement. No budget recorded and no Lighthouse run |
+| Performance | Applies (not met). Four static pages and no web font. The one script is the inline Google Analytics 4 loader, which appends gtag.js asynchronously on the production host and blocks nothing. That is a good starting position and it is not a measurement. No budget recorded and no Lighthouse run |
 | Incident Response | Applies: `SECURITY.md` routes reports to GitHub private vulnerability reporting with a 72-hour acknowledgment SLA. Not met: no severity convention, no secret-leak runbook, no committed-postmortem requirement |
 | Data Governance | Applies (L1): openly licensed public civic data, republished only as counts, handled defensively above the tier because the DINS file carries site addresses and parcel numbers (`data/raw/` gitignored, fixtures hand-written rather than sampled, no identifying field republished). A data card per source under `docs/data/` carries the seven rows section 1 requires, including the refresh cadence, the staleness SLA and the tier, which were the gap this row recorded (DG-01). DG-04 is a gate: `tests/test_data_cards.py` fails the build when a retrieval is older than the SLA its card states, and the clock lives there rather than in the artifacts, which have none. DG-03 is `require_columns` and `FieldSpec.classify`, which refuse a file per row rather than validating the first one. Not met: DG-02 is satisfied at the file level and not the record level, since no record is republished and every count's artifact names the source, version, retrieval date and hash; and DG-19 has nothing to link, because there has been one retrieval |
 | AI Development Measurement | Applies (not met). No baseline and no outcome metrics recorded for this repository's development stream |

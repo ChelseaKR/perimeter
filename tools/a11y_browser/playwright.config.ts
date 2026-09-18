@@ -9,9 +9,11 @@ import { defineConfig, devices } from "@playwright/test";
  * rule sets, in Chromium, plus WCAG 2.2 SC 1.4.10 Reflow, which axe does not check in
  * any engine because it is a property of the viewport rather than of the DOM.
  *
- * Nothing is served. The pages are static files with no script and no external asset,
- * so the specs read them straight off disk as `file://` URLs: no port, no server, and
- * nothing for CI to reach over the network. `PERIMETER_SITE_DIR` points the same specs
+ * Nothing is served. The pages are static files with no external asset, so the specs
+ * read them straight off disk as `file://` URLs: no port, no server, and nothing for CI
+ * to reach over the network. Their one script, the Google Analytics 4 loader, returns
+ * before loading anything off the production host, so a `file://` page never contacts
+ * Google; it does reveal the footer's opt-out button, which these specs then check. `PERIMETER_SITE_DIR` points the same specs
  * at another build directory, which is how `tests/test_a11y_browser_gate.py` runs them
  * against pages that must fail.
  *
