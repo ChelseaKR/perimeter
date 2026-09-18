@@ -122,7 +122,7 @@ def test_no_published_link_is_rooted_at_the_server(name: str) -> None:
 
 
 @pytest.mark.parametrize("name", PAGES)
-def test_every_published_page_canonicalises_to_itself_under_the_subpath(
+def test_every_published_page_canonicalizes_to_itself_under_the_subpath(
     name: str,
 ) -> None:
     """The same subpath property the test above holds for links, held for the canonical.
@@ -145,7 +145,7 @@ def test_every_published_page_canonicalises_to_itself_under_the_subpath(
     found = re.search(r'<link rel="canonical" href="([^"]*)">', text)
     assert found, f"{name} has no canonical URL"
     assert found.group(1) == expected, (
-        f"{name} canonicalises to {found.group(1)!r}, not {expected!r}"
+        f"{name} canonicalizes to {found.group(1)!r}, not {expected!r}"
     )
     assert f'<meta property="og:url" content="{expected}">' in text, (
         f"{name} og:url disagrees with its canonical"

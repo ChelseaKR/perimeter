@@ -12,12 +12,12 @@ The trigger is not the problem, and this file does not change it. `pages.yml` fi
 every push to `main` with no path filter, which is correct. What is missing is anything
 that notices when a firing did not land. Measured on 2026-09-13 over the 75 commits on
 `main` since `pages.yml` was added on 2026-08-07: 23 of them produced no `github-pages`
-deployment at all. Thirteen had their `publish-site` run **cancelled** -- the `pages`
+deployment at all. Thirteen had their `publish-site` run **canceled** -- the `pages`
 concurrency group holds one pending run, so a second push while a publish is in flight
 evicts the first -- and ten arrived inside a push whose tip was another commit and so
 never got a run. Two of the 23, `4385957b9` and `edbfb9bd7` (both 2026-08-29), changed
 files under `site/`: they changed the bytes a visitor receives and were never published.
-Every gate was green throughout, because a cancelled run is not a failed one, and because
+Every gate was green throughout, because a canceled run is not a failed one, and because
 none of these gates was asking.
 
 This module is the reader. It publishes nothing and holds no credential that could.
@@ -72,7 +72,7 @@ that stale forever.
 Why the deployment record and not the run history
 -------------------------------------------------
 `publish-site`'s run list is the wrong source and this repository is the proof. Thirteen of
-its runs finished `cancelled`. Count a cancelled run as a publish and the site reports as
+its runs finished `cancelled`. Count a canceled run as a publish and the site reports as
 fresh every time; filter cancellations out and the newest surviving run may be days from
 the commit it is credited with. A `github-pages` deployment, by contrast, exists only
 because bytes were published, it names the commit they came from, and its status says

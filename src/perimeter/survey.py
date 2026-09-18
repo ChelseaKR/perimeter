@@ -2,7 +2,7 @@
 
 A refresh currently begins from a crash. :class:`~perimeter.cells.SentinelDriftError`
 fails the build the first time a field holds something that reads like a missing-data
-marker nobody has reviewed for that field, which is the right behaviour and a poor way to
+marker nobody has reviewed for that field, which is the right behavior and a poor way to
 find out: it reports one cell, in one field, and says nothing about the next one. Working
 through a new retrieval that way means running the build, reading a refusal, reviewing a
 field, and running it again, once per undeclared marker in the file.

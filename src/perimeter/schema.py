@@ -195,7 +195,7 @@ class FieldSpec:
         The two-number denominator's numerator. Deliberately phrased as "somebody has
         ruled" and not "the zeros are values": :attr:`ZeroReading.UNDECIDABLE` is a review
         that reached no verdict, and a review that reached no verdict is still a review --
-        it is the state issue #83 asks for, and collapsing it into either neighbour would
+        it is the state issue #83 asks for, and collapsing it into either neighbor would
         lose the finding.
         """
         return self.numeric and self.zero_reading is not ZeroReading.UNREVIEWED
@@ -640,7 +640,7 @@ DINS_FIELDS: tuple[FieldSpec, ...] = (
         "both a recorded city and an empty cell. CITY has no published domain, so this "
         "is inferred. One thing the file shows is worth a reader's attention: every "
         "record holding NA belongs to an incident that started in 2020, and no record "
-        "in that cohort holds the value Unincorporated that neighbouring years use. "
+        "in that cohort holds the value Unincorporated that neighboring years use. "
         "That pattern reads as a value applied to a load rather than determined per "
         "structure, which is why NA is not counted as a recorded city. Whether those "
         "cells are better read as a recorded marker or as an empty cell cannot be told "

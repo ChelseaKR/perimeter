@@ -17,7 +17,7 @@ Two documents fix that, and both are built by the same run that builds the pages
   missing one. :mod:`tests.test_artifact_schemas` runs both directions against a fixture
   build and against the committed real artifacts.
 * **A Frictionless Data Package** at ``site/data/datapackage.json``, describing both
-  resources with the licence, the endpoint, the retrieval date and the SHA-256 of the
+  resources with the license, the endpoint, the retrieval date and the SHA-256 of the
   file each was measured from. Those facts come from :mod:`perimeter.sources`, the single
   reviewed provenance record, so the descriptor cannot state a hash the artifacts do not.
 
@@ -119,8 +119,9 @@ def _source_schema() -> dict[str, Any]:
             "landing_page": _string("The dataset's landing page."),
             "endpoint": _string("The service endpoint the rows were queried from."),
             "layer": _string("The layer within that service."),
-            "licence": _string("The licence the publisher states."),
-            "licence_url": _string("URL for that licence."),
+            # British spelling kept on purpose: these are published JSON Schema properties.
+            "licence": _string("The license the publisher states."),
+            "licence_url": _string("URL for that license."),
             "version": _string(
                 "The publisher's version string, or null in a fixture build.",
                 nullable=True,
@@ -803,8 +804,8 @@ def _resource(
         "licenses": [
             {
                 "name": "CC-BY-4.0",
-                "title": source.licence,
-                "path": source.licence_url,
+                "title": source.license,
+                "path": source.license_url,
             }
         ],
         "sources": [

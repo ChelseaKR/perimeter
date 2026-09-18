@@ -55,7 +55,7 @@ layer metadata on 2026-08-16.
 
 That number is the layer's to change and is not a promise about what any page will hold.
 Asked for 3,000 on 2026-08-16 the POSTFIRE layer answered with 2,000 rows and
-``exceededTransferLimit`` true, which is the standard behaviour whenever
+``exceededTransferLimit`` true, which is the standard behavior whenever
 ``resultRecordCount`` exceeds ``maxRecordCount``. So the walk below steps its offset by the
 length of the page it was handed, never by the length it asked for.
 """

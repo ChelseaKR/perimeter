@@ -52,7 +52,7 @@ import name stays `perimeter`.
 California Historical Fire Perimeters, version firep25_1, retrieved 2026-08-07:
 
 - 23,334 perimeter records, covering fire years 1878 to 2025. 77 records carry no year and
-  are counted as their own cohort rather than being attached to a neighbouring year.
+  are counted as their own cohort rather than being attached to a neighboring year.
 - 3,633 records carry an IRWIN ID (15.6%), reported per year so the transition is visible
   rather than asserted. FRAP's own release note describes the new Global ID as covering
   records "pre-dating IRWIN IDs".
@@ -167,7 +167,7 @@ make diff OLD=a.json NEW=b.json   # compare two coverage artifacts leaf by leaf
 
 A refresh used to begin from a crash. The build refuses a cell holding something that
 reads like a missing-data marker in a field nobody has reviewed for it, which is the right
-behaviour and a poor way to find out: it reports one cell, in one field, and says nothing
+behavior and a poor way to find out: it reports one cell, in one field, and says nothing
 about the next one, so a new retrieval gets worked through one refusal at a time.
 
 `make survey` reads the same files the build reads and reports every candidate at once:
@@ -223,7 +223,7 @@ Every leaf is compared at its path (`/fields[3]/present`), with both values prin
 
 An empty, missing, or unparseable input is refused rather than compared: two empty files
 compare equal, and "no change" about two files that were never read is the failure this
-whole repository is organised against. `make site-check` prints the same leaf comparison
+whole repository is organized against. `make site-check` prints the same leaf comparison
 before its byte-for-byte check decides, so a drift report names the values that moved.
 
 `make verify` includes `make pages`, which builds the pages from the committed fixtures and
@@ -317,7 +317,7 @@ accessibility gates read, and CI never report to the property. It also loads not
 the browser sends Global Privacy Control or Do Not Track, or after the visitor uses the
 footer's "Opt out of analytics" button, remembered in local storage as
 `perimeter:analytics-opt-out` (a key that names this project, because every
-`chelseakr.github.io` site shares one origin). Google signals and ad personalisation are
+`chelseakr.github.io` site shares one origin). Google signals and ad personalization are
 off, the advertising consent signals are denied everywhere, and analytics cookies are
 denied in the EEA, the UK and Switzerland. `tests/test_analytics.py` runs the committed
 loader in Node against each of those cases and deletes each guard in turn to prove the test
@@ -397,7 +397,7 @@ build time. Nothing in CI can check it against the source.
 | Data Governance | Applies (L1): openly licensed public civic data, republished only as counts, handled defensively above the tier because the DINS file carries site addresses and parcel numbers (`data/raw/` gitignored, fixtures hand-written rather than sampled, no identifying field republished). A data card per source under `docs/data/` carries the seven rows section 1 requires, including the refresh cadence, the staleness SLA and the tier, which were the gap this row recorded (DG-01). DG-04 is a gate: `tests/test_data_cards.py` fails the build when a retrieval is older than the SLA its card states, and the clock lives there rather than in the artifacts, which have none. DG-03 is `require_columns` and `FieldSpec.classify`, which refuse a file per row rather than validating the first one. Not met: DG-02 is satisfied at the file level and not the record level, since no record is republished and every count's artifact names the source, version, retrieval date and hash; and DG-19 has nothing to link, because there has been one retrieval |
 | AI Development Measurement | Applies (not met). No baseline and no outcome metrics recorded for this repository's development stream |
 
-## Licence
+## License
 
 Apache-2.0. Source data is published by CAL FIRE under a Creative Commons Attribution
-licence and is reproduced here only as counts.
+license and is reproduced here only as counts.

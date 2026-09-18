@@ -22,7 +22,7 @@ tests below hold three properties that keep it that way:
 * **An empty denominator is never a share.** A cohort holding no assessed records has
   nothing to divide by, and the page writes that in words. ``0.0%`` there would say the
   inspectors found nothing when what happened is that nobody could reach anything, which
-  is the defect this whole repository is organised against.
+  is the defect this whole repository is organized against.
 """
 
 from __future__ import annotations

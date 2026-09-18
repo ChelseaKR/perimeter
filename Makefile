@@ -121,7 +121,7 @@ site-offline:
 # html-validate for HTML conformance and the markup-level accessibility rules, axe-core
 # in a headless DOM for the WCAG 2.0/2.1/2.2 A and AA rule sets, the same axe rule sets
 # again in Chromium where nothing is undecidable, and WCAG 2.2 SC 1.4.10 Reflow at a
-# 320x256 viewport, which no engine decides from a DOM alone. Structure and colour
+# 320x256 viewport, which no engine decides from a DOM alone. Structure and color
 # contrast are additionally checked in `test`, so `make verify` still has a floor if a
 # toolchain is unavailable. What none of this can do is look at the pages; README.md
 # names what still needs a person.

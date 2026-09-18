@@ -1,7 +1,7 @@
 # Provenance
 
 Two sources, both published by the California Department of Forestry and Fire Protection,
-both under a Creative Commons Attribution licence, both read from a GeoServices REST
+both under a Creative Commons Attribution license, both read from a GeoServices REST
 endpoint that the dataset itself lists among its published resources.
 
 The values in this file are mirrored from `src/perimeter/sources.py`, which is the single
@@ -48,7 +48,7 @@ CHANGELOG. Both endpoints answered ordinary automated requests on the retrieval 
 | Landing page | https://data.cnra.ca.gov/dataset/california-historical-fire-perimeters |
 | Endpoint | `https://services1.arcgis.com/jUJYIo9tSA7EHvfZ/arcgis/rest/services/California_Historic_Fire_Perimeters/FeatureServer/0/query` |
 | Layer read | California Fire Perimeters (all) |
-| Licence | Creative Commons Attribution |
+| License | Creative Commons Attribution |
 | Version | firep25_1 |
 | Retrieved | 2026-08-07 |
 | Records | 23,334 |
@@ -102,7 +102,7 @@ quoted in `docs/MARKERS.md`, alongside the coded-value domains the layer itself 
 | Landing page | https://data.ca.gov/dataset/cal-fire-damage-inspection-dins-data |
 | Endpoint | `https://services1.arcgis.com/jUJYIo9tSA7EHvfZ/arcgis/rest/services/POSTFIRE_MASTER_DATA_SHARE/FeatureServer/0/query` |
 | Layer read | POSTFIRE |
-| Licence | Creative Commons Attribution |
+| License | Creative Commons Attribution |
 | Version | POSTFIRE_MASTER_DATA_SHARE |
 | Retrieved | 2026-08-07 |
 | Records | 132,522 |

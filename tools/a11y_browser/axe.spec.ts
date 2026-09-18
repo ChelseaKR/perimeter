@@ -8,7 +8,7 @@ import { SITE_DIR, pagesUnderTest, urlFor } from "./pages";
  *
  * jsdom does no layout and paints no pixels, so four rules land in `incomplete` there
  * and are declared in that file with a reason and with where each is covered instead.
- * A browser computes geometry and colour, so it decides all four, and this run has no
+ * A browser computes geometry and color, so it decides all four, and this run has no
  * declared-undecidable list at all: an undecided rule fails here, full stop. That is
  * the strongest form of the rule `tools/a11y.mjs` argues for, and it is only available
  * because something is doing layout.

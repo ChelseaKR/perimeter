@@ -23,7 +23,7 @@ PROVENANCE_FLAT = flatten(PROVENANCE)
 
 @pytest.mark.parametrize("source", SOURCES, ids=lambda s: s.key)
 def test_provenance_states_where_the_file_came_from(source: Source) -> None:
-    for value in (source.landing_page, source.endpoint, source.layer, source.licence):
+    for value in (source.landing_page, source.endpoint, source.layer, source.license):
         assert value in PROVENANCE, (
             f"{source.key}: {value!r} missing from PROVENANCE.md"
         )

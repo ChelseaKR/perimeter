@@ -100,7 +100,7 @@ def year_cohorts(records: Sequence[Record]) -> list[YearCohort]:
     """Records per year with IRWIN ID coverage inside each year.
 
     Records with no year are kept as their own cohort rather than being dropped or
-    attached to a neighbouring year. A year that no record names is simply absent from
+    attached to a neighboring year. A year that no record names is simply absent from
     this list; it is not published as a year with zero fires, because this dataset cannot
     tell the difference between a year with no fires and a year whose fires are missing.
     """
@@ -220,7 +220,7 @@ def placeholder_counterfactual(records: Sequence[Record]) -> DuplicateSignal:
     and a reader is entitled to see what it costs. This counts the other reading, so the
     difference is a number on the page rather than an assertion about one.
 
-    Never presented as a duplicate finding. It is the counterfactual, labelled as one.
+    Never presented as a duplicate finding. It is the counterfactual, labeled as one.
     """
     keys: list[tuple[str, ...]] = []
     for record in records:

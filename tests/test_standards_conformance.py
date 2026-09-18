@@ -126,7 +126,7 @@ def test_no_row_is_blank(standard: str) -> None:
 
 
 @pytest.mark.parametrize("standard", STANDARDS)
-def test_every_state_opens_with_a_recognised_verdict(standard: str) -> None:
+def test_every_state_opens_with_a_recognized_verdict(standard: str) -> None:
     """A gap has to be recorded as a gap. Prose that avoids saying which is not a state."""
     state = conformance_rows().get(standard, "")
     assert state.startswith(STATES), (
@@ -136,7 +136,7 @@ def test_every_state_opens_with_a_recognised_verdict(standard: str) -> None:
 
 def test_the_table_carries_no_standard_this_portfolio_does_not_have() -> None:
     unknown = set(conformance_rows()) - set(STANDARDS)
-    assert not unknown, f"unrecognised standards in the table: {sorted(unknown)}"
+    assert not unknown, f"unrecognized standards in the table: {sorted(unknown)}"
 
 
 # --- FIX-02: the manifest entry, and what happened to the test that pinned its absence -

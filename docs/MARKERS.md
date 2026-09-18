@@ -73,7 +73,7 @@ The definition in D2 is what settles it. A number an Emergency Command Center as
 a fire identifies that fire for that agency. Sixty-one separate Los Angeles County fires
 in 1975 did not receive the same assignment, and the value's collapse from universal
 before 1940 to a single record in the 2020s is the shape of a placeholder written into
-records digitised before the field was captured, not the shape of an identifier.
+records digitized before the field was captured, not the shape of an identifier.
 
 **Effect on published figures.** Both figures reproduce exactly, and both are now in the
 JSON artifact rather than asserted in prose. The reviewed reading is published in
@@ -421,7 +421,7 @@ here, so changing it is a one-line change with a gate on both sides of it.
 
 The last sentence of this section used to read *"and because the gate that reads this file
 has no way to tell a reviewed decision from an unexamined one."* It now has one:
-`FieldSpec.zero_reading`, published per field as `recorded_zero_reading`, summarised in
+`FieldSpec.zero_reading`, published per field as `recorded_zero_reading`, summarized in
 each artifact's `recorded_zero_review` block as two numbers, and stated on the page above
 each field table. A field measured as a number that publishes a recorded zero while
 carrying `unreviewed` fails the build.

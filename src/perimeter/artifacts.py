@@ -71,8 +71,9 @@ def _source_json(source: Source, *, is_fixture: bool) -> dict[str, Any]:
         "landing_page": source.landing_page,
         "endpoint": source.endpoint,
         "layer": source.layer,
-        "licence": source.licence,
-        "licence_url": source.licence_url,
+        # "licence"/"licence_url" keep their British spelling: published coverage JSON keys.
+        "licence": source.license,
+        "licence_url": source.license_url,
         "version": None if is_fixture else source.version,
         "retrieved": None if is_fixture else source.retrieved,
         # Policy rather than acquisition, so a fixture build publishes it too. A consumer

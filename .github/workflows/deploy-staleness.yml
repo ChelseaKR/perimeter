@@ -9,10 +9,10 @@
 # push to main with no path filter, which is correct. What is missing is anything that
 # notices a firing that did not land. Measured 2026-09-13 over the 75 commits on main since
 # pages.yml was added: 23 produced no github-pages deployment. Thirteen had their
-# publish-site run cancelled -- the `pages` concurrency group holds one pending run, so a
+# publish-site run canceled -- the `pages` concurrency group holds one pending run, so a
 # second push evicts the first -- and ten arrived inside a push whose tip was another
 # commit. Two of the 23, 4385957b9 and edbfb9bd7, changed files under site/. Every gate was
-# green throughout, because a cancelled run is not a failed one.
+# green throughout, because a canceled run is not a failed one.
 #
 # This workflow publishes NOTHING and cannot: it holds no `pages: write`, no
 # `id-token: write` and no deploy credential of any kind, and it dispatches nothing.
@@ -49,7 +49,7 @@ on:
 # Least privilege at the workflow level; the one job grants itself what it needs.
 permissions: {}
 
-# This job writes -- it files or updates one issue -- so a run is never cancelled mid-write,
+# This job writes -- it files or updates one issue -- so a run is never canceled mid-write,
 # and a manual dispatch never races the Monday schedule onto the same issue. Unlike ci.yml
 # there is nothing to key per commit here: the question is about the repository, not about
 # a particular push, so one shared group is right and the pending-slot eviction that costs

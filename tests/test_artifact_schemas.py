@@ -255,7 +255,7 @@ def test_the_descriptor_states_the_reviewed_acquisition_facts(source: Source) ->
     assert stated["recordCount"] == source.record_count
     assert stated["endpoint"] == source.endpoint
     assert stated["version"] == source.version
-    assert resource["licenses"][0]["path"] == source.licence_url
+    assert resource["licenses"][0]["path"] == source.license_url
 
 
 def test_a_fixture_descriptor_publishes_no_acquisition_facts() -> None:

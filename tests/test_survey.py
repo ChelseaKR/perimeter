@@ -472,7 +472,7 @@ def test_main_surveys_both_sources_and_writes_both_files(
     assert (out / "survey.md").is_file()
 
 
-def test_main_honours_a_narrower_listing_bound(tmp_path: Path) -> None:
+def test_main_honors_a_narrower_listing_bound(tmp_path: Path) -> None:
     out = tmp_path / "survey"
     assert (
         main(["--dins", str(DINS_FIXTURE), "--out", str(out), "--listing-bound", "1"])

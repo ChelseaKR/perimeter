@@ -927,11 +927,11 @@
           "type": "string"
         },
         "licence": {
-          "description": "The licence the publisher states.",
+          "description": "The license the publisher states.",
           "type": "string"
         },
         "licence_url": {
-          "description": "URL for that licence.",
+          "description": "URL for that license.",
           "type": "string"
         },
         "publisher": {

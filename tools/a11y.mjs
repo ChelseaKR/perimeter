@@ -3,9 +3,9 @@
 // This is the WCAG gate. It loads each page into a real DOM implementation and runs
 // axe-core's WCAG 2.0/2.1/2.2 A and AA rule sets plus the best-practice set, and exits
 // non-zero on any violation. It is not a substitute for a human looking at the pages:
-// jsdom does no layout and computes no colours, so the rules that depend on rendered
+// jsdom does no layout and computes no colors, so the rules that depend on rendered
 // geometry or on painted pixels cannot fire here. Those are named in README.md under
-// "What still needs a person", and colour contrast is measured separately, off the
+// "What still needs a person", and color contrast is measured separately, off the
 // palette itself, in tests/test_pages_html.py.
 //
 // axe returns four buckets, not two: `passes`, `violations`, `inapplicable`, and
@@ -97,7 +97,7 @@ async function checkPage(path) {
   // that came out of the page. The pages' one script is the Google Analytics 4 loader,
   // and the checker should not execute it: the Chromium gate runs it, off the production
   // host, where it loads nothing and only reveals the footer's opt-out button.
-  // axe probes for a canvas to decide whether it can sample colours. jsdom has none, so
+  // axe probes for a canvas to decide whether it can sample colors. jsdom has none, so
   // it reports that once per page. Everything else the page or axe says is forwarded.
   const console_ = new VirtualConsole();
   console_.forwardTo(console, { jsdomErrors: "none" });

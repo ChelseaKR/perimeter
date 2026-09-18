@@ -31,7 +31,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 REQUIRED_CARD_FIELDS = (
     "| Source |",
-    "| Licence |",
+    "| License |",
     "| Fetch and refresh cadence |",
     "| Fetch timestamp |",
     "| Tier |",
@@ -77,7 +77,7 @@ def test_the_card_restates_the_reviewed_record_without_drifting_from_it(
         source.publisher,
         source.landing_page,
         source.endpoint,
-        source.licence,
+        source.license,
         source.version,
         source.retrieved,
         source.sha256,

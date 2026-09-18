@@ -281,7 +281,7 @@ def test_every_published_finding_of_absence_survives_classification(
 def test_a_field_that_declares_a_judgment_call_declares_its_basis(
     spec: FieldSpec,
 ) -> None:
-    """No unlabelled judgment calls. A declared marker is either documented or inferred."""
+    """No unlabeled judgment calls. A declared marker is either documented or inferred."""
     if spec.declares_vocabulary:
         assert spec.basis is not Basis.NONE, (
             f"{spec.name} declares a vocabulary but no basis; see docs/MARKERS.md"
