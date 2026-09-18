@@ -12,7 +12,13 @@ from pathlib import Path
 
 from perimeter import schema_export
 from perimeter.artifacts import build
-from perimeter.render import SOCIAL_CARD, dins_page, index_page, perimeters_page
+from perimeter.render import (
+    SOCIAL_CARD,
+    dins_page,
+    index_page,
+    perimeters_page,
+    privacy_page,
+)
 from perimeter.sources import DINS, FRAP
 
 ASSETS = Path(__file__).resolve().parents[2] / "assets"
@@ -34,7 +40,7 @@ def build_site(
     out_dir: Path,
     is_fixture: bool,
 ) -> list[Path]:
-    """Write both JSON artifacts and all three pages, and return what was written."""
+    """Write both JSON artifacts and all four pages, and return what was written."""
     perimeters, inspections = build(
         perimeters_source=perimeters_source,
         dins_source=dins_source,
@@ -46,6 +52,7 @@ def build_site(
         "index.html": index_page(perimeters, inspections, is_fixture=is_fixture),
         "perimeters.html": perimeters_page(perimeters, is_fixture=is_fixture),
         "dins.html": dins_page(inspections, is_fixture=is_fixture),
+        "privacy.html": privacy_page(is_fixture=is_fixture),
     }
     written = [
         out_dir / "data" / "perimeters-coverage.json",

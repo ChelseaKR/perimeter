@@ -19,6 +19,7 @@ import html
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 
+from perimeter import analytics
 from perimeter.cells import present_tenths_of_percent
 from perimeter.coverage import (
     CohortCoverage,
@@ -58,7 +59,12 @@ SOCIAL_CARD_ALT = (
 # Keyed by `active`, the value each page already uses to mark its own nav entry, so a
 # canonical and the highlighted tab cannot disagree about which page this is. The index
 # canonicalises to the directory form, which is the URL Pages serves it at.
-CANONICAL_PATH = {"index": "", "perimeters": "perimeters.html", "dins": "dins.html"}
+CANONICAL_PATH = {
+    "index": "",
+    "perimeters": "perimeters.html",
+    "dins": "dins.html",
+    "privacy": "privacy.html",
+}
 
 DISCLAIMER = (
     "Unofficial. Not affiliated with or endorsed by CAL FIRE, FRAP, or any California "
@@ -326,6 +332,7 @@ dl.meta dd { margin: 0; word-break: break-word; }
 
 footer.page { border-top: 1px solid var(--rule); margin-top: 4rem; padding-top: 1.6rem; font-size: .84rem; color: var(--ink-3); }
 footer.page p { max-width: 44rem; }
+.link-button { font: inherit; color: var(--accent); background: none; border: 0; padding: 0; text-decoration: underline; cursor: pointer; }
 .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)); gap: 1.4rem; margin: 2rem 0; }
 .card { border: 1px solid var(--rule); background: var(--surface-raised); padding: 1.3rem 1.4rem 1.5rem; }
 .card h3 { margin-top: 0; color: var(--ink); font-size: 1.08rem; }
@@ -600,6 +607,7 @@ def page(
     body: str,
     active: str,
     is_fixture: bool,
+    ga4_id: str | None = analytics.GA4_MEASUREMENT_ID,
 ) -> str:
     fixture_banner = (
         '<p class="badge">Fixture build. These numbers describe the committed test '
@@ -640,7 +648,7 @@ def page(
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="{esc(SOCIAL_CARD_URL)}">
 <meta name="twitter:image:alt" content="{esc(SOCIAL_CARD_ALT)}">
-<style>{STYLESHEET}</style>
+{analytics.head_snippet(ga4_id)}<style>{STYLESHEET}</style>
 </head>
 <body>
 <a class="skip-link" href="#content">Skip to the measurement</a>
@@ -668,6 +676,7 @@ Schemas it names
 <a href="data/schema/dins-coverage.schema.json">DINS</a>) say what every key means,
 including which of the three counts is a recorded value, which is a recorded unknown,
 and which is an empty cell.</p>
+{analytics.footer_note(ga4_id)}
 </footer>
 </div>
 </body>
@@ -1410,4 +1419,72 @@ file hashes, is in <code>PROVENANCE.md</code> and repeated on each page.</p>
         body=body,
         active="index",
         is_fixture=is_fixture,
+    )
+
+
+_HOSTING = """<h2>Hosting</h2>
+<p>GitHub Pages serves this site. Like any web host, GitHub receives each request,
+including your IP address; see the
+<a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">GitHub
+General Privacy Statement</a>.</p>"""
+
+
+def _privacy_body(ga4_id: str | None) -> str:
+    """What the privacy page says, which depends on whether the build has an ID."""
+    if analytics.measurement_id(ga4_id) is None:
+        return (
+            "<p>This site runs no analytics, loads no third-party script and sets no "
+            f"cookies.</p>\n{_HOSTING}"
+        )
+    return f"""<p>These pages count visits with Google Analytics 4, a service of Google LLC in the
+United States. Nothing else on them tracks you, and the JSON artifacts under
+<code>data/</code> carry no tracking of any kind.</p>
+<h2>What Google Analytics records</h2>
+<p>For each page you open: the page address and the page you came from, the time, your
+browser, device and screen size, your language, and a rough location that Google works out
+from your IP address. Google Analytics 4 does not store the IP address itself. By default it
+also records scrolling and clicks on links that leave this site.</p>
+<h2>Cookies</h2>
+<p>Outside the places listed below, Google Analytics sets two cookies on
+chelseakr.github.io, named <code>_ga</code> and <code>_ga_</code> followed by an ID. They let
+it tell a returning browser from a new one, and last up to two years. In the European
+Economic Area, the United Kingdom and Switzerland it sets no analytics cookies. There,
+Google still receives a cookieless ping for each page.</p>
+<h2>Advertising features are off</h2>
+<p>Google signals and ad personalisation are both turned off, and the advertising storage,
+ad user data and ad personalisation consent signals are denied everywhere. Google keeps the
+event data for {esc(analytics.GA4_DATA_RETENTION)}. See
+<a href="https://policies.google.com/privacy">Google's privacy policy</a>.</p>
+<h2 id="opt-out">Opting out</h2>
+<ul>
+<li><strong>On this device:</strong> use &ldquo;Opt out of analytics&rdquo; at the bottom of
+any page. It stores <code>{esc(analytics.GA4_OPT_OUT_KEY)}</code> in this browser's local
+storage and sends it nowhere. From then on this site does not load Google Analytics in this
+browser. The same button then reads &ldquo;Opt back in&rdquo;, which removes the
+setting.</li>
+<li><strong>In any browser:</strong> turn on Global Privacy Control or Do Not Track. This
+site then never loads Google Analytics at all.</li>
+<li>Or install <a href="https://tools.google.com/dlpage/gaoptout">Google's Analytics opt-out
+browser add-on</a>.</li>
+</ul>
+{_HOSTING}"""
+
+
+def privacy_page(
+    *, is_fixture: bool, ga4_id: str | None = analytics.GA4_MEASUREMENT_ID
+) -> str:
+    """``privacy.html``: what this site collects, true for the build it is in."""
+    body = f"""
+<header class="page">
+<h1>Privacy</h1>
+</header>
+{_privacy_body(ga4_id)}
+"""
+    return page(
+        title="Perimeter | Privacy",
+        description="What this site collects about visitors, and how to opt out.",
+        body=body,
+        active="privacy",
+        is_fixture=is_fixture,
+        ga4_id=ga4_id,
     )
