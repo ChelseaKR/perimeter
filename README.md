@@ -354,7 +354,8 @@ here is how much of each published field is actually filled in, and what the bla
 ## Standards conformance
 
 This repository is held to the portfolio's shared engineering standards, pinned in
-`.standards-version` to `v2.0.0`. Every row states what is true on 2026-08-27, not what is
+`.standards-version` to `v3.0.1` (moved from `v2.0.0` on 2026-10-02; the rows were last
+reviewed against `v2.0.0`). Every row states what is true on 2026-08-27, not what is
 intended. "Applies (not met)" is a recorded gap; a blank state is a defect and
 `tests/test_standards_conformance.py` fails on one.
 

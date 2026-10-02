@@ -6,6 +6,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project a
 
 ## [Unreleased]
 
+### Changed, the standards pin moves to portfolio-standards v3.0.1
+
+- **`.standards-version` now names `v3.0.1`, up from `v2.0.0`.** At the old pin, three
+  standards (Code Quality, Quality & Metrics and the Responsible-Tech Framework) were
+  past their 92-day recheck. The README's conformance table cites the new pin and says
+  its rows were last reviewed against `v2.0.0`.
+
 ### Added, Google Analytics 4 on the pages, with a privacy page
 
 - **Owner decision 2026-09-17: GA4 on every public site, with privacy copy changed to
